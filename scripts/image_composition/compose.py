@@ -1,4 +1,4 @@
-import os, sys
+import os, sys, argparse
 from glob import glob
 from ConfigParser import ConfigParser
 
@@ -35,7 +35,6 @@ def main(inifile, head_dir, body_dir, legs_dir):
     body_files = glob(os.path.join(head_dir, 'body', '*[0-9].png'))
     legs_files = glob(os.path.join(head_dir, 'legs', '*[0-9].png'))
     for anim_name in parser.sections():
-        print anim_name
         for frame in parser.items(anim_name):
             # TODO: assert that the frame numbers are correct please.
             head_index, body_index, legs_index = map(int, frame[1].split(','))
@@ -52,4 +51,18 @@ def adjust_image(image):
     return Image.merge('RGBA', (a,a,a,a)), a
 
 if (__name__ == '__main__'):
-    main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
+    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser.add_argument('config', help='Path to config file specifying the'
+                                       'animations to make')
+    parser.add_argument('head', metavar='head_dir', type=str, 
+                        help="Character directory to look in for the sprite's "
+                             "head (must have a `head' subdirectory)")
+    parser.add_argument('body', metavar='body_dir', type=str, 
+                        help="Character directory to look in for the sprite's "
+                             "body (must have a `body' subdirectory)")
+    parser.add_argument('legs', metavar='legs_dir', type=str, 
+                        help="Character directory to look in for the sprite's "
+                             "legs (must have a `legs' subdirectory)")
+    args = parser.parse_args()
+
+    main(args.config, args.head, args.body, args.legs)
