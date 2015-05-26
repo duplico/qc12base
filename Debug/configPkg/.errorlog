@@ -1,6 +1,6 @@
-      0 [main] sh 1524936 sync_with_child: child 1527348(0x1A0) died before initialization with status code 0xC0000142
-     13 [main] sh 1524936 sync_with_child: *** child state waiting for longjmp
-C:/Users/George/AppData/Local/Temp/make1525124-1.sh: fork: Resource temporarily unavailable
+      0 [main] sh 1527960 sync_with_child: child 1529752(0x1A0) died before initialization with status code 0xC0000142
+     26 [main] sh 1527960 sync_with_child: *** child state waiting for longjmp
+C:/Users/George/AppData/Local/Temp/make1528132-1.sh: fork: Resource temporarily unavailable
 gmake[1]: *** [objs/Grace_init.obj] Error 128
 gmake: *** [C:/Users/George/workspace_v6_0/qc12/src/grace/grace.lib] Error 2
 error: xdc.cfg.SourceDir: "C:/ti/xdctools_3_31_00_24_core/packages/xdc/cfg/SourceDir.xs", line 184: xdc.cfg.SourceDir : Build of generated source libraries failed: exit status = 2:

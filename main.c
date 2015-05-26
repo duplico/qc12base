@@ -1,7 +1,7 @@
 /*
  * ======== Standard MSP430 includes ========
  */
-#include <msp430fr5969.h>
+#include <msp430fr5949.h>
 #include <driverlib.h>
 #include <stdint.h>
 #include <grlib.h>

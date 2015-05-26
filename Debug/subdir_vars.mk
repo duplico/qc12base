@@ -10,13 +10,19 @@ CFG_SRCS += \
 ../main.cfg 
 
 C_SRCS += \
-../main.c 
+../leds.c \
+../main.c \
+../radio.c 
 
 OBJS += \
-./main.obj 
+./leds.obj \
+./main.obj \
+./radio.obj 
 
 C_DEPS += \
-./main.pp 
+./leds.pp \
+./main.pp \
+./radio.pp 
 
 GEN_MISC_DIRS += \
 ./configPkg/ 
@@ -39,13 +45,19 @@ GEN_MISC_DIRS__QUOTED += \
 "configPkg\" 
 
 C_DEPS__QUOTED += \
-"main.pp" 
+"leds.pp" \
+"main.pp" \
+"radio.pp" 
 
 OBJS__QUOTED += \
-"main.obj" 
+"leds.obj" \
+"main.obj" \
+"radio.obj" 
 
 C_SRCS__QUOTED += \
-"../main.c" 
+"../leds.c" \
+"../main.c" \
+"../radio.c" 
 
 GEN_CMDS__FLAG += \
 -l"./configPkg/linker.cmd" 
