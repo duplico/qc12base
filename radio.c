@@ -6,8 +6,8 @@
  */
 
 #include "radio.h"
-#include "qcxi.h"
-#include "leds.h" // TODO
+#include "qc12.h"
+#include "leds.h"
 
 #include <stdint.h>
 #include "driverlib.h"
@@ -36,86 +36,9 @@ uint8_t in_bytes[sizeof(in_payload)];
 
 void init_radio() {
 
-	// SPI for radio //////////////////////////////////////////////////////////
-	//
-	// P4.1 ---- MOSI (TX) >>--|
-	// P4.2 ---- MISO (RX) <<--| RFM69CW
-	// P4.3 ----------- CLK ---|
-	// P4.7 ----------- NSS ---|
-	//                         |
-	// P6.0 --------- RESET->>-|
-	// P2.0 --------- DIO0 <<--|
-	//
+	// SPI for radio is done in Grace.
 
-	// DIO0 (interrupt pin):
-//	GPIO_setAsInputPin(GPIO_PORT_P2, GPIO_PIN0);
-	P2DIR &= ~BIT0;
-	P2SEL &= ~BIT0;
-
-	//P3.5,4,0 option select
-//	GPIO_setAsPeripheralModuleFunctionInputPin(
-//		GPIO_PORT_P4,
-//		GPIO_PIN2
-//	);
-	P4SEL |= BIT2;
-
-//	GPIO_setAsPeripheralModuleFunctionOutputPin(
-//			GPIO_PORT_P4,
-//			GPIO_PIN1 + GPIO_PIN3
-//	);
-	P4SEL |= GPIO_PIN1 + GPIO_PIN3;
-
-//	GPIO_setAsOutputPin(RFM_NSS_PORT, RFM_NSS_PIN);
-	RFM_NSS_PORT_DIR |= RFM_NSS_PIN;
-
-//	GPIO_setOutputHighOnPin(RFM_NSS_PORT, RFM_NSS_PIN); // NSS is active low.
-	RFM_NSS_PORT_OUT |= RFM_NSS_PIN;
-
-	// SPI to RFM /////////////////////////////////////////////////////////////
-	//
-	// Initialize the SPI for talking to the radio
-#if !BADGE_TARGET
-	returnValue = USCI_B_SPI_masterInit(
-		USCI_B1_BASE,
-		USCI_B_SPI_CLOCKSOURCE_SMCLK, // selectClockSource
-		UCS_getSMCLK(),
-		SPICLK,
-		USCI_B_SPI_MSB_FIRST,
-		USCI_B_SPI_PHASE_DATA_CAPTURED_ONFIRST_CHANGED_ON_NEXT,
-		USCI_B_SPI_CLOCKPOLARITY_INACTIVITY_LOW
-	);
-#else
-
-	//Disable the USCI Module
-	UCB1CTL1 |= UCSWRST;
-
-	UCB1CTL0 &= ~(UCCKPH + UCCKPL + UC7BIT + UCMSB + UCMST + UCMODE_3 + UCSYNC);
-
-	UCB1CTL1 &= ~(UCSSEL_3);
-
-	UCB1CTL1 |= USCI_B_SPI_CLOCKSOURCE_SMCLK;
-
-	UCB1BRW = 1;
-
-	/*
-	 * Configure as SPI master mode.
-	 * Clock phase select, polarity, msb
-	 * UCMST = Master mode
-	 * UCSYNC = Synchronous mode
-	 * UCMODE_0 = 3-pin SPI
-	 */
-
-	UCB1CTL0 |= (USCI_B_SPI_MSB_FIRST +
-				 USCI_B_SPI_PHASE_DATA_CAPTURED_ONFIRST_CHANGED_ON_NEXT +
-				 USCI_B_SPI_CLOCKPOLARITY_INACTIVITY_LOW +
-				 UCMST +
-				 UCSYNC +
-				 UCMODE_0);
-#endif
-
-	//Enable SPI module
-//	USCI_B_SPI_enable(USCI_B1_BASE);
-	UCB1CTL1 &= ~UCSWRST;
+	//Enable SPI module TODO
 
 	// Radio reboot procedure:
 	//  hold RESET high for > 100 us
@@ -123,20 +46,13 @@ void init_radio() {
 	//  module is ready
 
 //	GPIO_setOutputHighOnPin(GPIO_PORT_P6, GPIO_PIN0);
-	P6OUT |= BIT0;
+//	P6OUT |= BIT0; TODO
 	delay(1);
 //	GPIO_setOutputLowOnPin(GPIO_PORT_P6, GPIO_PIN0);
-	P6OUT &= ~BIT0;
+//	P6OUT &= ~BIT0; TODO
 	delay(10);
 
-	//Enable Receive interrupt
-
-//	USCI_B_SPI_clearInterruptFlag(USCI_B1_BASE, USCI_B_SPI_RECEIVE_INTERRUPT);
-//	USCI_B_SPI_enableInterrupt(USCI_B1_BASE, USCI_B_SPI_RECEIVE_INTERRUPT);
-//	USCI_B_SPI_clearInterruptFlag(USCI_B1_BASE, USCI_B_SPI_TRANSMIT_INTERRUPT);
-//	USCI_B_SPI_enableInterrupt(USCI_B1_BASE, USCI_B_SPI_TRANSMIT_INTERRUPT);
-	UCB1IFG &= ~(USCI_B_SPI_RECEIVE_INTERRUPT + USCI_B_SPI_TRANSMIT_INTERRUPT);
-	UCB1IE |= (USCI_B_SPI_RECEIVE_INTERRUPT + USCI_B_SPI_TRANSMIT_INTERRUPT);
+	//Enable Receive interrupt TODO
 
 	rfm_reg_state = RFM_REG_IDLE;
 	mode_sync(RFM_MODE_SB);
@@ -164,7 +80,7 @@ void init_radio() {
 	// Setup addresses and length:
 	write_single_register(0x37, 0b00110100); // Packet configuration (see DS)
 	write_single_register(0x38, sizeof(qcxipayload)); // PayloadLength
-	write_single_register(0x39, my_conf.badge_id); // NodeAddress
+//	write_single_register(0x39, my_conf.badge_id); // NodeAddress // TODO
 	write_single_register(0x3A, RFM_BROADCAST); // BroadcastAddress
 
 	write_single_register(0x3c, 0x8f); // TxStartCondition - FifoNotEmpty
@@ -203,7 +119,7 @@ void write_single_register_async(uint8_t addr, uint8_t data) {
 	addr = addr | 0b10000000; // MSB=1 => write command
 //	GPIO_setOutputLowOnPin(RFM_NSS_PORT, RFM_NSS_PIN); // Hold NSS low to begin frame.
 	RFM_NSS_PORT_OUT &= ~RFM_NSS_PIN;
-	USCI_B_SPI_transmitData(USCI_B1_BASE, addr); // Send our command.
+//	USCI_B_SPI_transmitData(USCI_B1_BASE, addr); // Send our command. // TODO: change to eUSCI
 }
 
 void write_single_register(uint8_t addr, uint8_t data) {
@@ -307,7 +223,7 @@ inline void radio_recv_start() {
 #pragma vector=USCI_B1_VECTOR
 __interrupt void USCI_B1_ISR(void)
 {
-	switch (__even_in_range(UCB1IV, 4)) {
+//	switch (__even_in_range(UCB1IV, 4)) { // TODO: eUSCI
 	//Vector 2 - RXIFG
 	case 2:
 		switch(rfm_reg_state) {
@@ -316,7 +232,7 @@ __interrupt void USCI_B1_ISR(void)
 			break;
 		case RFM_REG_RX_SINGLE_DAT:
 			// We just got the value. We're finished.
-			rfm_single_msg = USCI_B_SPI_receiveData(USCI_B1_BASE);
+//			rfm_single_msg = USCI_B_SPI_receiveData(USCI_B1_BASE); // TODO
 			rfm_reg_ifgs++; // RX thread is ready to go IDLE.
 			break;
 		case RFM_REG_TX_SINGLE_DAT:
@@ -359,7 +275,7 @@ __interrupt void USCI_B1_ISR(void)
 		case RFM_REG_RX_SINGLE_CMD:
 			// Just finished sending the command. Now we need to send a 0 so the
 			// clock keeps going and we can receive the data.
-			USCI_B_SPI_transmitData(USCI_B1_BASE, 0);
+//			USCI_B_SPI_transmitData(USCI_B1_BASE, 0); // TODO: eUSCI
 			rfm_reg_ifgs++; // TX thread is ready to go to RFM_REG_RX_SINGLE_DAT.
 			break;
 		case RFM_REG_RX_SINGLE_DAT:

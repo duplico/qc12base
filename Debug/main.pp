@@ -1,14 +1,13 @@
 # FIXED
 
 main.obj: ../main.c
-main.obj: C:/ti/ccsv6/ccs_base/msp430/include/msp430fr5969.h
+main.obj: C:/ti/ccsv6/ccs_base/msp430/include/msp430fr5949.h
 main.obj: C:/ti/ccsv6/ccs_base/msp430/include/in430.h
 main.obj: C:/ti/ccsv6/tools/compiler/ti-cgt-msp430_4.4.4/include/intrinsics.h
 main.obj: C:/ti/ccsv6/tools/compiler/ti-cgt-msp430_4.4.4/include/intrinsics_legacy_undefs.h
 main.obj: C:/Users/George/workspace_v6_0/qc12/driverlib/MSP430FR5xx_6xx/driverlib.h
 main.obj: C:/Users/George/workspace_v6_0/qc12/driverlib/MSP430FR5xx_6xx/inc/hw_memmap.h
 main.obj: C:/ti/ccsv6/ccs_base/msp430/include/msp430.h
-main.obj: C:/ti/ccsv6/ccs_base/msp430/include/msp430fr5949.h
 main.obj: C:/Users/George/workspace_v6_0/qc12/driverlib/MSP430FR5xx_6xx/inc/../deprecated/CCS/msp430fr5xx_6xxgeneric.h
 main.obj: C:/ti/ccsv6/tools/compiler/ti-cgt-msp430_4.4.4/include/stdint.h
 main.obj: C:/ti/ccsv6/tools/compiler/ti-cgt-msp430_4.4.4/include/stdbool.h
@@ -51,14 +50,13 @@ main.obj: C:/Users/George/workspace_v6_0/qc12/LCD_Driver/Template_Driver.h
 main.obj: C:/ti/grace_3_00_03_66/packages/ti/mcu/msp430/Grace.h
 
 ../main.c: 
-C:/ti/ccsv6/ccs_base/msp430/include/msp430fr5969.h: 
+C:/ti/ccsv6/ccs_base/msp430/include/msp430fr5949.h: 
 C:/ti/ccsv6/ccs_base/msp430/include/in430.h: 
 C:/ti/ccsv6/tools/compiler/ti-cgt-msp430_4.4.4/include/intrinsics.h: 
 C:/ti/ccsv6/tools/compiler/ti-cgt-msp430_4.4.4/include/intrinsics_legacy_undefs.h: 
 C:/Users/George/workspace_v6_0/qc12/driverlib/MSP430FR5xx_6xx/driverlib.h: 
 C:/Users/George/workspace_v6_0/qc12/driverlib/MSP430FR5xx_6xx/inc/hw_memmap.h: 
 C:/ti/ccsv6/ccs_base/msp430/include/msp430.h: 
-C:/ti/ccsv6/ccs_base/msp430/include/msp430fr5949.h: 
 C:/Users/George/workspace_v6_0/qc12/driverlib/MSP430FR5xx_6xx/inc/../deprecated/CCS/msp430fr5xx_6xxgeneric.h: 
 C:/ti/ccsv6/tools/compiler/ti-cgt-msp430_4.4.4/include/stdint.h: 
 C:/ti/ccsv6/tools/compiler/ti-cgt-msp430_4.4.4/include/stdbool.h: 
