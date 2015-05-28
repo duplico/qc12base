@@ -16,6 +16,48 @@
  *  ======== main ========
  */
 
+
+/*
+ * Peripherals:
+ *
+ *  Radio (RFM69CW)
+ *        eUSCI_B0 - radio
+ *        somi, miso, clk, ste
+ *        DIO0      P3.1
+ *        RESET     P3.2
+ */
+
+/*
+ *   LED controller
+ *        eUSCI_A0 - LEDs  (shared)
+ *        somi, miso, clk, ste
+ *        GSCLK     P1.2
+ */
+
+/*
+ *   Flash chip
+ *        eUSCI_A0 (shared)
+ *        somi, miso, clk
+ *        CS        P1.1
+ *        WP        P3.0
+ *        HOLD      P1.0
+ */
+
+/*
+ *   OLED
+ *        eUSCI_A1
+ *        ste, miso, clk
+ *        DC        P2.6
+ *        RES       P2.7
+ */
+
+/*
+ *   Buttons
+ *   (active low)
+ *   BTN1      P3.6
+ *   BTN2      P3.5
+ *   BTN3      P3.4
+ */
     // CS   1.3 (STE)
     // RES  1.5 (pull low to reset, otherwise high)
     // D/C  1.7
