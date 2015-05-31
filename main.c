@@ -21,6 +21,8 @@
  * Peripherals:
  *
  *  Radio (RFM69CW)
+ *        (MSB first, clock inactive low,
+ *         write on rise, change on fall, MSB first)
  *        eUSCI_B0 - radio
  *        somi, miso, clk, ste
  *        DIO0      P3.1
@@ -28,14 +30,19 @@
  */
 
 /*
- *   LED controller
+ *   LED controller (TLC5948A)
+ *        (write on rise, change on fall,
+ *         clock inactive low, MSB first)
  *        eUSCI_A0 - LEDs  (shared)
- *        somi, miso, clk, ste
+ *        somi, miso, clk
  *        GSCLK     P1.2
+ *        LAT       P1.4
  */
 
 /*
- *   Flash chip
+ *   Flash chip (S25FL216K)
+ *        (write on rise, change on fall,
+ *         CS active low, clock inactive low, MSB first)
  *        eUSCI_A0 (shared)
  *        somi, miso, clk
  *        CS        P1.1
@@ -44,7 +51,9 @@
  */
 
 /*
- *   OLED
+ *   OLED (OLED_0.96)
+ *        (write on rise, change on fall,
+ *         CS active low, MSB first)
  *        eUSCI_A1
  *        ste, miso, clk
  *        DC        P2.6
