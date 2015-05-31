@@ -105,20 +105,20 @@ uint8_t Template_Memory[LCD_X_SIZE*PAGES]; // TODO
 //
 //*****************************************************************************
 
-#define CSPORT 	GPIO_PORT_P1
-#define CSPIN 	GPIO_PIN3
+#define CSPORT      GPIO_PORT_P1
+#define CSPIN       GPIO_PIN3
 
-#define RESPORT	GPIO_PORT_P1
-#define RESPIN	GPIO_PIN5
+#define RESPORT     GPIO_PORT_P1
+#define RESPIN      GPIO_PIN5
 
-#define DCPORT	GPIO_PORT_P1
-#define DCPIN	GPIO_PIN7
+#define DCPORT      GPIO_PORT_P1
+#define DCPIN       GPIO_PIN7
 
-#define THISISDATA 	GPIO_setOutputHighOnPin(DCPORT, DCPIN)
-#define THISISCMD	GPIO_setOutputLowOnPin(DCPORT, DCPIN);
+#define THISISDATA  GPIO_setOutputHighOnPin(DCPORT, DCPIN)
+#define THISISCMD   GPIO_setOutputLowOnPin(DCPORT, DCPIN);
 
 #define GRAM_BUFFER(page, column) Template_Memory[(((PAGES-1)-page) * LCD_X_SIZE) + column]
-
+// TODO: Need to change to A1, not B0
 // Writes data to the LCD controller
 static void
 WriteData(uint16_t usData)
@@ -126,7 +126,7 @@ WriteData(uint16_t usData)
 	/* Write data to the LCD controller. For instance this can be bit banged 
 	with 6800 or 8080 protocol or this could be the SPI routine for a SPI LCD */
 
-	while (EUSCI_B_SPI_isBusy(EUSCI_B0_BASE));
+    while (EUSCI_B_SPI_isBusy(EUSCI_B0_BASE));
     THISISDATA;
 
     /* USCI_B0 TX buffer ready? */
