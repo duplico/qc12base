@@ -7,14 +7,11 @@
 #include <grlib.h>
 #include <Template_Driver.h>
 
-/*
- * ======== Grace related includes ========
- */
+// Grace includes:
 #include <ti/mcu/msp430/Grace.h>
 
-/*
- *  ======== main ========
- */
+// Project includes:
+#include "qc12.h"
 
 
 /*
