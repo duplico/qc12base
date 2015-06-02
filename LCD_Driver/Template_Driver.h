@@ -59,7 +59,7 @@
 #define LCD_Y_SIZE 64
 // Number of bits required to draw one pixel on the LCD screen
 #define BPP 1
-#define PAGES LCD_Y_SIZE / 8
+#define PAGES (LCD_Y_SIZE / 8)
 
 // Define LCD Screen Orientation Here
 #define LANDSCAPE
