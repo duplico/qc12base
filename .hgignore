@@ -1,3 +1,8 @@
 syntax: glob
 .config/
 Debug/
+src/grace/
+src/makefile.libs
+.cproject
+.launches/
+.settings/
