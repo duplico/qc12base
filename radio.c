@@ -31,6 +31,8 @@ volatile uint8_t rfm_reg_state = RFM_REG_IDLE;
 // The protocol machine:
 volatile uint8_t rfm_proto_state = 0;
 
+qcxipayload in_payload, out_payload;
+
 // temp buffer:
 uint8_t in_bytes[sizeof(in_payload)];
 
@@ -119,7 +121,7 @@ void write_single_register_async(uint8_t addr, uint8_t data) {
 	addr = addr | 0b10000000; // MSB=1 => write command
 //	GPIO_setOutputLowOnPin(RFM_NSS_PORT, RFM_NSS_PIN); // Hold NSS low to begin frame.
 	RFM_NSS_PORT_OUT &= ~RFM_NSS_PIN;
-	EUSCI_SPI_transmitData(EUSCI_B0_BASE, addr); // Send our command. // TODO: change to eUSCI
+	EUSCI_B_SPI_transmitData(EUSCI_B0_BASE, addr); // Send our command. // TODO: change to eUSCI
 }
 
 void write_single_register(uint8_t addr, uint8_t data) {
@@ -220,7 +222,7 @@ inline void radio_recv_start() {
  *
  *
  */
-#pragma vector=EUSCI_B0_VECTOR
+#pragma vector=USCI_B0_VECTOR
 __interrupt void EUSCI_B0_ISR(void)
 {
 //	switch (__even_in_range(UCB0IV, 4)) { // TODO: eUSCI
@@ -349,7 +351,7 @@ __interrupt void EUSCI_B0_ISR(void)
 		case RFM_REG_RX_FIFO_DAT:
 			rfm_reg_state = RFM_REG_IDLE;
 			memcpy(&in_payload, in_bytes, sizeof(qcxipayload));
-			f_rfm_rx_done = 1;
+//			f_rfm_rx_done = 1; // TODO
 			break;
 		case RFM_REG_TX_FIFO_DAT:
 			// After we send the FIFO, we need to set the mode to RX so the
@@ -381,7 +383,7 @@ __interrupt void EUSCI_B0_ISR(void)
 __interrupt void radio_interrupt_0(void) {
 	if (expected_dio_interrupt) { // tx finished.
 		// Auto packet mode: RX->SB->RX on receive.
-		f_rfm_tx_done = 1;
+//		f_rfm_tx_done = 1; // TODO
 		expected_dio_interrupt = 0;
 	} else { // rx
 		radio_recv_start();
