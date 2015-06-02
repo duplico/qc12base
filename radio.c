@@ -119,7 +119,7 @@ void write_single_register_async(uint8_t addr, uint8_t data) {
 	addr = addr | 0b10000000; // MSB=1 => write command
 //	GPIO_setOutputLowOnPin(RFM_NSS_PORT, RFM_NSS_PIN); // Hold NSS low to begin frame.
 	RFM_NSS_PORT_OUT &= ~RFM_NSS_PIN;
-//	USCI_B_SPI_transmitData(USCI_B1_BASE, addr); // Send our command. // TODO: change to eUSCI
+	EUSCI_SPI_transmitData(EUSCI_B0_BASE, addr); // Send our command. // TODO: change to eUSCI
 }
 
 void write_single_register(uint8_t addr, uint8_t data) {
@@ -137,7 +137,7 @@ uint8_t read_single_register_sync(uint8_t addr) {
 	addr = 0b01111111 & addr; // MSB=0 => write command
 //	GPIO_setOutputLowOnPin(RFM_NSS_PORT, RFM_NSS_PIN); // Hold NSS low to begin frame.
 	RFM_NSS_PORT_OUT &= ~RFM_NSS_PIN;
-	USCI_B_SPI_transmitData(USCI_B1_BASE, addr); // Send our command.
+	EUSCI_B_SPI_transmitData(EUSCI_B0_BASE, addr); // Send our command.
 	while (rfm_reg_state != RFM_REG_IDLE); // Block until read finished.
 	return rfm_single_msg;
 }
@@ -170,7 +170,7 @@ void radio_send_sync() {
 	rfm_reg_state = RFM_REG_TX_FIFO_CMD;
 //	GPIO_setOutputLowOnPin(RFM_NSS_PORT, RFM_NSS_PIN); // Hold NSS low to begin frame.
 	RFM_NSS_PORT_OUT &= ~RFM_NSS_PIN;
-	USCI_B_SPI_transmitData(USCI_B1_BASE, RFM_FIFO | 0b10000000); // Send write command.
+	EUSCI_B_SPI_transmitData(EUSCI_B0_BASE, RFM_FIFO | 0b10000000); // Send write command.
 	while (rfm_reg_state != RFM_REG_IDLE);
 	write_single_register_async(RFM_OPMODE, RFM_MODE_RX); // Set the mode so we'll re-enter RX mode once xmit is done.
 }
@@ -182,7 +182,7 @@ inline void radio_recv_start() {
 	rfm_reg_state = RFM_REG_RX_FIFO_CMD;
 //	GPIO_setOutputLowOnPin(RFM_NSS_PORT, RFM_NSS_PIN); // Hold NSS low to begin frame.
 	RFM_NSS_PORT_OUT &= ~RFM_NSS_PIN;
-	USCI_B_SPI_transmitData(USCI_B1_BASE, RFM_FIFO); // Send our read command.
+	EUSCI_B_SPI_transmitData(EUSCI_B0_BASE, RFM_FIFO); // Send our read command.
 }
 
 /*
@@ -220,10 +220,11 @@ inline void radio_recv_start() {
  *
  *
  */
-#pragma vector=USCI_B1_VECTOR
-__interrupt void USCI_B1_ISR(void)
+#pragma vector=EUSCI_B0_VECTOR
+__interrupt void EUSCI_B0_ISR(void)
 {
-//	switch (__even_in_range(UCB1IV, 4)) { // TODO: eUSCI
+//	switch (__even_in_range(UCB0IV, 4)) { // TODO: eUSCI
+	switch (__even_in_range(UCB0IV, 4)) {
 	//Vector 2 - RXIFG
 	case 2:
 		switch(rfm_reg_state) {
@@ -232,17 +233,17 @@ __interrupt void USCI_B1_ISR(void)
 			break;
 		case RFM_REG_RX_SINGLE_DAT:
 			// We just got the value. We're finished.
-//			rfm_single_msg = USCI_B_SPI_receiveData(USCI_B1_BASE); // TODO
+			rfm_single_msg = EUSCI_B_SPI_receiveData(EUSCI_B0_BASE);
 			rfm_reg_ifgs++; // RX thread is ready to go IDLE.
 			break;
 		case RFM_REG_TX_SINGLE_DAT:
 			// We just got the old value. It's stale, because we're setting it.
-			USCI_B_SPI_receiveData(USCI_B1_BASE); // Throw it away.
+			EUSCI_B_SPI_receiveData(EUSCI_B0_BASE); // Throw it away.
 			rfm_reg_ifgs++; // RX thread is ready to go IDLE.
 			break;
 		case RFM_REG_RX_FIFO_DAT:
 			// Got a data byte from the FIFO. Put it into its proper place.
-			(in_bytes)[rfm_reg_rx_index] = USCI_B_SPI_receiveData(USCI_B1_BASE);
+			(in_bytes)[rfm_reg_rx_index] = EUSCI_B_SPI_receiveData(EUSCI_B0_BASE);
 			rfm_reg_rx_index++;
 			if (rfm_reg_rx_index == sizeof(qcxipayload)) {
 				// That was the last one we were expecting.
@@ -251,7 +252,7 @@ __interrupt void USCI_B1_ISR(void)
 			break;
 		case RFM_REG_TX_FIFO_DAT:
 			// Got a data byte from the FIFO, but we're writing so it's stale garbage.
-			USCI_B_SPI_receiveData(USCI_B1_BASE); // Throw it away.
+			EUSCI_B_SPI_receiveData(EUSCI_B0_BASE); // Throw it away.
 			rfm_reg_rx_index++;
 			if (rfm_reg_rx_index == sizeof(qcxipayload)) {
 				// That was the last one we were expecting.
@@ -261,7 +262,7 @@ __interrupt void USCI_B1_ISR(void)
 		default:
 			// This covers all the CMD cases.
 			// We received some garbage sent to us while we were sending the command.
-			USCI_B_SPI_receiveData(USCI_B1_BASE); // Throw it away.
+			EUSCI_B_SPI_receiveData(EUSCI_B0_BASE); // Throw it away.
 			rfm_reg_ifgs++; // RX thread is ready to go to the DAT state.
 			rfm_reg_rx_index = 0;
 		} // end of state machine (RX thread)
@@ -275,7 +276,7 @@ __interrupt void USCI_B1_ISR(void)
 		case RFM_REG_RX_SINGLE_CMD:
 			// Just finished sending the command. Now we need to send a 0 so the
 			// clock keeps going and we can receive the data.
-//			USCI_B_SPI_transmitData(USCI_B1_BASE, 0); // TODO: eUSCI
+			EUSCI_B_SPI_transmitData(EUSCI_B0_BASE, 0); // TODO: eUSCI
 			rfm_reg_ifgs++; // TX thread is ready to go to RFM_REG_RX_SINGLE_DAT.
 			break;
 		case RFM_REG_RX_SINGLE_DAT:
@@ -285,7 +286,7 @@ __interrupt void USCI_B1_ISR(void)
 		case RFM_REG_TX_SINGLE_CMD:
 			// Just finished sending the command. Now we need to send
 			// rfm_single_msg.
-			USCI_B_SPI_transmitData(USCI_B1_BASE, rfm_single_msg);
+			EUSCI_B_SPI_transmitData(EUSCI_B0_BASE, rfm_single_msg);
 			rfm_reg_ifgs++; // TX thread is ready to go to RFM_REG_TX_SINGLE_DAT
 			break;
 		case RFM_REG_TX_SINGLE_DAT:
@@ -304,7 +305,7 @@ __interrupt void USCI_B1_ISR(void)
 				rfm_reg_ifgs++; // TX thread is ready to go IDLE.
 			} else {
 				// We have more to send.
-				USCI_B_SPI_transmitData(USCI_B1_BASE, 0);
+				EUSCI_B_SPI_transmitData(EUSCI_B0_BASE, 0);
 				rfm_reg_tx_index++;
 			}
 			break;
@@ -320,7 +321,7 @@ __interrupt void USCI_B1_ISR(void)
 				rfm_reg_ifgs++; // TX thread is ready to go IDLE.
 			} else {
 				// We have more to send.
-				USCI_B_SPI_transmitData(USCI_B1_BASE, ((uint8_t *) &out_payload)[rfm_reg_tx_index]);
+				EUSCI_B_SPI_transmitData(EUSCI_B0_BASE, ((uint8_t *) &out_payload)[rfm_reg_tx_index]);
 				rfm_reg_tx_index++;
 			}
 			break;
