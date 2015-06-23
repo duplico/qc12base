@@ -84,7 +84,7 @@
 #include <msp430.h>
 #include "grlib.h"
 #include "Template_Driver.h"
-#include <driverlib.h>
+#include <driverlib/MSP430FR5xx_6xx/driverlib.h>
 #include <stdint.h>
 
 //*****************************************************************************

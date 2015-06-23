@@ -10,7 +10,7 @@
 #include "leds.h"
 
 #include <stdint.h>
-#include "driverlib.h"
+#include <driverlib/MSP430FR5xx_6xx/driverlib.h>
 #include <string.h>
 
 #define SPICLK 8000000

@@ -9,7 +9,7 @@
 #define QC12_H_
 
 #include <stdint.h>
-#include "driverlib.h"
+#include <driverlib/MSP430FR5xx_6xx/driverlib.h>
 
 // Configuration flags
 #define BADGE_TARGET 1
@@ -56,8 +56,6 @@
 // The delay function, which we don't really want to use much, please.
 void delay(unsigned int);
 
-extern volatile Calendar currentTime;
-
 extern volatile uint8_t f_time_loop;
 extern volatile uint8_t f_rfm_rx_done;
 extern volatile uint8_t f_rfm_tx_done;
@@ -65,7 +63,6 @@ extern volatile uint8_t f_rfm_tx_done;
 typedef struct {
 	uint8_t to_addr, from_addr, base_id, clock_authority;
 	uint8_t prop_from;
-	Calendar time;
 	uint8_t prop_id;
 	uint16_t prop_time_loops_before_start;
 	uint8_t beacon;
