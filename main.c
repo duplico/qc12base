@@ -12,7 +12,7 @@
 
 // Project includes:
 #include "qc12.h"
-
+#include "radio.h"
 
 /*
  * Peripherals:
@@ -165,6 +165,59 @@ int main(void)
 {
     Grace_init(); // Activate Grace-generated configuration
     
+
+    /*
+     * Peripherals:
+     *
+     *  Radio (RFM69CW)
+     *        (MSB first, clock inactive low,
+     *         write on rise, change on fall, MSB first)
+     *        eUSCI_B0 - radio
+     *        somi, miso, clk, ste
+     *        DIO0      P3.1
+     *        RESET     P3.2
+     */
+
+    /*
+     *   LED controller (TLC5948A)
+     *        (write on rise, change on fall,
+     *         clock inactive low, MSB first)
+     *        eUSCI_A0 - LEDs  (shared)
+     *        somi, miso, clk
+     *        GSCLK     P1.2
+     *        LAT       P1.4
+     */
+
+    /*
+     *   Flash chip (S25FL216K)
+     *        (write on rise, change on fall,
+     *         CS active low, clock inactive low, MSB first)
+     *        eUSCI_A0 (shared)
+     *        somi, miso, clk
+     *        CS        P1.1
+     *        WP        P3.0
+     *        HOLD      P1.0
+     */
+
+    /*
+     *   OLED (OLED_0.96)
+     *        (write on rise, change on fall,
+     *         CS active low, MSB first)
+     *        eUSCI_A1
+     *        ste, miso, clk
+     *        DC        P2.6
+     *        RES       P2.7
+     */
+
+    /*
+     *   Buttons
+     *   (active low)
+     *   BTN1      P3.6
+     *   BTN2      P3.5
+     *   BTN3      P3.4
+     */
+
+
     // Unlock pins after low power mode. (See #10420-D)
     PM5CTL0 &= ~LOCKLPM5;
 
@@ -179,6 +232,8 @@ int main(void)
 
     GrImageDraw(&g_sContext, &fingerprint_badge_thinned1BPP_UNCOMP, 17, 0);
     GrFlush(&g_sContext);
+
+    init_radio();
 
     while (1);
 }
