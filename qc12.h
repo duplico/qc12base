@@ -21,9 +21,6 @@
 #define TRICK_INTERVAL_SECONDS 6
 #define TRICK_COUNT 12
 
-// Memory organization // TODO
-#define INFOA_START 0x001980
-
 // Configuration of pins for the badge and launchpad
 #if BADGE_TARGET
 	// Target is the actual badge:
@@ -31,10 +28,10 @@
 
 	// Radio:
 	// TODO
-	#define RFM_NSS_PORT GPIO_PORT_P4
-	#define RFM_NSS_PORT_DIR P4DIR
-	#define RFM_NSS_PORT_OUT P4OUT
-	#define RFM_NSS_PIN GPIO_PIN7
+	#define RFM_NSS_PORT GPIO_PORT_P1
+	#define RFM_NSS_PORT_DIR P1DIR
+	#define RFM_NSS_PORT_OUT P1OUT
+	#define RFM_NSS_PIN GPIO_PIN3
 
 #else
 	// Target is the Launchpad+shield:

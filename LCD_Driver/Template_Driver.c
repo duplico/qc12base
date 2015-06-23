@@ -105,20 +105,16 @@ uint8_t Template_Memory[LCD_X_SIZE*PAGES]; // TODO
 //
 //*****************************************************************************
 
-#define CSPORT      GPIO_PORT_P1
-#define CSPIN       GPIO_PIN3
+#define RESPORT     GPIO_PORT_P2
+#define RESPIN      GPIO_PIN6
 
-#define RESPORT     GPIO_PORT_P1
-#define RESPIN      GPIO_PIN5
-
-#define DCPORT      GPIO_PORT_P1
+#define DCPORT      GPIO_PORT_P2
 #define DCPIN       GPIO_PIN7
 
 #define THISISDATA  GPIO_setOutputHighOnPin(DCPORT, DCPIN)
 #define THISISCMD   GPIO_setOutputLowOnPin(DCPORT, DCPIN);
 
 #define GRAM_BUFFER(page, column) Template_Memory[(((PAGES-1)-page) * LCD_X_SIZE) + column]
-// TODO: Need to change to A1, not B0
 // Writes data to the LCD controller
 static void
 WriteData(uint16_t usData)
@@ -126,13 +122,13 @@ WriteData(uint16_t usData)
 	/* Write data to the LCD controller. For instance this can be bit banged 
 	with 6800 or 8080 protocol or this could be the SPI routine for a SPI LCD */
 
-    while (EUSCI_B_SPI_isBusy(EUSCI_B0_BASE));
+    while (EUSCI_A_SPI_isBusy(EUSCI_A1_BASE));
     THISISDATA;
 
-    /* USCI_B0 TX buffer ready? */
-    while (!EUSCI_B_SPI_getInterruptStatus(EUSCI_B0_BASE,
-    	EUSCI_B_SPI_TRANSMIT_INTERRUPT));
-    EUSCI_B_SPI_transmitData(EUSCI_B0_BASE, usData);
+    /* USCI_A1 TX buffer ready? */
+    while (!EUSCI_A_SPI_getInterruptStatus(EUSCI_A1_BASE,
+    	EUSCI_A_SPI_TRANSMIT_INTERRUPT));
+    EUSCI_A_SPI_transmitData(EUSCI_A1_BASE, usData);
 }
 
 // Writes a command to the LCD controller
@@ -142,12 +138,12 @@ WriteCommand(uint8_t ucCommand)
    /* This function is typically very similar (sometimes the same) as WriteData()
    The difference is that this is for the LCD to interpret commands instead of pixel
    data. For instance in 8080 protocol, this means pulling the DC line low.*/
-	while (EUSCI_B_SPI_isBusy(EUSCI_B0_BASE));
+	while (EUSCI_A_SPI_isBusy(EUSCI_A1_BASE));
 	THISISCMD;
-	/* USCI_B0 TX buffer ready? */
-	while (!EUSCI_B_SPI_getInterruptStatus(EUSCI_B0_BASE,
-		EUSCI_B_SPI_TRANSMIT_INTERRUPT));
-	EUSCI_B_SPI_transmitData(EUSCI_B0_BASE, ucCommand);
+	/* USCI_A1 TX buffer ready? */
+	while (!EUSCI_A_SPI_getInterruptStatus(EUSCI_A1_BASE,
+		EUSCI_A_SPI_TRANSMIT_INTERRUPT));
+	EUSCI_A_SPI_transmitData(EUSCI_A1_BASE, ucCommand);
 }
 
 // Zeros the pixel address of the LCD driver
@@ -226,17 +222,17 @@ Template_DriverInit(void)
 	//	OLED_RES_LOW;
 		GPIO_setOutputLowOnPin(RESPORT, RESPIN);
 	//	// Delay for 200ms at 16Mhz
-		__delay_cycles(1600000);
+		__delay_cycles(1000);
 	//	OLED_RES_HIGH;
 		GPIO_setOutputHighOnPin(RESPORT, RESPIN);
-		__delay_cycles(800000);
+		__delay_cycles(1000);
 		THISISDATA;
 
 	    for (uint8_t i=0; i<sizeof SSD1306_init; i++) {
 	    	WriteCommand(SSD1306_init[i]);
 	    }
 
-		while (EUSCI_B_SPI_isBusy(EUSCI_B0_BASE));
+		while (EUSCI_A_SPI_isBusy(EUSCI_A1_BASE));
 }
 
 
@@ -273,10 +269,13 @@ Template_DriverPixelDraw(void *pvDisplayData, int16_t lX, int16_t lY,
   the LCD screen and the color ulValue has already been translated to the LCD.
   */
 
+	lX = MAPPED_X(lX, lY);
+	lY = MAPPED_Y(lX, lY);
+
 	// Our COLUMN NUMBER is just x.
 	// Our PAGE NUMBER is y/8
 	// This is our ROW VALUE (by shifting 0b10000000 >> by row number):
-	uint8_t val = 0x80 >> (lY % 8);
+	uint8_t val = 0x80 >> lY % 8;
 
 	// clear pixel
 	GRAM_BUFFER(lY/8, lX) &= ~val;
@@ -589,7 +588,7 @@ Template_DriverFlush(void *pvDisplayData)
 	SetAddress(0, 0);
 	for (uint16_t i=0; i<LCD_X_SIZE*8; i++) { // TODO
 		WriteData(Template_Memory[i]);
-		__delay_cycles(1600);
+		__delay_cycles(100);
 	}
 
 

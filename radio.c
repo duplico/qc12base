@@ -36,25 +36,37 @@ qcxipayload in_payload, out_payload;
 // temp buffer:
 uint8_t in_bytes[sizeof(in_payload)];
 
+#define RESET_PORT	GPIO_PORT_P3
+#define RESET_PIN	GPIO_PIN2
+
+#define DIO_PORT	GPIO_PORT_P3
+#define DIO_PIN		GPIO_PIN1
+
+void delay(unsigned int ms) {
+	while (ms--)
+		__delay_cycles(4000);
+}
+
+
 void init_radio() {
 
 	// SPI for radio is done in Grace.
-
-	//Enable SPI module TODO
 
 	// Radio reboot procedure:
 	//  hold RESET high for > 100 us
 	//  pull RESET low, wait 5 ms
 	//  module is ready
 
-//	GPIO_setOutputHighOnPin(GPIO_PORT_P6, GPIO_PIN0);
-//	P6OUT |= BIT0; TODO
+	GPIO_setOutputHighOnPin(RESET_PORT, RESET_PIN);
 	delay(1);
-//	GPIO_setOutputLowOnPin(GPIO_PORT_P6, GPIO_PIN0);
-//	P6OUT &= ~BIT0; TODO
+	GPIO_setOutputLowOnPin(RESET_PORT, RESET_PIN);
 	delay(10);
 
-	//Enable Receive interrupt TODO
+	//Enable Receive interrupt:
+	EUSCI_B_SPI_clearInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_RECEIVE_INTERRUPT);
+	EUSCI_B_SPI_enableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_RECEIVE_INTERRUPT);
+	EUSCI_B_SPI_clearInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_TRANSMIT_INTERRUPT);
+	EUSCI_B_SPI_enableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_TRANSMIT_INTERRUPT);
 
 	rfm_reg_state = RFM_REG_IDLE;
 	mode_sync(RFM_MODE_SB);
@@ -102,12 +114,9 @@ void init_radio() {
 	write_single_register(0x3b, RFM_AUTOMODE_RX);
 	volatile uint8_t ret = 0;
 
-//	GPIO_enableInterrupt(GPIO_PORT_P2, GPIO_PIN0);
-	P2IE |= GPIO_PIN0;
-//	GPIO_interruptEdgeSelect(GPIO_PORT_P2, GPIO_PIN0, GPIO_LOW_TO_HIGH_TRANSITION);
-	P2IES &= ~GPIO_PIN0;
-//	GPIO_clearInterruptFlag(GPIO_PORT_P2, GPIO_PIN0);
-	P2IFG &= ~GPIO_PIN0;
+	GPIO_enableInterrupt(DIO_PORT, DIO_PIN);
+	GPIO_selectInterruptEdge(DIO_PORT, DIO_PIN, GPIO_LOW_TO_HIGH_TRANSITION);
+	GPIO_clearInterrupt(DIO_PORT, DIO_PIN);
 
 	ret = read_single_register_sync(0x01);
 
@@ -121,7 +130,7 @@ void write_single_register_async(uint8_t addr, uint8_t data) {
 	addr = addr | 0b10000000; // MSB=1 => write command
 //	GPIO_setOutputLowOnPin(RFM_NSS_PORT, RFM_NSS_PIN); // Hold NSS low to begin frame.
 	RFM_NSS_PORT_OUT &= ~RFM_NSS_PIN;
-	EUSCI_B_SPI_transmitData(EUSCI_B0_BASE, addr); // Send our command. // TODO: change to eUSCI
+	EUSCI_B_SPI_transmitData(EUSCI_B0_BASE, addr); // Send our command.
 }
 
 void write_single_register(uint8_t addr, uint8_t data) {
@@ -379,7 +388,7 @@ __interrupt void EUSCI_B0_ISR(void)
 /*
  * ISR for DIO0 from the RFM module. It's asserted when a job (TX or RX) is finished.
  */
-#pragma vector=PORT2_VECTOR
+#pragma vector=PORT3_VECTOR
 __interrupt void radio_interrupt_0(void) {
 	if (expected_dio_interrupt) { // tx finished.
 		// Auto packet mode: RX->SB->RX on receive.
@@ -388,7 +397,6 @@ __interrupt void radio_interrupt_0(void) {
 	} else { // rx
 		radio_recv_start();
 	}
-//	GPIO_clearInterruptFlag(GPIO_PORT_P2, GPIO_PIN0);
+	GPIO_clearInterrupt(DIO_PORT, DIO_PIN);
 	__bic_SR_register_on_exit(LPM3_bits);
-	P2IFG &= ~GPIO_PIN0; // Is this needed?
 }

@@ -62,8 +62,8 @@
 #define PAGES (LCD_Y_SIZE / 8)
 
 // Define LCD Screen Orientation Here
-#define LANDSCAPE
-//#define LANDSCAPE_FLIP
+//#define LANDSCAPE
+#define LANDSCAPE_FLIP
 //#define PORTRAIT
 //#define PORTRAIT_FLIP
 
