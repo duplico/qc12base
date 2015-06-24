@@ -186,7 +186,13 @@ void init() {
      *        DC        P2.6
      *        RES       P2.7
      */
-
+    qc12_oledInit();
+    GrContextInit(&g_sContext, &g_sqc12_oled);
+    GrContextBackgroundSet(&g_sContext, ClrBlack);
+    GrContextForegroundSet(&g_sContext, ClrWhite);
+    GrContextFontSet(&g_sContext, &g_sFontFixed6x8);
+    GrClearDisplay(&g_sContext);
+    GrFlush(&g_sContext);
 }
 
 int main(void)
@@ -224,18 +230,6 @@ int main(void)
      *   BTN3      P3.4
      */
 
-
-    // Unlock pins after low power mode. (See #10420-D)
-    PM5CTL0 &= ~LOCKLPM5;
-
-    qc12_oledInit();
-
-    GrContextInit(&g_sContext, &g_sqc12_oled);
-    GrContextForegroundSet(&g_sContext, ClrBlack);
-    GrContextBackgroundSet(&g_sContext, ClrWhite);
-    GrContextFontSet(&g_sContext, &g_sFontFixed6x8);
-    GrClearDisplay(&g_sContext);
-    GrFlush(&g_sContext);
     GrImageDraw(&g_sContext, &fingerprint_badge_thinned1BPP_UNCOMP, 17, 0);
     GrFlush(&g_sContext);
 
