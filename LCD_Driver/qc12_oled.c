@@ -31,11 +31,6 @@
  * --/COPYRIGHT--*/
 //*****************************************************************************
 //
-// Template_Driver.c - Display driver for any LCD Controller. This file serves as
-//						a template for creating new LCD driver files
-//
-//*****************************************************************************
-//
 //! \addtogroup display_api
 //! @{
 //
@@ -46,15 +41,15 @@
 // READ ME
 //
 // This template driver is intended to be modified for creating new LCD drivers
-// It is setup so that only Template_DriverPixelDraw() and DPYCOLORTRANSLATE()
-// and some LCD size configuration settings in the header file Template_Driver.h
+// It is setup so that only qc12_oledPixelDraw() and DPYCOLORTRANSLATE()
+// and some LCD size configuration settings in the header file qc12_oled.h
 // are REQUIRED to be written. These functions are marked with the string
-// "TemplateDisplayFix" in the comments so that a search through Template_Driver.c and
-// Template_Driver.h can quickly identify the necessary areas of change.
+// "TemplateDisplayFix" in the comments so that a search through qc12_oled.c and
+// qc12_oled.h can quickly identify the necessary areas of change.
 //
-// Template_DriverPixelDraw() is the base function to write to the LCD
+// qc12_oledPixelDraw() is the base function to write to the LCD
 // display. Functions like WriteData(), WriteCommand(), and SetAddress()
-// are suggested to be used to help implement the Template_DriverPixelDraw()
+// are suggested to be used to help implement the qc12_oledPixelDraw()
 // function, but are not required. SetAddress() should be used by other pixel
 // level functions to help optimize them.
 // 
@@ -65,9 +60,9 @@
 // on how to fully optimize LCD driver files. In int16_t, driver optimizations
 // should take advantage of the auto-incrementing of the LCD controller. 
 // This should be utilized so that a loop of WriteData() can be used instead
-// of a loop of Template_DriverPixelDraw(). The pixel draw loop contains both a
+// of a loop of qc12_oledPixelDraw(). The pixel draw loop contains both a
 // SetAddress() + WriteData() compared to WriteData() alone. This is a big time 
-// saver especially for the line draws and Template_DriverPixelDrawMultiple.
+// saver especially for the line draws and qc12_oledPixelDrawMultiple.
 // More optimization can be done by reducing function calls by writing macros,
 // eliminating unnecessary instructions, and of course taking advantage of other 
 // features offered by the LCD controller. With so many pixels on an LCD screen
@@ -83,7 +78,7 @@
 //*****************************************************************************
 #include <msp430.h>
 #include "grlib.h"
-#include "Template_Driver.h"
+#include "qc12_oled.h"
 #include <driverlib/MSP430FR5xx_6xx/driverlib.h>
 #include <stdint.h>
 
@@ -96,7 +91,7 @@
   displays. This allows you to update pixels while reading the neighboring pixels
   from the buffer instead of a read from the LCD controller. A buffer is not required
   as a read followed by a write can be used instead.*/
-uint8_t Template_Memory[LCD_X_SIZE*PAGES]; // TODO
+uint8_t oled_memory[LCD_X_SIZE*PAGES]; // TODO
 //                        (LCD_X_SIZE * LCD_Y_SIZE * BPP + 7) / 8];
 
 //*****************************************************************************
@@ -114,7 +109,7 @@ uint8_t Template_Memory[LCD_X_SIZE*PAGES]; // TODO
 #define THISISDATA  GPIO_setOutputHighOnPin(DCPORT, DCPIN)
 #define THISISCMD   GPIO_setOutputLowOnPin(DCPORT, DCPIN);
 
-#define GRAM_BUFFER(page, column) Template_Memory[(((PAGES-1)-page) * LCD_X_SIZE) + column]
+#define GRAM_BUFFER(page, column) oled_memory[(((PAGES-1)-page) * LCD_X_SIZE) + column]
 // Writes data to the LCD controller
 static void
 WriteData(uint16_t usData)
@@ -194,7 +189,7 @@ InitLCDDisplayBuffer(void *pvDisplayData, uint16_t ulValue)
 // This function initializes the LCD controller
 // TemplateDisplayFix
 void
-Template_DriverInit(void)
+qc12_oledInit(void)
 {
 	InitLCDDisplayBuffer(0, 0);
 
@@ -262,7 +257,7 @@ Template_DriverInit(void)
 //*****************************************************************************
 // TemplateDisplayFix
 static void
-Template_DriverPixelDraw(void *pvDisplayData, int16_t lX, int16_t lY,
+qc12_oledPixelDraw(void *pvDisplayData, int16_t lX, int16_t lY,
                                    uint16_t ulValue)
 {  
   /* This function already has checked that the pixel is within the extents of  
@@ -313,7 +308,7 @@ Template_DriverPixelDraw(void *pvDisplayData, int16_t lX, int16_t lY,
 //
 //*****************************************************************************
 static void
-Template_DriverPixelDrawMultiple(void *pvDisplayData, int16_t lX,
+qc12_oledPixelDrawMultiple(void *pvDisplayData, int16_t lX,
                                            int16_t lY, int16_t lX0, int16_t lCount,
                                            int16_t lBPP,
                                            const uint8_t *pucData,
@@ -340,7 +335,7 @@ Template_DriverPixelDrawMultiple(void *pvDisplayData, int16_t lX,
                 for(; (lX0 < 8) && lCount; lX0++, lCount--)
                 {
                     // Draw this pixel in the appropriate color
-					Template_DriverPixelDraw(pvDisplayData, lX++, lY, 
+					qc12_oledPixelDraw(pvDisplayData, lX++, lY, 
 											((uint16_t *)pucPalette)[(ulByte >> (7 - lX0)) & 1]);
                 }
                 
@@ -365,7 +360,7 @@ Template_DriverPixelDrawMultiple(void *pvDisplayData, int16_t lX,
                 for(; (lX0 < 4) && lCount; lX0++, lCount--)
                 {
                     // Draw this pixel in the appropriate color
-					Template_DriverPixelDraw(pvDisplayData, lX++, lY, 
+					qc12_oledPixelDraw(pvDisplayData, lX++, lY, 
 											((uint16_t *)pucPalette)[(ulByte >> (6 - (lX0 << 1))) & 3]);
                 }
                 
@@ -397,7 +392,7 @@ Template_DriverPixelDrawMultiple(void *pvDisplayData, int16_t lX,
                         ulByte = (*pucData >> 4);    
                         ulByte = (*(uint16_t *)(pucPalette + ulByte));
                         // Write to LCD screen
-                        Template_DriverPixelDraw(pvDisplayData, lX++, lY, ulByte);
+                        qc12_oledPixelDraw(pvDisplayData, lX++, lY, ulByte);
                         
                         // Decrement the count of pixels to draw
                         lCount--;
@@ -412,7 +407,7 @@ Template_DriverPixelDrawMultiple(void *pvDisplayData, int16_t lX,
                             ulByte = (*pucData++ & 15);
                             ulByte = (*(uint16_t *)(pucPalette + ulByte));
                             // Write to LCD screen
-                            Template_DriverPixelDraw(pvDisplayData, lX++, lY, ulByte);
+                            qc12_oledPixelDraw(pvDisplayData, lX++, lY, ulByte);
 
                             // Decrement the count of pixels to draw
                             lCount--;
@@ -435,7 +430,7 @@ Template_DriverPixelDrawMultiple(void *pvDisplayData, int16_t lX,
                 ulByte = *pucData++;
                 ulByte = (*(uint16_t *)(pucPalette + ulByte));
                 // Write to LCD screen
-                Template_DriverPixelDraw(pvDisplayData, lX++, lY, ulByte);
+                qc12_oledPixelDraw(pvDisplayData, lX++, lY, ulByte);
             }
             // The image data has been drawn
             break;
@@ -461,7 +456,7 @@ Template_DriverPixelDrawMultiple(void *pvDisplayData, int16_t lX,
 //
 //*****************************************************************************
 static void
-Template_DriverLineDrawH(void *pvDisplayData, int16_t lX1, int16_t lX2,
+qc12_oledLineDrawH(void *pvDisplayData, int16_t lX1, int16_t lX2,
                                    int16_t lY, uint16_t ulValue)
 {
   /* Ideally this function shouldn't call pixel draw. It should have it's own
@@ -471,7 +466,7 @@ Template_DriverLineDrawH(void *pvDisplayData, int16_t lX1, int16_t lX2,
   
   do
   {
-    Template_DriverPixelDraw(pvDisplayData, lX1, lY, ulValue);
+    qc12_oledPixelDraw(pvDisplayData, lX1, lY, ulValue);
   }
   while(lX1++ < lX2);
 }
@@ -494,12 +489,12 @@ Template_DriverLineDrawH(void *pvDisplayData, int16_t lX1, int16_t lX2,
 //
 //*****************************************************************************
 static void
-Template_DriverLineDrawV(void *pvDisplayData, int16_t lX, int16_t lY1,
+qc12_oledLineDrawV(void *pvDisplayData, int16_t lX, int16_t lY1,
                                    int16_t lY2, uint16_t ulValue)
 {
   do
   {
-    Template_DriverPixelDraw(pvDisplayData, lX, lY1, ulValue);
+    qc12_oledPixelDraw(pvDisplayData, lX, lY1, ulValue);
   }
   while(lY1++ < lY2);
 }
@@ -522,7 +517,7 @@ Template_DriverLineDrawV(void *pvDisplayData, int16_t lX, int16_t lY1,
 //
 //*****************************************************************************
 static void
-Template_DriverRectFill(void *pvDisplayData, const tRectangle *pRect,
+qc12_oledRectFill(void *pvDisplayData, const tRectangle *pRect,
                                   uint16_t ulValue)
 {
   int16_t x0 = pRect->sXMin;
@@ -532,7 +527,7 @@ Template_DriverRectFill(void *pvDisplayData, const tRectangle *pRect,
   
   while(y0++ <= y1)
   {
-    Template_DriverLineDrawH(pvDisplayData, x0, x1, y0, ulValue);
+    qc12_oledLineDrawH(pvDisplayData, x0, x1, y0, ulValue);
   }
 }
 
@@ -554,7 +549,7 @@ Template_DriverRectFill(void *pvDisplayData, const tRectangle *pRect,
 //
 //*****************************************************************************
 static uint16_t
-Template_DriverColorTranslate(void *pvDisplayData,
+qc12_oledColorTranslate(void *pvDisplayData,
                                         uint32_t  ulValue)
 {
 	/* The DPYCOLORTRANSLATE macro should be defined in TemplateDriver.h */
@@ -580,22 +575,22 @@ Template_DriverColorTranslate(void *pvDisplayData,
 //
 //*****************************************************************************
 static void
-Template_DriverFlush(void *pvDisplayData)
+qc12_oledFlush(void *pvDisplayData)
 {
   // Flush Buffer here. This function is not needed if a buffer is not used,
   // or if the buffer is always updated with the screen writes.
 
 	SetAddress(0, 0);
 	for (uint16_t i=0; i<LCD_X_SIZE*8; i++) { // TODO
-		WriteData(Template_Memory[i]);
-		__delay_cycles(100);
+		WriteData(oled_memory[i]);
+		__delay_cycles(100); // TODO!!!
 	}
 
 
 //	int16_t i=0,j=0;
 //	for(i =0; i< LCD_Y_SIZE; i++)
 //	for(j =0; j< (LCD_X_SIZE * BPP + 7) / 8; j++)
-//		Template_DriverPixelDraw(pvDisplayData, j, i, Template_Memory[i * LCD_Y_SIZE + j]);
+//		qc12_oledPixelDraw(pvDisplayData, j, i, Template_Memory[i * LCD_Y_SIZE + j]);
 }
 
 //*****************************************************************************
@@ -612,17 +607,17 @@ Template_DriverFlush(void *pvDisplayData)
 //
 //*****************************************************************************
 static void
-Template_DriverClearScreen (void *pvDisplayData, uint16_t ulValue)
+qc12_oledClearScreen (void *pvDisplayData, uint16_t ulValue)
 {
 	// This fills the entire display to clear it
 	// Some LCD drivers support a simple command to clear the display
 //	while(y0++ <= (LCD_Y_SIZE - 1))
 	uint8_t val = ulValue? 0xff:0;
 	for (uint16_t i=0; i<LCD_X_SIZE*8; i++)
-		Template_Memory[i] = val;
+		oled_memory[i] = val;
 //	for (uint8_t y0=0; y0<LCD_Y_SIZE; y0++)
 //	{
-//		Template_DriverLineDrawH(pvDisplayData, 0, LCD_X_SIZE - 1, y0, ulValue);
+//		qc12_oledLineDrawH(pvDisplayData, 0, LCD_X_SIZE - 1, y0, ulValue);
 //	}
 }
 
@@ -631,10 +626,10 @@ Template_DriverClearScreen (void *pvDisplayData, uint16_t ulValue)
 //! The display structure that describes the driver for the blank template.
 //
 //*****************************************************************************
-const tDisplay g_sTemplate_Driver =
+const tDisplay g_sqc12_oled =
 {
     sizeof(tDisplay),
-    Template_Memory,
+    oled_memory,
 #if defined(PORTRAIT) || defined(PORTRAIT_FLIP)
     LCD_Y_SIZE,
     LCD_X_SIZE,
@@ -642,14 +637,14 @@ const tDisplay g_sTemplate_Driver =
     LCD_X_SIZE,
     LCD_Y_SIZE,
 #endif
-    Template_DriverPixelDraw,
-    Template_DriverPixelDrawMultiple,
-    Template_DriverLineDrawH,
-    Template_DriverLineDrawV,
-    Template_DriverRectFill,
-    Template_DriverColorTranslate,
-    Template_DriverFlush,
-    Template_DriverClearScreen
+    qc12_oledPixelDraw,
+    qc12_oledPixelDrawMultiple,
+    qc12_oledLineDrawH,
+    qc12_oledLineDrawV,
+    qc12_oledRectFill,
+    qc12_oledColorTranslate,
+    qc12_oledFlush,
+    qc12_oledClearScreen
 };
 
 //*****************************************************************************
