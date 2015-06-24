@@ -47,7 +47,7 @@ void CS_A_graceInit(void)
     /*
      * Start Low Frequency crystal in low frequency mode
      */
-    CS_turnOnLFXTWithTimeout(LFXTDRIVE_1, 100000);
+    CS_turnOnLFXTWithTimeout(LFXTDRIVE_2, 100000);
 
     /*
      * Setting MCLK source from CS_DCOCLK_SELECT with the divider of CS_CLOCK_DIVIDER_2.
@@ -60,9 +60,9 @@ void CS_A_graceInit(void)
     CS_initClockSignal(CS_SMCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_2);
 
     /*
-     * Setting ACLK source from CS_LFMODOSC_SELECT with the divider of CS_CLOCK_DIVIDER_1.
+     * Setting ACLK source from CS_LFXTCLK_SELECT with the divider of CS_CLOCK_DIVIDER_1.
      */
-    CS_initClockSignal(CS_ACLK, CS_LFMODOSC_SELECT, CS_CLOCK_DIVIDER_1);
+    CS_initClockSignal(CS_ACLK, CS_LFXTCLK_SELECT, CS_CLOCK_DIVIDER_1);
 
     /*
      * Set DCO frequency to 8000000 Hz

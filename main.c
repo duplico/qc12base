@@ -5,7 +5,7 @@
 #include <driverlib/MSP430FR5xx_6xx/driverlib.h>
 #include <stdint.h>
 #include <grlib.h>
-#include <Template_Driver.h>
+#include <qc12_oled.h>
 
 // Grace includes:
 #include <ti/mcu/msp430/Grace.h>
@@ -32,7 +32,7 @@
  *         clock inactive low, MSB first)
  *        eUSCI_A0 - LEDs  (shared)
  *        somi, miso, clk
- *        GSCLK     P1.2
+ *        GSCLK     P1.2 (timer TA1.1)
  *        LAT       P1.4
  */
 
@@ -161,10 +161,8 @@ const tImage  fingerprint_badge_thinned1BPP_UNCOMP=
 
 tContext g_sContext;
 
-int main(void)
-{
+void init() {
     Grace_init(); // Activate Grace-generated configuration
-    
 
     /*
      * Peripherals:
@@ -177,6 +175,24 @@ int main(void)
      *        DIO0      P3.1
      *        RESET     P3.2
      */
+    init_radio();
+
+    /*
+     *   OLED (OLED_0.96)
+     *        (write on rise, change on fall,
+     *         CS active low, MSB first)
+     *        eUSCI_A1
+     *        ste, miso, clk
+     *        DC        P2.6
+     *        RES       P2.7
+     */
+
+}
+
+int main(void)
+{
+
+
 
     /*
      *   LED controller (TLC5948A)
@@ -184,7 +200,7 @@ int main(void)
      *         clock inactive low, MSB first)
      *        eUSCI_A0 - LEDs  (shared)
      *        somi, miso, clk
-     *        GSCLK     P1.2
+     *        GSCLK     P1.2 (TA1.1) (pulsing all the time per Grace config)
      *        LAT       P1.4
      */
 
@@ -199,15 +215,6 @@ int main(void)
      *        HOLD      P1.0
      */
 
-    /*
-     *   OLED (OLED_0.96)
-     *        (write on rise, change on fall,
-     *         CS active low, MSB first)
-     *        eUSCI_A1
-     *        ste, miso, clk
-     *        DC        P2.6
-     *        RES       P2.7
-     */
 
     /*
      *   Buttons
@@ -221,19 +228,16 @@ int main(void)
     // Unlock pins after low power mode. (See #10420-D)
     PM5CTL0 &= ~LOCKLPM5;
 
-    Template_DriverInit();
+    qc12_oledInit();
 
-    GrContextInit(&g_sContext, &g_sTemplate_Driver);
+    GrContextInit(&g_sContext, &g_sqc12_oled);
     GrContextForegroundSet(&g_sContext, ClrBlack);
     GrContextBackgroundSet(&g_sContext, ClrWhite);
     GrContextFontSet(&g_sContext, &g_sFontFixed6x8);
     GrClearDisplay(&g_sContext);
     GrFlush(&g_sContext);
-
     GrImageDraw(&g_sContext, &fingerprint_badge_thinned1BPP_UNCOMP, 17, 0);
     GrFlush(&g_sContext);
-
-    init_radio();
 
     while (1);
 }

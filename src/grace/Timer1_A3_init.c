@@ -42,8 +42,8 @@ void Timer1_A3_graceInit(void)
     /* USER CODE END (section: Timer1_A3_graceInit_prologue) */
 
     /* Initialize TimerA in up mode */
-    initUpParam.clockSource = TIMER_A_CLOCKSOURCE_SMCLK;
-    initUpParam.clockSourceDivider = TIMER_A_CLOCKSOURCE_DIVIDER_4;
+    initUpParam.clockSource = TIMER_A_CLOCKSOURCE_ACLK;
+    initUpParam.clockSourceDivider = TIMER_A_CLOCKSOURCE_DIVIDER_1;
     initUpParam.timerPeriod = 2;
     initUpParam.timerInterruptEnable_TAIE = TIMER_A_TAIE_INTERRUPT_DISABLE;
     initUpParam.captureCompareInterruptEnable_CCR0_CCIE = TIMER_A_CCIE_CCR0_INTERRUPT_DISABLE;

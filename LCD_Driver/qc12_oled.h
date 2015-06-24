@@ -31,14 +31,14 @@
  * --/COPYRIGHT--*/
 //*****************************************************************************
 //
-// Template_Driver.h - Prototypes for the Hitachi138x110 LCD
+// qc12_oled.h - Prototypes for the Hitachi138x110 LCD
 //                                     display driver with a HD66753
 //                                     controller.
 //
 //*****************************************************************************
 
-#ifndef __Template_Driver_H__
-#define __Template_Driver_H__
+#ifndef __qc12_oled_H__
+#define __qc12_oled_H__
 
 //*****************************************************************************
 //
@@ -82,7 +82,7 @@
 //
 //*****************************************************************************
 
-/* Defines for pixels, colors, masks, etc. Anything Template_Driver.c needs*/
+/* Defines for pixels, colors, masks, etc. Anything qc12_oled.c needs*/
 
 
 //*****************************************************************************
@@ -170,6 +170,8 @@ and could also include Set_Address(), Write_Data(), etc. */
 //
 // \return Returns the display-driver specific color
 
+// TODO:
+
 #define DPYCOLORTRANSLATE(c)    ((((c) & 0x00f80000) >> 8) |               \
                                  (((c) & 0x0000fc00) >> 5) |               \
                                  (((c) & 0x000000f8) >> 3))
@@ -179,9 +181,9 @@ and could also include Set_Address(), Write_Data(), etc. */
 // Prototypes for the globals exported by this driver.
 //
 //*****************************************************************************
-extern void Template_DriverInit(void);
-extern const tDisplay g_sTemplate_Driver;
-extern uint8_t Template_Memory[];
+extern void qc12_oledInit(void);
+extern const tDisplay g_sqc12_oled;
+extern uint8_t oled_memory[];
 
 
-#endif // __Template_Driver_H__
+#endif // __qc12_oled_H__
