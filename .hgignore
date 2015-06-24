@@ -1,8 +1,8 @@
 syntax: glob
 .config/
 Debug/
-src/grace/
 src/makefile.libs
-.cproject
 .launches/
 .settings/
+*.bak
+src/grace/objs/
