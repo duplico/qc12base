@@ -64,10 +64,6 @@
     // D0   2.2 (CLK)
     // D1   1.6 (MOSI)
 
-// Defines for the TLC:
-#define LATPORT     GPIO_PORT_P1
-#define LATPIN      GPIO_PIN4
-
 tContext g_sContext;
 
 void usci_a_send(uint16_t base, uint8_t data) {

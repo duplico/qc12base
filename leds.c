@@ -1,12 +1,8 @@
 /*
  * leds.c
- * (c) 2014 George Louthan
+ * (c) 2015 George Louthan
  * 3-clause BSD license; see license.md.
  */
-
-#include "qc12.h"
-#include "leds.h"
-#include <string.h>
 
 /*
  *   LED controller (TLC5948A)
@@ -18,9 +14,19 @@
  *        LAT       P1.4
  */
 
+#include "qc12.h"
+#include "leds.h"
+#include <string.h>
+
+// Defines for the TLC:
+#define LATPORT     GPIO_PORT_P1
+#define LATPIN      GPIO_PIN4
+
 volatile uint8_t f_time_loop = 0; // TODO
 
-uint16_t gs_data[16] = {
+uint16_t led_tx_light = 0xffff;
+
+uint16_t gs_data[15] = {
 		// Mid-right (front view)
 		0x1fff, // R
 		0x0000, // G
@@ -41,8 +47,6 @@ uint16_t gs_data[16] = {
 		0x1f00,
 		0x0f00,
 		0x0a00,
-		// Status
-		0xffff,
 };
 
 void tlc_set_gs(uint8_t shift) {
@@ -54,8 +58,8 @@ void tlc_set_gs(uint8_t shift) {
     // Now the GS data itself.
 
     // Status light:
-    usci_a_send(EUSCI_A0_BASE, (uint8_t) (gs_data[15] >> 8));
-    usci_a_send(EUSCI_A0_BASE, (uint8_t) (gs_data[15] & 0x00ff));
+    usci_a_send(EUSCI_A0_BASE, (uint8_t) (led_tx_light >> 8));
+    usci_a_send(EUSCI_A0_BASE, (uint8_t) (led_tx_light & 0x00ff));
 
     // 5 RGB LEDs:
     for (uint8_t channel=15; channel; channel--) {
@@ -133,13 +137,9 @@ void tlc_set_fun(uint8_t blank) {
     UCA0CTLW0 &= ~UCSWRST;
 }
 
-
-
-
-
-
 void init_leds() {
 
+    // TODO: Shouldn't really need to do this:
     UCA0CTLW0 |= UCSWRST;
     UCA0CTLW0 &= ~UC7BIT;
     UCA0CTLW0 &= ~UCSWRST;
