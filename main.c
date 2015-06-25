@@ -174,74 +174,6 @@ void tlc_set_fun() {
     GPIO_pulse(GPIO_PORT_P1, GPIO_PIN4);
 }
 
-void tlc_set_gs_bb() {
-     // We need a 0 to show it's GS:
-     tlc_bit(0);
-     tlc_bit(0);
-     tlc_bit(0);
-     tlc_bit(0);
-     tlc_bit(0);
-     tlc_bit(0);
-     tlc_bit(0);
-     tlc_bit(0);
-     // Now the GS data itself. There are 16 channels;
-     for (uint8_t channel=0; channel<16; channel++) {
-          // ...with 16 bits each:
-          for (uint8_t bit=16; bit; bit--) {
-               tlc_bit(bit<9);
-          }
-     }
-     // That means the shift register will be full. Time to latch.
-     // !SCLK:
-     P1OUT &= ~BIT5;
-     // LAT
-     GPIO_pulse(GPIO_PORT_P1, GPIO_PIN4);
-}
-
-void tlc_set_fun_bb() {
-    tlc_bit(1); // 1 to show it's function.
-    for (uint8_t b = 255; b>136; b--) { // For all the reserved bits, write a 0.
-        tlc_bit(0);
-    }
-
-    tlc_bit(0);    // B136 / PSM(D2)
-    tlc_bit(0);    // B135 / PSM(D1)
-    tlc_bit(0);    // B134 / PSM(D0)
-    tlc_bit(0);    // B133 / OLDENA
-    tlc_bit(0);    // B132 / IDMCUR(D1)
-    tlc_bit(0);    // B131 / IDMCUR(D0)
-    tlc_bit(0);    // B130 / IDMRPT(D0)
-    tlc_bit(0);    // B129 / IDMENA
-    tlc_bit(1);    // B128 / LATTMG(D1)
-    tlc_bit(1);    // B127 / LATTMG(D0)
-    tlc_bit(0);    // B126 / LSDVLT(D1)
-    tlc_bit(0);    // B125 / LSDVLT(D0)
-    tlc_bit(0);    // B124 / LODVLT(D1)
-    tlc_bit(0);    // B123 / LODVLT(D0)
-    tlc_bit(1);    // B122 / ESPWM
-    tlc_bit(0);    // B121 / TMGRST
-    tlc_bit(1);    // B120 / DSPRPT
-
-    tlc_bit(0);    // B119 / BLANK
-
-    // Global brightness: 7 bits:
-    for (uint8_t b=0; b<7; b++) {
-        tlc_bit(1);
-    }
-
-    // 16 channels of dot-correct:
-    for (uint8_t c=0; c<16; c++) {
-        // 7 bits each:
-        for (uint8_t b=0; b<7; b++) {
-            tlc_bit(1);
-        }
-    }
-
-    // That means the shift register will be full. Time to latch.
-    GPIO_setOutputLowOnPin(GPIO_PORT_P1, GPIO_PIN5); // Set CLK low.
-    GPIO_pulse(GPIO_PORT_P1, GPIO_PIN4);
-}
-
 
 void init() {
     Grace_init(); // Activate Grace-generated configuration
@@ -274,19 +206,12 @@ void init() {
     GrContextForegroundSet(&g_sContext, ClrWhite);
     GrContextFontSet(&g_sContext, &g_sFontFixed6x8);
     GrClearDisplay(&g_sContext);
+    GrImageDraw(&g_sContext, &standing_1, 0, 32);
+    GrStringDraw(&g_sContext, "4 DUPLiCO", -1, 0, 0, 1);
+    GrCircleDraw(&g_sContext, 2, 3, 6);
+    GrStringDraw(&g_sContext, "  the gay", -1, 0, 9, 0);
+    GrStringDraw(&g_sContext, "<  Play! >", -1, 0, 120, 1);
     GrFlush(&g_sContext);
-
-
-    // TA1.1 (P1.2)
-//    Timer_A_outputPWMParam ta_param = {
-//    		TIMER_A_CLOCKSOURCE_SMCLK,
-//			TIMER_A_CLOCKSOURCE_DIVIDER_1,
-//			TIMER_A_CAPTURECOMPARE_REGISTER_1,
-//			TIMER_A_OUTPUTMODE_OUTBITVALUE,
-//
-//    };
-//
-//    Timer_A_outputPWM(TIMER_A1_BASE)
 }
 
 int main(void)
@@ -315,49 +240,51 @@ int main(void)
 
     // Read status register:
 
-    P1OUT &= ~BIT1; // CS low, select.
-    usci_a_send(EUSCI_A0_BASE, 0x05); // Read status.
-    while (!EUSCI_A_SPI_getInterruptStatus(EUSCI_A0_BASE,
-    		EUSCI_A_SPI_RECEIVE_INTERRUPT));
-    EUSCI_A_SPI_receiveData(EUSCI_A0_BASE); // Throw away the stale garbage we got while sending.
+//    P1OUT &= ~BIT1; // CS low, select.
+//    usci_a_send(EUSCI_A0_BASE, 0x05); // Read status.
+//    while (!EUSCI_A_SPI_getInterruptStatus(EUSCI_A0_BASE,
+//    		EUSCI_A_SPI_RECEIVE_INTERRUPT));
+//    EUSCI_A_SPI_receiveData(EUSCI_A0_BASE); // Throw away the stale garbage we got while sending.
+//
+//    usci_a_send(EUSCI_A0_BASE, 0xFF); // Meaningless crap.
+//    while (!EUSCI_A_SPI_getInterruptStatus(EUSCI_A0_BASE,
+//    		EUSCI_A_SPI_RECEIVE_INTERRUPT));
+//    in = EUSCI_A_SPI_receiveData(EUSCI_A0_BASE);
+//
+//    P1OUT |= BIT1; // CS high, deselect.
+//
+//    sprintf(str, "status = %d", in);
+//    GrStringDraw(&g_sContext, str, -1, 0, 0, 1);
+//    GrFlush(&g_sContext);
+//
+//    // WRITE ENABLE:
+//    P1OUT &= ~BIT1; // CS low, select.
+//    usci_a_send(EUSCI_A0_BASE, 0x06); // WREN
+//    while (!EUSCI_A_SPI_getInterruptStatus(EUSCI_A0_BASE,
+//    		EUSCI_A_SPI_RECEIVE_INTERRUPT));
+//    EUSCI_A_SPI_receiveData(EUSCI_A0_BASE); // Throw away the stale garbage we got while sending.
+//    P1OUT |= BIT1; // CS high, deselect.
+//
+//    // Read status register:
+//
+//    P1OUT &= ~BIT1; // CS low, select.
+//    usci_a_send(EUSCI_A0_BASE, 0x05); // Read status.
+//    while (!EUSCI_A_SPI_getInterruptStatus(EUSCI_A0_BASE,
+//    		EUSCI_A_SPI_RECEIVE_INTERRUPT));
+//    EUSCI_A_SPI_receiveData(EUSCI_A0_BASE); // Throw away the stale garbage we got while sending.
+//
+//    usci_a_send(EUSCI_A0_BASE, 0xFF); // Meaningless crap.
+//    while (!EUSCI_A_SPI_getInterruptStatus(EUSCI_A0_BASE,
+//    		EUSCI_A_SPI_RECEIVE_INTERRUPT));
+//    in = EUSCI_A_SPI_receiveData(EUSCI_A0_BASE);
+//
+//    P1OUT |= BIT1; // CS high, deselect.
+//
+//    sprintf(str, "status = %d", in);
+//    GrStringDraw(&g_sContext, str, -1, 0, 10, 1);
+//    GrFlush(&g_sContext);
 
-    usci_a_send(EUSCI_A0_BASE, 0xFF); // Meaningless crap.
-    while (!EUSCI_A_SPI_getInterruptStatus(EUSCI_A0_BASE,
-    		EUSCI_A_SPI_RECEIVE_INTERRUPT));
-    in = EUSCI_A_SPI_receiveData(EUSCI_A0_BASE);
 
-    P1OUT |= BIT1; // CS high, deselect.
-
-    sprintf(str, "status = %d", in);
-    GrStringDraw(&g_sContext, str, -1, 0, 0, 1);
-    GrFlush(&g_sContext);
-
-    // WRITE ENABLE:
-    P1OUT &= ~BIT1; // CS low, select.
-    usci_a_send(EUSCI_A0_BASE, 0x06); // WREN
-    while (!EUSCI_A_SPI_getInterruptStatus(EUSCI_A0_BASE,
-    		EUSCI_A_SPI_RECEIVE_INTERRUPT));
-    EUSCI_A_SPI_receiveData(EUSCI_A0_BASE); // Throw away the stale garbage we got while sending.
-    P1OUT |= BIT1; // CS high, deselect.
-
-    // Read status register:
-
-    P1OUT &= ~BIT1; // CS low, select.
-    usci_a_send(EUSCI_A0_BASE, 0x05); // Read status.
-    while (!EUSCI_A_SPI_getInterruptStatus(EUSCI_A0_BASE,
-    		EUSCI_A_SPI_RECEIVE_INTERRUPT));
-    EUSCI_A_SPI_receiveData(EUSCI_A0_BASE); // Throw away the stale garbage we got while sending.
-
-    usci_a_send(EUSCI_A0_BASE, 0xFF); // Meaningless crap.
-    while (!EUSCI_A_SPI_getInterruptStatus(EUSCI_A0_BASE,
-    		EUSCI_A_SPI_RECEIVE_INTERRUPT));
-    in = EUSCI_A_SPI_receiveData(EUSCI_A0_BASE);
-
-    P1OUT |= BIT1; // CS high, deselect.
-
-    sprintf(str, "status = %d", in);
-    GrStringDraw(&g_sContext, str, -1, 0, 10, 1);
-    GrFlush(&g_sContext);
 
 
     while (1);
