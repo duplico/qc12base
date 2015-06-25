@@ -276,6 +276,7 @@ void init() {
     GrClearDisplay(&g_sContext);
     GrFlush(&g_sContext);
 
+
     // TA1.1 (P1.2)
 //    Timer_A_outputPWMParam ta_param = {
 //    		TIMER_A_CLOCKSOURCE_SMCLK,
@@ -313,10 +314,6 @@ int main(void)
     // WP# high normally (write protect)
 
     // Read status register:
-
-    GPIO_setOutputHighOnPin(GPIO_PORT_P1, GPIO_PIN0);
-    GPIO_setOutputHighOnPin(GPIO_PORT_P1, GPIO_PIN1);
-    GPIO_setOutputHighOnPin(GPIO_PORT_P3, GPIO_PIN0);
 
     P1OUT &= ~BIT1; // CS low, select.
     usci_a_send(EUSCI_A0_BASE, 0x05); // Read status.

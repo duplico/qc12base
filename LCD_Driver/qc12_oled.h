@@ -30,28 +30,10 @@
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * --/COPYRIGHT--*/
 //*****************************************************************************
-//
-// qc12_oled.h - Prototypes for the Hitachi138x110 LCD
-//                                     display driver with a HD66753
-//                                     controller.
-//
-//*****************************************************************************
 
 #ifndef __qc12_oled_H__
 #define __qc12_oled_H__
 
-//*****************************************************************************
-//
-// Include Files
-//
-//*****************************************************************************
-
-/*Put any necessary include files here*/
-
-//*****************************************************************************
-//
-// User Configuration for the LCD Driver
-//
 //*****************************************************************************
 // Number of pixels on LCD X-axis
 #define LCD_X_SIZE 128
@@ -63,9 +45,9 @@
 
 // Define LCD Screen Orientation Here
 //#define LANDSCAPE
-#define LANDSCAPE_FLIP
+//#define LANDSCAPE_FLIP
 //#define PORTRAIT
-//#define PORTRAIT_FLIP
+#define PORTRAIT_FLIP
 
 
 //*****************************************************************************
@@ -172,9 +154,7 @@ and could also include Set_Address(), Write_Data(), etc. */
 
 // TODO:
 
-#define DPYCOLORTRANSLATE(c)    ((((c) & 0x00f80000) >> 8) |               \
-                                 (((c) & 0x0000fc00) >> 5) |               \
-                                 (((c) & 0x000000f8) >> 3))
+#define DPYCOLORTRANSLATE(c) (c ? 1 : 0)
 
 //*****************************************************************************
 //
