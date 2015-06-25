@@ -15,7 +15,7 @@
  *  ==== ALL OTHER CHANGES WILL BE OVERWRITTEN WHEN IT IS REGENERATED ====
  *
  *  This file was generated from
- *      C:/ti/grace_3_10_00_82/packages/ti/mcu/msp430/csl2/pmm/PMM_init.xdt
+ *      D:/ti/grace_3_10_00_82/packages/ti/mcu/msp430/csl2/pmm/PMM_init.xdt
  */
 #include <driverlib/MSP430FR5xx_6xx/inc/hw_memmap.h>
 #include <driverlib/MSP430FR5xx_6xx/pmm.h>

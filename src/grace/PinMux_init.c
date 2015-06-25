@@ -15,7 +15,7 @@
  *  ==== ALL OTHER CHANGES WILL BE OVERWRITTEN WHEN IT IS REGENERATED ====
  *
  *  This file was generated from
- *      C:/ti/grace_3_10_00_82/packages/ti/mcu/msp430/csl2/pinmux/PinMux_init.xdt
+ *      D:/ti/grace_3_10_00_82/packages/ti/mcu/msp430/csl2/pinmux/PinMux_init.xdt
  */
 #include <driverlib/MSP430FR5xx_6xx/inc/hw_memmap.h>
 #include <driverlib/MSP430FR5xx_6xx/pmm.h>
@@ -61,10 +61,10 @@ void PinMux_graceInit(void)
     P1SEL0 = BIT2;
 
     /* Port 1 Port Select Register 1 */
-    P1SEL1 = BIT6 | BIT7;
+    P1SEL1 = BIT5 | BIT6 | BIT7;
 
     /* Port 1 Direction Register */
-    P1DIR = BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5;
+    P1DIR = BIT0 | BIT1 | BIT2 | BIT3 | BIT4;
 
     /* Port 1 Interrupt Edge Select */
     P1IES = 0;
@@ -76,10 +76,10 @@ void PinMux_graceInit(void)
     P2OUT = 0;
 
     /* Port 2 Port Select Register 1 */
-    P2SEL1 = BIT2 | BIT3 | BIT4 | BIT5;
+    P2SEL1 = BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5;
 
     /* Port 2 Direction Register */
-    P2DIR = BIT0 | BIT6 | BIT7;
+    P2DIR = BIT6 | BIT7;
 
     /* Port 2 Resistor Enable Register */
     P2REN = BIT1;
