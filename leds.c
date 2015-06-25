@@ -20,45 +20,54 @@
 
 volatile uint8_t f_time_loop = 0; // TODO
 
-// NB: Make sure that the MSB here is never 0b1:
-const uint8_t dot_correct_settings[] = {
-		0x7f,	// R
-		0x0f,	// G
-		0x0f,	// B
-		0x7f,	// R
-		0x0f,	// G
-		0x0f,	// B
-		0x7f,	// R
-		0x0f,	// G
-		0x0f,	// B
-		0x7f,	// R
-		0x0f,	// G
-		0x0f,	// B
-		0x7f,	// R
-		0x0f,	// G
-		0x0f,	// B
-		0x7f
+uint16_t gs_data[16] = {
+		// Mid-right (front view)
+		0x0fff, // R
+		0x0000, // G
+		0x0000, // B
+		// Bottom-right
+		0x0f00, // R
+		0x0f00, // G
+		0x0000, // B
+		// Bottom-left
+		0x0000, // R
+		0x0fff, // G
+		0x0000, // B
+		// Mid-left
+		0x0000,
+		0x0000,
+		0x0ff0,
+		// Top-middle
+		0x0f00,
+		0x0a00,
+		0x0500,
+		// Status
+		0xffff,
 };
 
-
-void tlc_set_gs() {
+void tlc_set_gs(uint8_t shift) {
     while (!EUSCI_A_SPI_getInterruptStatus(EUSCI_A0_BASE,
             EUSCI_A_SPI_TRANSMIT_INTERRUPT));
 
     // We need a 0 to show it's GS:
     usci_a_send(EUSCI_A0_BASE, 0x00);
-    // Now the GS data itself. There are 16 channels; MSB first!
-    for (uint8_t channel=16; channel; channel--) {
-        // ...with 16 bits each:
-        usci_a_send(EUSCI_A0_BASE, (channel % 3) ? 0x0f : 0x0f); // MSByte
-        usci_a_send(EUSCI_A0_BASE, 0x00); // LSByte
+    // Now the GS data itself.
+
+    // Status light:
+    usci_a_send(EUSCI_A0_BASE, (uint8_t) (gs_data[15] >> 8));
+    usci_a_send(EUSCI_A0_BASE, (uint8_t) (gs_data[15] & 0x00ff));
+
+    // 5 RGB LEDs:
+    for (uint8_t channel=15; channel; channel--) {
+    	usci_a_send(EUSCI_A0_BASE, (uint8_t) (gs_data[(shift+channel-1) % 15] >> 8));
+    	usci_a_send(EUSCI_A0_BASE, (uint8_t) (gs_data[(shift+channel-1) % 15] & 0x00ff));
     }
 
     // LATCH:
     GPIO_pulse(GPIO_PORT_P1, GPIO_PIN4);
 }
 
-void tlc_set_fun() {
+void tlc_set_fun(uint8_t blank) {
     while (!EUSCI_A_SPI_getInterruptStatus(EUSCI_A0_BASE,
             EUSCI_A_SPI_TRANSMIT_INTERRUPT));
 
@@ -94,7 +103,7 @@ void tlc_set_fun() {
 
     // B119 / BLANK
     // MSB is BLANK; remainder are BC:
-    usci_a_send(EUSCI_A0_BASE, 0x08);
+    usci_a_send(EUSCI_A0_BASE, 0x08 + (blank << 7));
 
 
     UCA0CTLW0 |= UCSWRST;
@@ -135,8 +144,9 @@ void init_leds() {
     UCA0CTLW0 &= ~UC7BIT;
     UCA0CTLW0 &= ~UCSWRST;
 
-    tlc_set_gs();
-    tlc_set_fun();
+    tlc_set_fun(1);
+    tlc_set_gs(0);
+    tlc_set_fun(0);
 }
 
 void led_enable(uint16_t duty_cycle) {

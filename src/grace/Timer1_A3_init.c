@@ -44,7 +44,7 @@ void Timer1_A3_graceInit(void)
     /* Initialize TimerA in up mode */
     initUpParam.clockSource = TIMER_A_CLOCKSOURCE_SMCLK;
     initUpParam.clockSourceDivider = TIMER_A_CLOCKSOURCE_DIVIDER_1;
-    initUpParam.timerPeriod = 19;
+    initUpParam.timerPeriod = 7;
     initUpParam.timerInterruptEnable_TAIE = TIMER_A_TAIE_INTERRUPT_DISABLE;
     initUpParam.captureCompareInterruptEnable_CCR0_CCIE = TIMER_A_CCIE_CCR0_INTERRUPT_DISABLE;
     initUpParam.timerClear = TIMER_A_SKIP_CLEAR;
@@ -55,7 +55,7 @@ void Timer1_A3_graceInit(void)
     initCompParam.compareRegister = TIMER_A_CAPTURECOMPARE_REGISTER_1;
     initCompParam.compareInterruptEnable = TIMER_A_CAPTURECOMPARE_INTERRUPT_DISABLE;
     initCompParam.compareOutputMode = TIMER_A_OUTPUTMODE_RESET_SET;
-    initCompParam.compareValue = 9;
+    initCompParam.compareValue = 3;
     Timer_A_initCompareMode(TIMER_A1_BASE, &initCompParam);
 
     /* Start TimerA counter */

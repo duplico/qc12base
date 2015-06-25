@@ -191,5 +191,12 @@ int main(void)
 
 
 
-    while (1);
+    uint8_t shift = 0;
+    while (1) {
+    	tlc_set_fun(1);
+    	tlc_set_gs(shift);
+    	tlc_set_fun(0);
+    	shift = (shift + 3) % 15;
+    	__delay_cycles(2000000);
+    }
 }

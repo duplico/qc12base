@@ -50,9 +50,9 @@ void CS_A_graceInit(void)
     CS_turnOnLFXTWithTimeout(LFXTDRIVE_2, 100000);
 
     /*
-     * Setting MCLK source from CS_DCOCLK_SELECT with the divider of CS_CLOCK_DIVIDER_2.
+     * Setting MCLK source from CS_DCOCLK_SELECT with the divider of CS_CLOCK_DIVIDER_4.
      */
-    CS_initClockSignal(CS_MCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_2);
+    CS_initClockSignal(CS_MCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_4);
 
     /*
      * Setting SMCLK source from CS_DCOCLK_SELECT with the divider of CS_CLOCK_DIVIDER_2.
@@ -65,9 +65,9 @@ void CS_A_graceInit(void)
     CS_initClockSignal(CS_ACLK, CS_LFXTCLK_SELECT, CS_CLOCK_DIVIDER_1);
 
     /*
-     * Set DCO frequency to 8000000 Hz
+     * Set DCO frequency to 16000000 Hz
      */
-    CS_setDCOFreq(CS_DCORSEL_0, CS_DCOFSEL_6);
+    CS_setDCOFreq(CS_DCORSEL_1, CS_DCOFSEL_4);
 
     /*
      * Clears all oscillator fault flags including global oscillator fault flag
