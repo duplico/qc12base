@@ -1,4 +1,4 @@
-import os, sys, argparse
+import os, sys, argparse, re
 from glob import glob
 from ConfigParser import ConfigParser
 
@@ -11,6 +11,8 @@ SPRITE_HEIGHT = 64
 HEAD_HEIGHT = 22
 BODY_HEIGHT = 46
 FEET_HEIGHT = 18
+
+is_a_number = re.compile("[0-9]+")
 
 def make_sprite(head_path, body_path, legs_path):
     sprite = Image.new('RGBA', (SPRITE_WIDTH, SPRITE_HEIGHT), (0,0,0,0))
@@ -35,16 +37,25 @@ def make_sprite(head_path, body_path, legs_path):
             # zero-pad...
             while index % 8:
                 out_str += "0"
-            out_str += ", \n 0b"
+            out_str += ", \n     0b"
             index = 0
         if index and index % 8 == 0:
             out_str += ", 0b"
         out_str += "1" if sum(pixel) else "0"
         index += 1
-    out_str += "}"
+    out_str += "},"
     
     return out_str
+
+p_sprite_bank = []
+p_sprite_pixel_bank = []
+p_sprite_bank_indices = dict()
     
+f_sprite_bank = []
+f_sprite_pixel_bank = []
+f_sprite_bank_indices = dict()
+
+animations = []
 
 def main(inifile, head_dir, body_dir, legs_dir):
     parser = ConfigParser()
@@ -52,27 +63,80 @@ def main(inifile, head_dir, body_dir, legs_dir):
     head_files = glob(os.path.join(head_dir, 'head', '*[0-9].png'))
     body_files = glob(os.path.join(head_dir, 'body', '*[0-9].png'))
     legs_files = glob(os.path.join(head_dir, 'legs', '*[0-9].png'))
+    index_offset = 0
+    index = 0
+    longest_anim_buffer = 0
     for anim_name in parser.sections():
+        # Note: The in animation must be first, followed by loop, then out.
+        if ":loop" in anim_name:
+            anim['loop_start_index'] = index_offset = index
+        elif ":out" in anim_name:
+            anim['loop_end_index'] = index_offset = index
+        else:
+            anim=dict(looped=(":in" in anim_name), name=anim_name.split(':')[0], images=[], persistent=False)
+            animations.append(anim)
+            index_offset = 0
+        # TODO: assert there's no other :s in the name?
         for frame in parser.items(anim_name):
-            # TODO: assert that the frame numbers are correct please.
-            head_index, body_index, legs_index = map(int, frame[1].split(','))
-            # TODO: assert indices are in bounds
-            # TODO: assert the the filename endswith index-1
-            pixels = make_sprite(head_files[head_index-1], body_files[body_index-1], legs_files[legs_index-1])
-            
-            img_name = "%s_%s" % (anim_name, frame[0])
-            print "static const unsigned char %s_pixels[] = \n%s;" % (img_name, pixels)
-            print ""
-            print "const tImage %s = {" % img_name
-            print "    IMAGE_FMT_1BPP_UNCOMP,"
-            print "    %d," % SPRITE_WIDTH
-            print "    %d," % SPRITE_HEIGHT
-            print "    2,"
-            print "    palette_bw,"
-            print "    %s_pixels," % img_name
-            print "};"
-            print
-            print
+            if is_a_number.match(frame[0]):
+                # It's a frame number.
+                
+                if anim['persistent']:
+                    sprite_bank = p_sprite_bank
+                    sprite_pixel_bank = p_sprite_pixel_bank
+                    sprite_bank_indices = p_sprite_bank_indices
+                else:
+                    sprite_bank = f_sprite_bank
+                    sprite_pixel_bank = f_sprite_pixel_bank
+                    sprite_bank_indices = f_sprite_bank_indices
+                
+                # TODO: assert that the frame numbers are correct please.
+                # TODO: assert indices are in bounds
+                # TODO: assert the the filename endswith index-1
+                
+                head_index, body_index, legs_index = map(int, frame[1].split(','))
+                if (head_index, body_index, legs_index) in sprite_bank_indices:
+                    frame_bank_index = sprite_bank_indices[(head_index, body_index, legs_index)]
+                else:
+                    frame_bank_index = len(sprite_pixel_bank)
+                    sprite_bank_indices[(head_index, body_index, legs_index)] = frame_bank_index
+                    pixels = make_sprite(head_files[head_index-1], body_files[body_index-1], legs_files[legs_index-1])
+                    metadata = "{ IMG_FMT_1BPP_UNCOMP, %d, %d, 2, palette_bw, %s }," % (SPRITE_WIDTH, SPRITE_HEIGHT, "bank[%d]" % frame_bank_index)
+                    metadata += " // %d:%d:%d" % (head_index, body_index, legs_index)
+                    sprite_pixel_bank.append(pixels)
+                    sprite_bank.append(metadata)
+                    
+                index = int(frame[0]) + index_offset
+                img_name = "%s_%d" % (anim['name'], (index-1))
+                anim['images'].append(frame_bank_index)
+            elif frame[0] == "persistent":
+                assert not anim['images'] # Persistent MUST BE FIRST.
+                anim['persistent'] = True
+        if not anim['persistent'] and index > longest_anim_buffer:
+            longest_anim_buffer = index
+    
+    print "persistent_sprite_bank_pixels = {\n   ",
+    print "\n\n    ".join(p_sprite_pixel_bank)
+    print "}"
+    
+    print "flash_sprite_bank_pixels = {\n   ",
+    print "\n\n    ".join(f_sprite_pixel_bank)
+    print "}"
+    
+    print "persistent_sprite_bank = {\n   ",
+    print "\n    ".join(p_sprite_bank)
+    print "}"
+    
+    print "flash_sprite_bank = {\n   ",
+    print "\n    ".join(f_sprite_bank)
+    print "}"
+    
+    for anim in animations:
+        print anim
+        print
+        print
+        
+    print "anim_buffer_alloc = %d" % longest_anim_buffer
         
 
 def adjust_image(image):
