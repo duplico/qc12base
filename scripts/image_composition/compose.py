@@ -25,8 +25,26 @@ def make_sprite(head_path, body_path, legs_path):
     sprite.paste(head, ((SPRITE_WIDTH-head.size[0])/2, 0+feet_offset+body_offset), head_mask)    
     sprite.paste(body, (0,0+feet_offset+body_offset), body_mask)
     sprite.paste(legs, ((SPRITE_WIDTH-legs.size[0])/2, body.size[1]+feet_offset), legs_mask)
+            
+    out_str = "{0b"
     
-    sprite.show()
+    index = 0
+    
+    for pixel in list(sprite.getdata()):
+        if index == SPRITE_WIDTH:
+            # zero-pad...
+            while index % 8:
+                out_str += "0"
+            out_str += ", \n 0b"
+            index = 0
+        if index and index % 8 == 0:
+            out_str += ", 0b"
+        out_str += "1" if sum(pixel) else "0"
+        index += 1
+    out_str += "}"
+    
+    return out_str
+    
 
 def main(inifile, head_dir, body_dir, legs_dir):
     parser = ConfigParser()
@@ -39,10 +57,22 @@ def main(inifile, head_dir, body_dir, legs_dir):
             # TODO: assert that the frame numbers are correct please.
             head_index, body_index, legs_index = map(int, frame[1].split(','))
             # TODO: assert indices are in bounds
-            print head_index, body_index, legs_index
             # TODO: assert the the filename endswith index-1
-            print head_files[head_index-1], body_files[body_index-1], legs_files[legs_index-1]
-            make_sprite(head_files[head_index-1], body_files[body_index-1], legs_files[legs_index-1])
+            pixels = make_sprite(head_files[head_index-1], body_files[body_index-1], legs_files[legs_index-1])
+            
+            img_name = "%s_%s" % (anim_name, frame[0])
+            print "static const unsigned char %s_pixels[] = \n%s;" % (img_name, pixels)
+            print ""
+            print "const tImage %s = {" % img_name
+            print "    IMAGE_FMT_1BPP_UNCOMP,"
+            print "    %d," % SPRITE_WIDTH
+            print "    %d," % SPRITE_HEIGHT
+            print "    2,"
+            print "    palette_bw,"
+            print "    %s_pixels," % img_name
+            print "};"
+            print
+            print
         
 
 def adjust_image(image):
