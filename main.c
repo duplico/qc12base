@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <grlib.h>
 #include <qc12_oled.h>
+#include <stdio.h>
 
 // Grace includes:
 #include <ti/mcu/msp430/Grace.h>
@@ -100,13 +101,13 @@ uint8_t tlc_in_bit() {
 }
 
 void usci_a_send(uint16_t base, uint8_t data) {
-    while (EUSCI_A_SPI_isBusy(base));
-    while (!EUSCI_A_SPI_getInterruptStatus(base,
-     EUSCI_A_SPI_TRANSMIT_INTERRUPT));
-     EUSCI_A_SPI_transmitData(base, data);
-    while (!EUSCI_A_SPI_getInterruptStatus(base,
-     EUSCI_A_SPI_TRANSMIT_INTERRUPT));
-    while (EUSCI_A_SPI_isBusy(base));
+	while (EUSCI_A_SPI_isBusy(base));
+	while (!EUSCI_A_SPI_getInterruptStatus(base,
+			EUSCI_A_SPI_TRANSMIT_INTERRUPT));
+	EUSCI_A_SPI_transmitData(base, data);
+	while (!EUSCI_A_SPI_getInterruptStatus(base,
+			EUSCI_A_SPI_TRANSMIT_INTERRUPT));
+	while (EUSCI_A_SPI_isBusy(base));
 }
 
 void tlc_set_gs() {
@@ -119,7 +120,7 @@ void tlc_set_gs() {
     for (uint8_t channel=0; channel<16; channel++) {
         // ...with 16 bits each:
         usci_a_send(EUSCI_A0_BASE, 0x00); // MSByte
-        usci_a_send(EUSCI_A0_BASE, 0xff); // LSByte
+        usci_a_send(EUSCI_A0_BASE, (channel % 3) ? 0xff : 0x00); // LSByte
     }
 
     // LATCH:
@@ -162,7 +163,7 @@ void tlc_set_fun() {
 
     // B119 / BLANK
     // MSB is BLANK; remainder are BC:
-    usci_a_send(EUSCI_A0_BASE, 0xEF);
+    usci_a_send(EUSCI_A0_BASE, 0x7F);
 
     for (uint8_t i=0; i<14; i++) {
         // 16 DC 7-tets in 14 octets/bytes:
@@ -176,6 +177,13 @@ void tlc_set_fun() {
 void tlc_set_gs_bb() {
      // We need a 0 to show it's GS:
      tlc_bit(0);
+     tlc_bit(0);
+     tlc_bit(0);
+     tlc_bit(0);
+     tlc_bit(0);
+     tlc_bit(0);
+     tlc_bit(0);
+     tlc_bit(0);
      // Now the GS data itself. There are 16 channels;
      for (uint8_t channel=0; channel<16; channel++) {
           // ...with 16 bits each:
@@ -186,20 +194,11 @@ void tlc_set_gs_bb() {
      // That means the shift register will be full. Time to latch.
      // !SCLK:
      P1OUT &= ~BIT5;
-     P1OUT &= ~BIT5;
      // LAT
      GPIO_pulse(GPIO_PORT_P1, GPIO_PIN4);
 }
 
 void tlc_set_fun_bb() {
-    // TODO: Test if we can BB some leading 0s:
-	tlc_bit(0);
-	tlc_bit(0);
-	tlc_bit(0);
-	tlc_bit(0);
-	tlc_bit(0);
-	tlc_bit(0);
-	tlc_bit(0);
     tlc_bit(1); // 1 to show it's function.
     for (uint8_t b = 255; b>136; b--) { // For all the reserved bits, write a 0.
         tlc_bit(0);
@@ -240,7 +239,6 @@ void tlc_set_fun_bb() {
 
     // That means the shift register will be full. Time to latch.
     GPIO_setOutputLowOnPin(GPIO_PORT_P1, GPIO_PIN5); // Set CLK low.
-    GPIO_setOutputHighOnPin(GPIO_PORT_P1, GPIO_PIN4); // LAT
     GPIO_pulse(GPIO_PORT_P1, GPIO_PIN4);
 }
 
@@ -300,11 +298,6 @@ int main(void)
     // TODO:
     //    post();
 
-
-    // TODO: remove:
-
-    // Peripheral testing code:
-
     tlc_set_gs();
     tlc_set_fun();
 
@@ -319,58 +312,56 @@ int main(void)
     // HOLD# high normally
     // WP# high normally (write protect)
 
+    // Read status register:
+
+    GPIO_setOutputHighOnPin(GPIO_PORT_P1, GPIO_PIN0);
+    GPIO_setOutputHighOnPin(GPIO_PORT_P1, GPIO_PIN1);
+    GPIO_setOutputHighOnPin(GPIO_PORT_P3, GPIO_PIN0);
+
+    P1OUT &= ~BIT1; // CS low, select.
+    usci_a_send(EUSCI_A0_BASE, 0x05); // Read status.
+    while (!EUSCI_A_SPI_getInterruptStatus(EUSCI_A0_BASE,
+    		EUSCI_A_SPI_RECEIVE_INTERRUPT));
+    EUSCI_A_SPI_receiveData(EUSCI_A0_BASE); // Throw away the stale garbage we got while sending.
+
+    usci_a_send(EUSCI_A0_BASE, 0xFF); // Meaningless crap.
+    while (!EUSCI_A_SPI_getInterruptStatus(EUSCI_A0_BASE,
+    		EUSCI_A_SPI_RECEIVE_INTERRUPT));
+    in = EUSCI_A_SPI_receiveData(EUSCI_A0_BASE);
+
+    P1OUT |= BIT1; // CS high, deselect.
+
+    sprintf(str, "status = %d", in);
+    GrStringDraw(&g_sContext, str, -1, 0, 0, 1);
+    GrFlush(&g_sContext);
 
     // WRITE ENABLE:
-    //    P1OUT &= ~BIT1; // CS low, select.
-    //    usci_a_send(EUSCI_A0_BASE, 0x06); // WREN
-    //    while (!EUSCI_A_SPI_getInterruptStatus(EUSCI_A0_BASE,
-    //             EUSCI_A_SPI_RECEIVE_INTERRUPT));
-    //
-    //    EUSCI_A_SPI_receiveData(EUSCI_A0_BASE); // Throw away the stale garbage we got while sending.
-    //    P1OUT |= BIT1; // CS high, deselect.
+    P1OUT &= ~BIT1; // CS low, select.
+    usci_a_send(EUSCI_A0_BASE, 0x06); // WREN
+    while (!EUSCI_A_SPI_getInterruptStatus(EUSCI_A0_BASE,
+    		EUSCI_A_SPI_RECEIVE_INTERRUPT));
+    EUSCI_A_SPI_receiveData(EUSCI_A0_BASE); // Throw away the stale garbage we got while sending.
+    P1OUT |= BIT1; // CS high, deselect.
 
-    //    __delay_cycles(25);
-//
-//    P1OUT &= ~BIT1; // CS low, select.
-//
-//    tlc_bit(0);
-//    tlc_bit(0);
-//    tlc_bit(0);
-//    tlc_bit(0);
-//    tlc_bit(0);
-//    tlc_bit(1);
-//    tlc_bit(1);
-//    tlc_bit(0);
-//
-//    P1OUT |= BIT1; // CS high, deselect.
-//
-//    __delay_cycles(100);
-//
-//    P1OUT &= ~BIT1; // CS low, select.
-//
-//    tlc_bit(0);
-//    tlc_bit(0);
-//    tlc_bit(0);
-//    tlc_bit(0);
-//    tlc_bit(0);
-//    tlc_bit(1);
-//    tlc_bit(0);
-//    tlc_bit(1);
-//
-//    // 0x05...
-//
-//    in = 0;
-//    in |= (tlc_in_bit()? 1 : 0) << 7;
-//    in |= (tlc_in_bit()? 1 : 0) << 6;
-//    in |= (tlc_in_bit()? 1 : 0) << 5;
-//    in |= (tlc_in_bit()? 1 : 0) << 4;
-//    in |= (tlc_in_bit()? 1 : 0) << 3;
-//    in |= (tlc_in_bit()? 1 : 0) << 2;
-//    in |= (tlc_in_bit()? 1 : 0) << 1;
-//    in |= (tlc_in_bit()? 1 : 0) << 0;
-//
-//    P1OUT &= ~BIT5; // clock low.
-//    P1OUT |= BIT1; // CS high, end
+    // Read status register:
+
+    P1OUT &= ~BIT1; // CS low, select.
+    usci_a_send(EUSCI_A0_BASE, 0x05); // Read status.
+    while (!EUSCI_A_SPI_getInterruptStatus(EUSCI_A0_BASE,
+    		EUSCI_A_SPI_RECEIVE_INTERRUPT));
+    EUSCI_A_SPI_receiveData(EUSCI_A0_BASE); // Throw away the stale garbage we got while sending.
+
+    usci_a_send(EUSCI_A0_BASE, 0xFF); // Meaningless crap.
+    while (!EUSCI_A_SPI_getInterruptStatus(EUSCI_A0_BASE,
+    		EUSCI_A_SPI_RECEIVE_INTERRUPT));
+    in = EUSCI_A_SPI_receiveData(EUSCI_A0_BASE);
+
+    P1OUT |= BIT1; // CS high, deselect.
+
+    sprintf(str, "status = %d", in);
+    GrStringDraw(&g_sContext, str, -1, 0, 10, 1);
+    GrFlush(&g_sContext);
+
 
     while (1);
 }
