@@ -100,60 +100,30 @@ uint8_t tlc_in_bit() {
 }
 
 void usci_a_send(uint16_t base, uint8_t data) {
+    while (EUSCI_A_SPI_isBusy(base));
     while (!EUSCI_A_SPI_getInterruptStatus(base,
      EUSCI_A_SPI_TRANSMIT_INTERRUPT));
      EUSCI_A_SPI_transmitData(base, data);
     while (!EUSCI_A_SPI_getInterruptStatus(base,
      EUSCI_A_SPI_TRANSMIT_INTERRUPT));
-}
-
-void tlc_set_gs_bb() {
-     // We need a 0 to show it's GS:
-     tlc_bit(0);
-     // Now the GS data itself. There are 16 channels;
-     for (uint8_t channel=0; channel<16; channel++) {
-          // ...with 16 bits each:
-          for (uint8_t bit=16; bit; bit--) {
-               tlc_bit(bit<9);
-          }
-     }
-     // That means the shift register will be full. Time to latch.
-     // !SCLK:
-     P1OUT &= ~BIT5;
-     P1OUT &= ~BIT5;
-     // LAT
-     P1OUT |= BIT4;
-     P1OUT |= BIT4;
-     // !LAT
-     P1OUT &= ~BIT4;
-     P1OUT &= ~BIT4;
-     P1OUT &= ~BIT4;
-     P1OUT &= ~BIT4;
+    while (EUSCI_A_SPI_isBusy(base));
 }
 
 void tlc_set_gs() {
     while (!EUSCI_A_SPI_getInterruptStatus(EUSCI_A0_BASE,
             EUSCI_A_SPI_TRANSMIT_INTERRUPT));
-    UCA0CTLW0 |= UCSWRST; // Reset...
-    UCA0CTLW0 &= ~UC7BIT; // 8-bit mode for GS.
-    UCA0CTLW0 &= ~UCSWRST; // Unreset...
 
     // We need a 0 to show it's GS:
-    usci_a_send(EUSCI_A0_BASE, 0x00); // TODO: This is +7 clock ticks vs previously...
+    usci_a_send(EUSCI_A0_BASE, 0x00);
     // Now the GS data itself. There are 16 channels;
     for (uint8_t channel=0; channel<16; channel++) {
         // ...with 16 bits each:
-        usci_a_send(EUSCI_A0_BASE, 0x00);
-        usci_a_send(EUSCI_A0_BASE, 0xff);
+        usci_a_send(EUSCI_A0_BASE, 0x00); // MSByte
+        usci_a_send(EUSCI_A0_BASE, 0xff); // LSByte
     }
-    // That means the shift register will be full. Time to latch.
-    P1OUT |= BIT4;
-    P1OUT |= BIT4;
-    // !LAT
-    P1OUT &= ~BIT4;
-    P1OUT &= ~BIT4;
-    P1OUT &= ~BIT4;
-    P1OUT &= ~BIT4;
+
+    // LATCH:
+    GPIO_pulse(GPIO_PORT_P1, GPIO_PIN4);
 }
 
 void tlc_set_fun() {
@@ -203,8 +173,33 @@ void tlc_set_fun() {
     GPIO_pulse(GPIO_PORT_P1, GPIO_PIN4);
 }
 
+void tlc_set_gs_bb() {
+     // We need a 0 to show it's GS:
+     tlc_bit(0);
+     // Now the GS data itself. There are 16 channels;
+     for (uint8_t channel=0; channel<16; channel++) {
+          // ...with 16 bits each:
+          for (uint8_t bit=16; bit; bit--) {
+               tlc_bit(bit<9);
+          }
+     }
+     // That means the shift register will be full. Time to latch.
+     // !SCLK:
+     P1OUT &= ~BIT5;
+     P1OUT &= ~BIT5;
+     // LAT
+     GPIO_pulse(GPIO_PORT_P1, GPIO_PIN4);
+}
+
 void tlc_set_fun_bb() {
     // TODO: Test if we can BB some leading 0s:
+	tlc_bit(0);
+	tlc_bit(0);
+	tlc_bit(0);
+	tlc_bit(0);
+	tlc_bit(0);
+	tlc_bit(0);
+	tlc_bit(0);
     tlc_bit(1); // 1 to show it's function.
     for (uint8_t b = 255; b>136; b--) { // For all the reserved bits, write a 0.
         tlc_bit(0);
@@ -245,13 +240,8 @@ void tlc_set_fun_bb() {
 
     // That means the shift register will be full. Time to latch.
     GPIO_setOutputLowOnPin(GPIO_PORT_P1, GPIO_PIN5); // Set CLK low.
-    GPIO_setOutputLowOnPin(GPIO_PORT_P1, GPIO_PIN5); // Set CLK low. // cargo cult
     GPIO_setOutputHighOnPin(GPIO_PORT_P1, GPIO_PIN4); // LAT
-    GPIO_setOutputHighOnPin(GPIO_PORT_P1, GPIO_PIN4); // LAT // cargo cult
-    GPIO_setOutputLowOnPin(GPIO_PORT_P1, GPIO_PIN4); // !LAT
-    GPIO_setOutputLowOnPin(GPIO_PORT_P1, GPIO_PIN4); // !LAT // cargo cult
-    GPIO_setOutputLowOnPin(GPIO_PORT_P1, GPIO_PIN4); // !LAT // cargo cult
-    GPIO_setOutputLowOnPin(GPIO_PORT_P1, GPIO_PIN4); // !LAT // cargo cult
+    GPIO_pulse(GPIO_PORT_P1, GPIO_PIN4);
 }
 
 
@@ -287,6 +277,17 @@ void init() {
     GrContextFontSet(&g_sContext, &g_sFontFixed6x8);
     GrClearDisplay(&g_sContext);
     GrFlush(&g_sContext);
+
+    // TA1.1 (P1.2)
+//    Timer_A_outputPWMParam ta_param = {
+//    		TIMER_A_CLOCKSOURCE_SMCLK,
+//			TIMER_A_CLOCKSOURCE_DIVIDER_1,
+//			TIMER_A_CAPTURECOMPARE_REGISTER_1,
+//			TIMER_A_OUTPUTMODE_OUTBITVALUE,
+//
+//    };
+//
+//    Timer_A_outputPWM(TIMER_A1_BASE)
 }
 
 int main(void)
@@ -304,9 +305,8 @@ int main(void)
 
     // Peripheral testing code:
 
-    tlc_set_gs_bb();
-    tlc_set_fun_bb();
-    // TODO: GSCLK pulses (happening in the background now).
+    tlc_set_gs();
+    tlc_set_fun();
 
     // TESTING THE FLASH:
 

@@ -15,7 +15,7 @@
  *  ==== ALL OTHER CHANGES WILL BE OVERWRITTEN WHEN IT IS REGENERATED ====
  *
  *  This file was generated from
- *      C:/ti/grace_3_10_00_82/packages/ti/mcu/msp430/csl/interrupt_vectors/InterruptVectors_init.xdt
+ *      D:/ti/grace_3_10_00_82/packages/ti/mcu/msp430/csl/interrupt_vectors/InterruptVectors_init.xdt
  */
 #include <msp430.h>
 #include "_Grace.h"

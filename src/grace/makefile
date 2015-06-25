@@ -1,21 +1,21 @@
 # path to use to find driver sources
-DRV_SRCDIR = C:/ti/msp430/MSPWare_2_20_00_19/driverlib/driverlib/MSP430FR5xx_6xx
+DRV_SRCDIR = D:/ti/msp430/MSPWare_2_20_00_19/driverlib/driverlib/MSP430FR5xx_6xx
 vpath %.c $(DRV_SRCDIR)
 
 # optional compiler flags
-CCOPTS ?= -vmspx --abi=eabi --data_model=restricted --use_hw_mpy=F5 --include_path="C:/ti/ccsv6/ccs_base/msp430/include" --include_path="C:/Users/glouthan/workspace_v6_0/qc12" --include_path="C:/Users/glouthan/workspace_v6_0/qc12/grlib" --include_path="C:/Users/glouthan/workspace_v6_0/qc12/LCD_Driver" --include_path="C:/ti/ccsv6/tools/compiler/ti-cgt-msp430_4.4.4/include" --advice:power=all --advice:hw_config=all -g --c99 --define=__MSP430FR5949__ --diag_warning=225 --display_error_number --diag_wrap=off --silicon_errata=CPU21 --silicon_errata=CPU22 --silicon_errata=CPU40 --printf_support=minimal   -qq -pdsw225 
+CCOPTS ?= -vmspx --abi=eabi --data_model=restricted --use_hw_mpy=F5 --include_path="D:/ti/ccsv6/ccs_base/msp430/include" --include_path="C:/Users/George/workspace_v6_1/qc12" --include_path="C:/Users/George/workspace_v6_1/qc12/grlib" --include_path="C:/Users/George/workspace_v6_1/qc12/LCD_Driver" --include_path="D:/ti/ccsv6/tools/compiler/ti-cgt-msp430_4.4.4/include" --advice:power=all --advice:hw_config=all -g --c99 --define=__MSP430FR5949__ --diag_warning=225 --display_error_number --diag_wrap=off --silicon_errata=CPU21 --silicon_errata=CPU22 --silicon_errata=CPU40 --printf_support=minimal   -qq -pdsw225 
 
 # required C preprocessor flags
-#    compiler   headers: "C:/ti/ccsv6/tools/compiler/ti-cgt-msp430_4.4.4/include"
-#    device     headers: "C:/ti/ccsv6/ccs_base/msp430/include"
-#    Grace      headers: "C:/ti/grace_3_10_00_82/packages"
-#    MSP430ware headers: "C:/ti/msp430/MSPWare_2_20_00_19/driverlib/driverlib/MSP430FR5xx_6xx"
-#                      : "C:/ti/msp430/MSPWare_2_20_00_19/driverlib"
-CPPFLAGS = -D__MSP430FR5949__ -I "C:/ti/ccsv6/tools/compiler/ti-cgt-msp430_4.4.4/include" -I "C:/ti/grace_3_10_00_82/packages"  -I "C:/ti/ccsv6/ccs_base/msp430/include" -I "C:/ti/msp430/MSPWare_2_20_00_19/driverlib/driverlib/MSP430FR5xx_6xx" -I "C:/ti/msp430/MSPWare_2_20_00_19/driverlib"
+#    compiler   headers: "D:/ti/ccsv6/tools/compiler/ti-cgt-msp430_4.4.4/include"
+#    device     headers: "D:/ti/ccsv6/ccs_base/msp430/include"
+#    Grace      headers: "D:/ti/grace_3_10_00_82/packages"
+#    MSP430ware headers: "D:/ti/msp430/MSPWare_2_20_00_19/driverlib/driverlib/MSP430FR5xx_6xx"
+#                      : "D:/ti/msp430/MSPWare_2_20_00_19/driverlib"
+CPPFLAGS = -D__MSP430FR5949__ -I "D:/ti/ccsv6/tools/compiler/ti-cgt-msp430_4.4.4/include" -I "D:/ti/grace_3_10_00_82/packages"  -I "D:/ti/ccsv6/ccs_base/msp430/include" -I "D:/ti/msp430/MSPWare_2_20_00_19/driverlib/driverlib/MSP430FR5xx_6xx" -I "D:/ti/msp430/MSPWare_2_20_00_19/driverlib"
 
 # the compiler and archiver commands
-CC = "C:/ti/ccsv6/tools/compiler/ti-cgt-msp430_4.4.4/bin/cl430" --abi=eabi -c --obj_directory=objs/  -vmspx --near_data=none --code_model=large --data_model=restricted
-AR = "C:/ti/ccsv6/tools/compiler/ti-cgt-msp430_4.4.4/bin/ar430" rq
+CC = "D:/ti/ccsv6/tools/compiler/ti-cgt-msp430_4.4.4/bin/cl430" --abi=eabi -c --obj_directory=objs/  -vmspx --near_data=none --code_model=large --data_model=restricted
+AR = "D:/ti/ccsv6/tools/compiler/ti-cgt-msp430_4.4.4/bin/ar430" rq
 RM = cmd.exe /q /c del /f
 MKDIR = mkdir
 

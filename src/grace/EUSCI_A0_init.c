@@ -15,7 +15,7 @@
  *  ==== ALL OTHER CHANGES WILL BE OVERWRITTEN WHEN IT IS REGENERATED ====
  *
  *  This file was generated from
- *      C:/ti/grace_3_10_00_82/packages/ti/mcu/msp430/csl2/communication/EUSCI_init.xdt
+ *      D:/ti/grace_3_10_00_82/packages/ti/mcu/msp430/csl2/communication/EUSCI_init.xdt
  */
 #include <stdint.h>
 #include "_Grace.h"
@@ -42,7 +42,7 @@ void EUSCI_A0_graceInit(void)
     /* initialize eUSCI SPI master mode */
     initSPIMasterParam.selectClockSource = EUSCI_A_SPI_CLOCKSOURCE_SMCLK;
     initSPIMasterParam.clockSourceFrequency = 4000000;
-    initSPIMasterParam.desiredSpiClock = 500000;
+    initSPIMasterParam.desiredSpiClock = 100000;
     initSPIMasterParam.msbFirst = EUSCI_A_SPI_MSB_FIRST;
     initSPIMasterParam.clockPhase = EUSCI_A_SPI_PHASE_DATA_CAPTURED_ONFIRST_CHANGED_ON_NEXT;
     initSPIMasterParam.clockPolarity = EUSCI_A_SPI_CLOCKPOLARITY_INACTIVITY_LOW;
