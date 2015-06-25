@@ -22,25 +22,25 @@ volatile uint8_t f_time_loop = 0; // TODO
 
 uint16_t gs_data[16] = {
 		// Mid-right (front view)
-		0x0fff, // R
+		0x1fff, // R
 		0x0000, // G
 		0x0000, // B
 		// Bottom-right
-		0x0f00, // R
-		0x0f00, // G
+		0x1f00, // R
+		0x1f00, // G
 		0x0000, // B
 		// Bottom-left
 		0x0000, // R
-		0x0fff, // G
+		0x1fff, // G
 		0x0000, // B
 		// Mid-left
 		0x0000,
 		0x0000,
-		0x0ff0,
+		0x1ff0,
 		// Top-middle
+		0x1f00,
 		0x0f00,
 		0x0a00,
-		0x0500,
 		// Status
 		0xffff,
 };
