@@ -9,6 +9,9 @@
 
 void init_leds();
 
+void tlc_set_gs(uint8_t shift);
+void tlc_set_fun(uint8_t blank);
+
 //void led_timestep();
 
 void led_enable(uint16_t);

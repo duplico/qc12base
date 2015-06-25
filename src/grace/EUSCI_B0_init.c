@@ -41,7 +41,7 @@ void EUSCI_B0_graceInit(void)
 
     /* initialize eUSCI SPI master mode */
     initSPIMasterParam.selectClockSource = EUSCI_B_SPI_CLOCKSOURCE_SMCLK;
-    initSPIMasterParam.clockSourceFrequency = 4000000;
+    initSPIMasterParam.clockSourceFrequency = 8000000;
     initSPIMasterParam.desiredSpiClock = 100000;
     initSPIMasterParam.msbFirst = EUSCI_B_SPI_MSB_FIRST;
     initSPIMasterParam.clockPhase = EUSCI_B_SPI_PHASE_DATA_CAPTURED_ONFIRST_CHANGED_ON_NEXT;
