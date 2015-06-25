@@ -113,10 +113,17 @@ void init() {
     GrContextForegroundSet(&g_sContext, ClrWhite);
     GrContextFontSet(&g_sContext, &g_sFontCmsc12); // &g_sFontFixed6x8);
     GrClearDisplay(&g_sContext);
-    GrImageDraw(&g_sContext, &standing_1, 0, 32);
+    GrImageDraw(&g_sContext, &standing_1, 0, 48);
     GrStringDraw(&g_sContext, "DUPLiCO", -1, 0, 0, 1);
-//    GrCircleDraw(&g_sContext, 2, 3, 6);
-    GrStringDraw(&g_sContext, "  the gay", -1, 0, 9, 0);
+    GrContextFontSet(&g_sContext, &g_sFontFixed6x8);
+    GrStringDraw(&g_sContext, "  the", -1, 0, 12, 0);
+    GrContextFontSet(&g_sContext, &g_sFontCmsc12); // &g_sFontFixed6x8);
+    GrStringDraw(&g_sContext, "    n00b", -1, 0, 18, 0);
+    GrLineDrawH(&g_sContext, 0, 64, 0);
+    GrLineDrawH(&g_sContext, 0, 64, 32);
+    GrLineDrawH(&g_sContext, 0, 64, 34);
+    GrLineDrawH(&g_sContext, 0, 64, 113);
+    GrLineDrawH(&g_sContext, 0, 64, 115);
     GrStringDraw(&g_sContext, "<  Play! >", -1, 0, 116, 1);
     GrFlush(&g_sContext);
 }
@@ -137,6 +144,6 @@ int main(void)
     	tlc_set_gs(shift);
     	tlc_set_fun(0);
     	shift = (shift + 3) % 15;
-    	__delay_cycles(2000000);
+    	__delay_cycles(600000);
     }
 }
