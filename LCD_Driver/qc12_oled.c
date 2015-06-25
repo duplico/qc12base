@@ -91,7 +91,7 @@
   displays. This allows you to update pixels while reading the neighboring pixels
   from the buffer instead of a read from the LCD controller. A buffer is not required
   as a read followed by a write can be used instead.*/
-uint8_t oled_memory[LCD_X_SIZE*PAGES]; // TODO
+uint8_t oled_memory[LCD_X_SIZE*PAGES]; // TODO???
 //                        (LCD_X_SIZE * LCD_Y_SIZE * BPP + 7) / 8];
 
 //*****************************************************************************
@@ -110,12 +110,11 @@ uint8_t oled_memory[LCD_X_SIZE*PAGES]; // TODO
 #define THISISCMD   GPIO_setOutputLowOnPin(DCPORT, DCPIN);
 
 #define GRAM_BUFFER(page, column) oled_memory[(((PAGES-1)-page) * LCD_X_SIZE) + column]
+
 // Writes data to the LCD controller
 static void
 WriteData(uint16_t usData)
 {
-	/* Write data to the LCD controller. For instance this can be bit banged 
-	with 6800 or 8080 protocol or this could be the SPI routine for a SPI LCD */
 
     while (EUSCI_A_SPI_isBusy(EUSCI_A1_BASE));
     THISISDATA;
@@ -130,12 +129,8 @@ WriteData(uint16_t usData)
 static void
 WriteCommand(uint8_t ucCommand)
 {
-   /* This function is typically very similar (sometimes the same) as WriteData()
-   The difference is that this is for the LCD to interpret commands instead of pixel
-   data. For instance in 8080 protocol, this means pulling the DC line low.*/
 	while (EUSCI_A_SPI_isBusy(EUSCI_A1_BASE));
 	THISISCMD;
-	/* USCI_A1 TX buffer ready? */
 	while (!EUSCI_A_SPI_getInterruptStatus(EUSCI_A1_BASE,
 		EUSCI_A_SPI_TRANSMIT_INTERRUPT));
 	EUSCI_A_SPI_transmitData(EUSCI_A1_BASE, ucCommand);
@@ -264,19 +259,19 @@ qc12_oledPixelDraw(void *pvDisplayData, int16_t lX, int16_t lY,
   the LCD screen and the color ulValue has already been translated to the LCD.
   */
 
-	lX = MAPPED_X(lX, lY);
-	lY = MAPPED_Y(lX, lY);
+	uint16_t mapped_x = MAPPED_X(lX, lY);
+	uint16_t mapped_y = MAPPED_Y(lX, lY);
 
 	// Our COLUMN NUMBER is just x.
 	// Our PAGE NUMBER is y/8
 	// This is our ROW VALUE (by shifting 0b10000000 >> by row number):
-	uint8_t val = 0x80 >> lY % 8;
+	uint8_t val = 0x80 >> mapped_y % 8;
 
 	// clear pixel
-	GRAM_BUFFER(lY/8, lX) &= ~val;
+	GRAM_BUFFER(mapped_y/8, mapped_x) &= ~val;
 	// write pixel // if needed
 	if (ulValue) { // && !(GRAM_BUFFER(lY/8, lX) & val)) {
-		GRAM_BUFFER(lY/8, lX) |= val;
+		GRAM_BUFFER(mapped_y/8, mapped_x) |= val;
 //		SetAddress(lX, lY);
 //		WriteData(GRAM_BUFFER(lY/8, lX));
 	}
@@ -583,7 +578,6 @@ qc12_oledFlush(void *pvDisplayData)
 	SetAddress(0, 0);
 	for (uint16_t i=0; i<LCD_X_SIZE*8; i++) { // TODO
 		WriteData(oled_memory[i]);
-		__delay_cycles(100); // TODO!!!
 	}
 
 
