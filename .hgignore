@@ -6,3 +6,4 @@ src/makefile.libs
 .settings/
 *.bak
 src/grace/objs/
+img/img_append.c
