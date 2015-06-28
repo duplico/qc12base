@@ -109,7 +109,7 @@ void init() {
     GrContextForegroundSet(&g_sContext, ClrWhite);
     GrContextFontSet(&g_sContext, &g_sFontCmsc12); // &g_sFontFixed6x8);
     GrClearDisplay(&g_sContext);
-    GrImageDraw(&g_sContext, &standing_1, 0, 48);
+//    GrImageDraw(&g_sContext, &standing_1, 0, 48);
     GrStringDraw(&g_sContext, "DUPLiCO", -1, 0, 0, 1);
     GrContextFontSet(&g_sContext, &g_sFontFixed6x8);
     GrStringDraw(&g_sContext, "  the", -1, 0, 12, 0);
@@ -124,6 +124,32 @@ void init() {
     GrFlush(&g_sContext);
 }
 
+void play_animation(qc12_anim_t anim, uint8_t loops) {
+    // TODO: make non-blocking.
+    if (anim.looped) {
+        for (uint8_t i=0; i<anim.loop_start; i++) {
+            GrImageDraw(&g_sContext, anim.images[i], 0, 48);
+            GrFlush(&g_sContext);
+            __delay_cycles(1000000);
+        }
+    }
+    for (uint8_t loop=loops; loop; loop--) {
+        for (uint8_t i=anim.loop_start; i<anim.loop_end; i++) {
+            GrImageDraw(&g_sContext, anim.images[i], 0, 48);
+            GrFlush(&g_sContext);
+            __delay_cycles(1000000);
+        }
+    }
+    // go from anim.loop_start to anim.loop_end
+    if (anim.looped) {
+        for (uint8_t i=anim.loop_end; i<anim.len; i++) {
+            GrImageDraw(&g_sContext, anim.images[i], 0, 48);
+            GrFlush(&g_sContext);
+            __delay_cycles(1000000);
+        }
+    }
+}
+
 int main(void)
 {
     // TODO: Remove
@@ -135,6 +161,9 @@ int main(void)
     //    post();
 
     uint8_t shift = 0;
+
+    play_animation(waving, 5);
+
     while (1) {
     	tlc_set_fun(1);
     	tlc_set_gs(shift);

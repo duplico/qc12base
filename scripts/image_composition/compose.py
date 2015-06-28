@@ -115,7 +115,7 @@ def main(inifile, head_dir, body_dir, legs_dir):
                     frame_bank_index = len(sprite_pixel_bank)
                     sprite_bank_indices[(head_index, body_index, legs_index)] = frame_bank_index
                     pixels = make_sprite(head_files[head_index-1], body_files[body_index-1], legs_files[legs_index-1])
-                    metadata = "{ IMG_FMT_1BPP_UNCOMP, %d, %d, 2, palette_bw, %s }," % (SPRITE_WIDTH, SPRITE_HEIGHT, "bank[%d]" % frame_bank_index)
+                    metadata = "{ IMAGE_FMT_1BPP_UNCOMP, %d, %d, 2, palette_bw, %s_sprite_bank_pixels[%d] }," % (SPRITE_WIDTH, SPRITE_HEIGHT, "persistent" if anim['persistent'] else "flash", frame_bank_index)
                     metadata += " // %d:%d:%d" % (head_index, body_index, legs_index)
                     sprite_pixel_bank.append(pixels)
                     sprite_bank.append(metadata)
@@ -165,7 +165,8 @@ def main(inifile, head_dir, body_dir, legs_dir):
         print "qc12_anim_t %s = {" % anim['name']
         print "\t%d, // Looped?" % (int(anim['looped']) if 'looped' in anim else 0)
         print "\t%d, // Loop start index" % (anim['loop_start_index'] if 'loop_start_index' in anim else 0)
-        print "\t%d, // Loop end index" % (anim['loop_end_index'] if 'loop_end_index' in anim else 0)
+        print "\t%d, // Loop end index" % (anim['loop_end_index'] if 'loop_end_index' in anim else len(anim['image_pointers']))
+        print "\t%d, // Length" % len(anim['images'])
         print "\t{%s} // Pointers to frames" % ",\n\t ".join(anim['image_pointers'])
         print "};"
         print
