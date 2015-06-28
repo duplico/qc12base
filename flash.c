@@ -35,13 +35,13 @@ void usci_a0_send_sync(uint8_t data) {
     // If we're held, wait:
     // TODO: don't busy wait.
     while (flash_state & FLASH_STATE_HOLD);
-    while (EUSCI_A_SPI_isBusy(base));
-    while (!EUSCI_A_SPI_getInterruptStatus(base,
+    while (EUSCI_A_SPI_isBusy(EUSCI_A0_BASE));
+    while (!EUSCI_A_SPI_getInterruptStatus(EUSCI_A0_BASE,
               EUSCI_A_SPI_TRANSMIT_INTERRUPT));
-    EUSCI_A_SPI_transmitData(base, data);
-    while (!EUSCI_A_SPI_getInterruptStatus(base,
+    EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, data);
+    while (!EUSCI_A_SPI_getInterruptStatus(EUSCI_A0_BASE,
               EUSCI_A_SPI_TRANSMIT_INTERRUPT));
-    while (EUSCI_A_SPI_isBusy(base));
+    while (EUSCI_A_SPI_isBusy(EUSCI_A0_BASE));
     while (!EUSCI_A_SPI_getInterruptStatus(EUSCI_A0_BASE,
             EUSCI_A_SPI_RECEIVE_INTERRUPT));
     EUSCI_A_SPI_receiveData(EUSCI_A0_BASE); // Throw away the stale garbage we got while sending.
@@ -51,13 +51,13 @@ uint8_t usci_a0_recv_sync(uint8_t data) {
     // If we're held, wait:
     // TODO: don't busy wait.
     while (flash_state & FLASH_STATE_HOLD);
-    while (EUSCI_A_SPI_isBusy(base));
-    while (!EUSCI_A_SPI_getInterruptStatus(base,
+    while (EUSCI_A_SPI_isBusy(EUSCI_A0_BASE));
+    while (!EUSCI_A_SPI_getInterruptStatus(EUSCI_A0_BASE,
               EUSCI_A_SPI_TRANSMIT_INTERRUPT));
-    EUSCI_A_SPI_transmitData(base, data);
-    while (!EUSCI_A_SPI_getInterruptStatus(base,
+    EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, data);
+    while (!EUSCI_A_SPI_getInterruptStatus(EUSCI_A0_BASE,
               EUSCI_A_SPI_TRANSMIT_INTERRUPT));
-    while (EUSCI_A_SPI_isBusy(base));
+    while (EUSCI_A_SPI_isBusy(EUSCI_A0_BASE));
     while (!EUSCI_A_SPI_getInterruptStatus(EUSCI_A0_BASE,
             EUSCI_A_SPI_RECEIVE_INTERRUPT));
     return EUSCI_A_SPI_receiveData(EUSCI_A0_BASE);

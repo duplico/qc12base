@@ -363,7 +363,7 @@ uint8_t persistent_sprite_bank_pixels[4][512] = {
      0b00000000, 0b00000000, 0b00000000, 0b11010101, 0b10101011, 0b00000000, 0b00000000, 0b00000000},
 };
 
-flash_sprite_bank_pixels[3][512] = {
+uint8_t flash_sprite_bank_pixels[3][512] = {
     {0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000,
      0b00000000, 0b00000000, 0b00000000, 0b00000001, 0b11000000, 0b00000000, 0b00000000, 0b00000000,
      0b00000000, 0b00000000, 0b00000000, 0b00000011, 0b01000000, 0b00000000, 0b00000000, 0b00000000,
@@ -561,29 +561,31 @@ flash_sprite_bank_pixels[3][512] = {
 };
 
 tImage persistent_sprite_bank[4] = {
-    { IMG_FMT_1BPP_UNCOMP, 64, 64, 2, palette_bw, bank[0] }, // 1:1:1
-    { IMG_FMT_1BPP_UNCOMP, 64, 64, 2, palette_bw, bank[1] }, // 1:3:1
-    { IMG_FMT_1BPP_UNCOMP, 64, 64, 2, palette_bw, bank[2] }, // 2:4:1
-    { IMG_FMT_1BPP_UNCOMP, 64, 64, 2, palette_bw, bank[3] }, // 2:3:1
+    { IMAGE_FMT_1BPP_UNCOMP, 64, 64, 2, palette_bw, persistent_sprite_bank_pixels[0] }, // 1:1:1
+    { IMAGE_FMT_1BPP_UNCOMP, 64, 64, 2, palette_bw, persistent_sprite_bank_pixels[1] }, // 1:3:1
+    { IMAGE_FMT_1BPP_UNCOMP, 64, 64, 2, palette_bw, persistent_sprite_bank_pixels[2] }, // 2:4:1
+    { IMAGE_FMT_1BPP_UNCOMP, 64, 64, 2, palette_bw, persistent_sprite_bank_pixels[3] }, // 2:3:1
 };
 
 tImage flash_sprite_bank[3] = {
-    { IMG_FMT_1BPP_UNCOMP, 64, 64, 2, palette_bw, bank[0] }, // 6:6:3
-    { IMG_FMT_1BPP_UNCOMP, 64, 64, 2, palette_bw, bank[1] }, // 6:7:4
-    { IMG_FMT_1BPP_UNCOMP, 64, 64, 2, palette_bw, bank[2] }, // 6:8:5
+    { IMAGE_FMT_1BPP_UNCOMP, 64, 64, 2, palette_bw, flash_sprite_bank_pixels[0] }, // 6:6:3
+    { IMAGE_FMT_1BPP_UNCOMP, 64, 64, 2, palette_bw, flash_sprite_bank_pixels[1] }, // 6:7:4
+    { IMAGE_FMT_1BPP_UNCOMP, 64, 64, 2, palette_bw, flash_sprite_bank_pixels[2] }, // 6:8:5
 };
 
 qc12_anim_t standing = {
      0, // Looped?
      0, // Loop start index
-     0, // Loop end index
+     1, // Loop end index
+     1, // Length
      {&persistent_sprite_bank[0]} // Pointers to frames
 };
 
 qc12_anim_t walking = {
      0, // Looped?
      0, // Loop start index
-     0, // Loop end index
+     4, // Loop end index
+     4, // Length
      {&flash_sprite_bank[0],
       &flash_sprite_bank[1],
       &flash_sprite_bank[0],
@@ -594,6 +596,7 @@ qc12_anim_t waving = {
      1, // Looped?
      2, // Loop start index
      4, // Loop end index
+     6, // Length
      {&persistent_sprite_bank[0],
       &persistent_sprite_bank[1],
       &persistent_sprite_bank[2],
