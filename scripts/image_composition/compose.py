@@ -5,6 +5,8 @@ from ConfigParser import ConfigParser
 from PIL import Image
 import PIL.ImageOps
 
+uniform_sprite_size = 0
+
 SPRITE_WIDTH = 64
 SPRITE_HEIGHT = 64
  
@@ -14,7 +16,10 @@ FEET_HEIGHT = 18
 
 is_a_number = re.compile("[0-9]+")
 
+
 def make_sprite(head_path, body_path, legs_path):
+    global uniform_sprite_size
+
     sprite = Image.new('RGBA', (SPRITE_WIDTH, SPRITE_HEIGHT), (0,0,0,0))
     
     head, head_mask = adjust_image(Image.open(head_path))
@@ -31,6 +36,7 @@ def make_sprite(head_path, body_path, legs_path):
     out_str = "{0b"
     
     index = 0
+    sprite_size = 0
     
     for pixel in list(sprite.getdata()):
         if index == SPRITE_WIDTH:
@@ -43,7 +49,14 @@ def make_sprite(head_path, body_path, legs_path):
             out_str += ", 0b"
         out_str += "1" if sum(pixel) else "0"
         index += 1
+        sprite_size += 1
     out_str += "},"
+    
+    sprite_size = sprite_size / 8
+    if uniform_sprite_size:
+        assert sprite_size == uniform_sprite_size
+    else:
+        uniform_sprite_size = sprite_size
     
     return out_str
 
@@ -66,6 +79,7 @@ def main(inifile, head_dir, body_dir, legs_dir):
     index_offset = 0
     index = 0
     longest_anim_buffer = 0
+    
     for anim_name in parser.sections():
         # Note: The in animation must be first, followed by loop, then out.
         if ":loop" in anim_name:
@@ -115,25 +129,45 @@ def main(inifile, head_dir, body_dir, legs_dir):
         if not anim['persistent'] and index > longest_anim_buffer:
             longest_anim_buffer = index
     
-    print "persistent_sprite_bank_pixels = {\n   ",
+    print "uint8_t persistent_sprite_bank_pixels[%d][%d] = {\n   " % (len(p_sprite_pixel_bank), uniform_sprite_size),
     print "\n\n    ".join(p_sprite_pixel_bank)
-    print "}"
+    print "};"
+    print
     
-    print "flash_sprite_bank_pixels = {\n   ",
+    print "flash_sprite_bank_pixels[%d][%d] = {\n   " % (len(f_sprite_pixel_bank), uniform_sprite_size),
     print "\n\n    ".join(f_sprite_pixel_bank)
-    print "}"
+    print "};"
+    print
     
-    print "persistent_sprite_bank = {\n   ",
+    print "tImage persistent_sprite_bank[%d] = {\n   " % (len(p_sprite_bank)),
     print "\n    ".join(p_sprite_bank)
-    print "}"
+    print "};"
+    print
     
-    print "flash_sprite_bank = {\n   ",
+    print "tImage flash_sprite_bank[%d] = {\n   " % (len(f_sprite_bank)),
     print "\n    ".join(f_sprite_bank)
-    print "}"
+    print "};"
+    print
+    
+    """
+    typedef struct {
+        uint8_t persistent;
+        uint8_t looped;
+        uint8_t loop_start;
+        uint8_t loop_end;
+        tImage* images[8];
+    } qc12_anim_t;
+    """
     
     for anim in animations:
-        print anim
-        print
+        bank_buffer = "persistent_sprite_bank" if anim['persistent'] else "flash_sprite_bank"
+        anim['image_pointers'] = map(lambda a: "&%s[%d]" % (bank_buffer, a), anim['images'])
+        print "qc12_anim_t %s = {" % anim['name']
+        print "\t%d, // Looped?" % (int(anim['looped']) if 'looped' in anim else 0)
+        print "\t%d, // Loop start index" % (anim['loop_start_index'] if 'loop_start_index' in anim else 0)
+        print "\t%d, // Loop end index" % (anim['loop_end_index'] if 'loop_end_index' in anim else 0)
+        print "\t{%s} // Pointers to frames" % ",\n\t ".join(anim['image_pointers'])
+        print "};"
         print
         
     print "anim_buffer_alloc = %d" % longest_anim_buffer
