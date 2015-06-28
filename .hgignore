@@ -7,3 +7,4 @@ src/makefile.libs
 *.bak
 src/grace/objs/
 img/img_append.c
+img/img_append.txt
