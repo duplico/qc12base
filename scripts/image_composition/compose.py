@@ -11,13 +11,12 @@ SPRITE_WIDTH = 64
 SPRITE_HEIGHT = 64
  
 HEAD_HEIGHT = 22
-BODY_HEIGHT = 46
+BODY_HEIGHT = 24
 FEET_HEIGHT = 18
 
 is_a_number = re.compile("[0-9]+")
 
-
-def make_sprite(head_path, body_path, legs_path):
+def make_sprite(head_path, body_path, legs_path, heights=(HEAD_HEIGHT, BODY_HEIGHT, FEET_HEIGHT)):
     global uniform_sprite_size
 
     sprite = Image.new('RGBA', (SPRITE_WIDTH, SPRITE_HEIGHT), (0,0,0,0))
@@ -26,12 +25,41 @@ def make_sprite(head_path, body_path, legs_path):
     body, body_mask = adjust_image(Image.open(body_path))
     legs, legs_mask = adjust_image(Image.open(legs_path))
     
-    feet_offset = FEET_HEIGHT - legs_mask.getbbox()[3]
-    body_offset = BODY_HEIGHT - body_mask.getbbox()[3]
+    # This is the amount of blank space at the bottom of the legs:
+    squat_amount = legs.size[1] - legs_mask.getbbox()[3]
     
-    sprite.paste(head, ((SPRITE_WIDTH-head.size[0])/2, 0+feet_offset+body_offset), head_mask)    
-    sprite.paste(body, (0,0+feet_offset+body_offset), body_mask)
-    sprite.paste(legs, ((SPRITE_WIDTH-legs.size[0])/2, body.size[1]+feet_offset), legs_mask)
+    # Now we place the legs; the bottom of the bounding box needs to be aligned
+    # with the bottom of our sprite canvas:
+    legs_y = SPRITE_HEIGHT - legs_mask.getbbox()[3]
+    
+    # The baseline leg height is FEET_HEIGHT. So we need to lower the torso by
+    # FEET_HEIGHT - heights[2] + squat_amount
+    body_y = squat_amount + (FEET_HEIGHT - heights[2])
+
+    # Now we just plop the head on at SPRITE_HEIGHT - the heights of everything
+    # plus the squat amount:
+    head_y = squat_amount + (SPRITE_HEIGHT - sum(heights)) # TODO: might be wrong...
+    
+    sprite.paste(
+        head, 
+        ((SPRITE_WIDTH-head.size[0])/2, 
+         head_y), 
+        head_mask
+    )
+    sprite.paste(
+        body, 
+        ((SPRITE_WIDTH-body.size[0])/2, 
+         body_y), 
+        body_mask
+    )
+    sprite.paste(
+        legs, 
+        ((SPRITE_WIDTH-legs.size[0])/2, 
+         legs_y), 
+        legs_mask
+    )
+    
+    sprite.show()
             
     out_str = "{0b"
     
@@ -73,9 +101,9 @@ animations = []
 def main(inifile, head_dir, body_dir, legs_dir):
     parser = ConfigParser()
     parser.read(inifile)
-    head_files = glob(os.path.join(head_dir, 'head', '*[0-9].png'))
-    body_files = glob(os.path.join(head_dir, 'body', '*[0-9].png'))
-    legs_files = glob(os.path.join(head_dir, 'legs', '*[0-9].png'))
+    head_files = glob(os.path.join(head_dir, 'head', '*.png'))
+    body_files = glob(os.path.join(body_dir, 'body', '*.png'))
+    legs_files = glob(os.path.join(legs_dir, 'legs', '*.png'))
     index_offset = 0
     index = 0
     longest_anim_buffer = 0
