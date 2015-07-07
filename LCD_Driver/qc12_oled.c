@@ -111,28 +111,15 @@ uint8_t oled_memory[LCD_X_SIZE*PAGES]; // TODO???
 
 #define GRAM_BUFFER(page, column) oled_memory[(((PAGES-1)-page) * LCD_X_SIZE) + column]
 
-// Writes data to the LCD controller
-static void
-WriteData(uint16_t usData)
-{
-
-    while (EUSCI_A_SPI_isBusy(EUSCI_A1_BASE));
-    THISISDATA;
-
-    /* USCI_A1 TX buffer ready? */
-    while (!EUSCI_A_SPI_getInterruptStatus(EUSCI_A1_BASE,
-    	EUSCI_A_SPI_TRANSMIT_INTERRUPT));
-    EUSCI_A_SPI_transmitData(EUSCI_A1_BASE, usData);
-}
+uint8_t ok_to_send = 1;
 
 // Writes a command to the LCD controller
 static void
 WriteCommand(uint8_t ucCommand)
 {
-	while (EUSCI_A_SPI_isBusy(EUSCI_A1_BASE));
-	THISISCMD;
-	while (!EUSCI_A_SPI_getInterruptStatus(EUSCI_A1_BASE,
-		EUSCI_A_SPI_TRANSMIT_INTERRUPT));
+	while (!ok_to_send);
+    THISISCMD;
+	ok_to_send = 0;
 	EUSCI_A_SPI_transmitData(EUSCI_A1_BASE, ucCommand);
 }
 
@@ -186,43 +173,46 @@ InitLCDDisplayBuffer(void *pvDisplayData, uint16_t ulValue)
 void
 qc12_oledInit(void)
 {
-	InitLCDDisplayBuffer(0, 0);
+    InitLCDDisplayBuffer(0, 0);
 
-	char SSD1306_init[] = {
-			0xAE, 		// Display off
-			0xD5, 0x80, // Clock divide / oscillator
-			0xA8, 0x3F, // Multiplex ratio
-			0xd3, 0x00, // Display offset
-			0x40,		// Start line
-			0x8d, 0x14, // Charge pump
-			0xa1,		// Segment re-map
-			//		0xc8,		// COM output scan direction
-			0xda, 0x12,	// COM pins hardware configuration
-			0x81, 0x10, // Contrast control
-			0xD9, 0xF1, // Pre-charge period
-			0xDB, 0x40, // V_COMH deselect level
-			0xA4,		// Entire display on/off (A5/A4)
-			0xA6,		// Normal/inverse display
-			0x20, 0x00, // Horizontal addressing mode.
-			// CLEAR SCREEN (according to screen datasheet)
-			0xAF,		// Display ON!
-	};
+    char SSD1306_init[] = {
+            0xAE, 		// Display off
+            0xD5, 0x80, // Clock divide / oscillator
+            0xA8, 0x3F, // Multiplex ratio
+            0xd3, 0x00, // Display offset
+            0x40,		// Start line
+            0x8d, 0x14, // Charge pump
+            0xa1,		// Segment re-map
+            //		0xc8,		// COM output scan direction
+            0xda, 0x12,	// COM pins hardware configuration
+            0x81, 0x10, // Contrast control
+            0xD9, 0xF1, // Pre-charge period
+            0xDB, 0x40, // V_COMH deselect level
+            0xA4,		// Entire display on/off (A5/A4)
+            0xA6,		// Normal/inverse display
+            0x20, 0x00, // Horizontal addressing mode.
+            // CLEAR SCREEN (according to screen datasheet)
+            0xAF,		// Display ON!
+    };
 
-		THISISCMD;
-	//	OLED_RES_LOW;
-		GPIO_setOutputLowOnPin(RESPORT, RESPIN);
-	//	// Delay for 200ms at 16Mhz
-		__delay_cycles(1000);
-	//	OLED_RES_HIGH;
-		GPIO_setOutputHighOnPin(RESPORT, RESPIN);
-		__delay_cycles(1000);
-		THISISDATA;
+    EUSCI_A_SPI_clearInterrupt(EUSCI_A1_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
+    EUSCI_A_SPI_enableInterrupt(EUSCI_A1_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
 
-	    for (uint8_t i=0; i<sizeof SSD1306_init; i++) {
-	    	WriteCommand(SSD1306_init[i]);
-	    }
+    THISISCMD;
+    //	OLED_RES_LOW;
+    GPIO_setOutputLowOnPin(RESPORT, RESPIN);
+    //	// Delay for 200ms at 16Mhz
+    __delay_cycles(1000);
+    //	OLED_RES_HIGH;
+    GPIO_setOutputHighOnPin(RESPORT, RESPIN);
+    __delay_cycles(1000);
+    THISISDATA;
 
-		while (EUSCI_A_SPI_isBusy(EUSCI_A1_BASE));
+    for (uint8_t i=0; i<sizeof SSD1306_init; i++) {
+        WriteCommand(SSD1306_init[i]);
+    }
+
+    while (EUSCI_A_SPI_isBusy(EUSCI_A1_BASE));
 }
 
 
@@ -272,8 +262,6 @@ qc12_oledPixelDraw(void *pvDisplayData, int16_t lX, int16_t lY,
 	// write pixel // if needed
 	if (ulValue) { // && !(GRAM_BUFFER(lY/8, lX) & val)) {
 		GRAM_BUFFER(mapped_y/8, mapped_x) |= val;
-//		SetAddress(lX, lY);
-//		WriteData(GRAM_BUFFER(lY/8, lX));
 	}
 }
 
@@ -555,6 +543,8 @@ qc12_oledColorTranslate(void *pvDisplayData,
     return(DPYCOLORTRANSLATE(ulValue));
 }
 
+uint16_t writing_data = 0;
+
 //*****************************************************************************
 //
 //! Flushes any cached drawing operations.
@@ -576,9 +566,14 @@ qc12_oledFlush(void *pvDisplayData)
   // or if the buffer is always updated with the screen writes.
 
 	SetAddress(0, 0);
-	for (uint16_t i=0; i<LCD_X_SIZE*8; i++) { // TODO
-		WriteData(oled_memory[i]);
-	}
+	THISISDATA;
+
+	writing_data = 1; // represents next thing to send.
+    EUSCI_A_SPI_transmitData(EUSCI_A1_BASE, oled_memory[0]);
+
+//	for (uint16_t i=0; i<LCD_X_SIZE*8; i++) { // TODO
+//		WriteData(oled_memory[i]);
+//	}
 
 
 //	int16_t i=0,j=0;
@@ -586,6 +581,37 @@ qc12_oledFlush(void *pvDisplayData)
 //	for(j =0; j< (LCD_X_SIZE * BPP + 7) / 8; j++)
 //		qc12_oledPixelDraw(pvDisplayData, j, i, Template_Memory[i * LCD_Y_SIZE + j]);
 }
+
+#pragma vector=USCI_A1_VECTOR
+__interrupt void EUSCI_A1_ISR(void)
+{
+    switch (__even_in_range(UCA1IV, 4)) {
+    //Vector 2 - RXIFG
+    case 2:
+        // The OLED display can't talk to us. It has no outputs.
+        // TODO: make sure this never happens please.
+        // We received some garbage sent to us while we were sending.
+        EUSCI_B_SPI_receiveData(EUSCI_B0_BASE); // Throw it away.
+        break; // End of RXIFG ///////////////////////////////////////////////////////
+
+    case 4: // Vector 4 - TXIFG : I just sent a byte.
+        if (writing_data == LCD_X_SIZE*8) {
+            writing_data = 0;
+            // done with the data.
+        }
+        else if (writing_data) { // still more data to send:
+            EUSCI_A_SPI_transmitData(EUSCI_A1_BASE, oled_memory[writing_data]);
+            writing_data++;
+            break;
+        }
+        ok_to_send = 1;
+
+        break; // End of TXIFG /////////////////////////////////////////////////////
+
+    default: break;
+    } // End of ISR flag switch ////////////////////////////////////////////////////
+}
+
 
 //*****************************************************************************
 //
