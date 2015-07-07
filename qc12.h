@@ -12,8 +12,6 @@
 #include <driverlib/MSP430FR5xx_6xx/driverlib.h>
 #include <msp430fr5949.h>
 
-void usci_a_send(uint16_t base, uint8_t data);
-
 // Configuration flags
 #define BADGE_TARGET 1
 #define BADGES_IN_SYSTEM 200

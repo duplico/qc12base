@@ -58,15 +58,6 @@ volatile uint8_t f_new_second = 0;
  *   BTN3      P3.4
  */
 
-void usci_a_send(uint16_t base, uint8_t data) {
-	while (EUSCI_A_SPI_isBusy(base));
-	while (!EUSCI_A_SPI_getInterruptStatus(base,
-			EUSCI_A_SPI_TRANSMIT_INTERRUPT));
-	EUSCI_A_SPI_transmitData(base, data);
-	while (!EUSCI_A_SPI_getInterruptStatus(base,
-			EUSCI_A_SPI_TRANSMIT_INTERRUPT));
-	while (EUSCI_A_SPI_isBusy(base));
-}
 
 void init_rtc() {
     RTC_B_definePrescaleEvent(RTC_B_BASE, RTC_B_PRESCALE_1, RTC_B_PSEVENTDIVIDER_4); // 32 Hz
@@ -108,7 +99,7 @@ void anim_next_frame() {
         return;
 
     GrImageDraw(&g_sContext, anim_data.images[anim_index], 0, 51);
-    GrFlush(&g_sContext);
+//    GrFlush(&g_sContext);
 
     anim_index++;
 
@@ -154,17 +145,12 @@ int main(void)
 
     play_animation(waving, 5);
 
-    uint8_t rainbow_interval = 3;
+    uint8_t rainbow_interval = 2;
 
     while (1) {
-    	if (f_new_second) {
-            anim_next_frame();
-            f_new_second = 0;
-    	}
     	if (f_time_loop) {
     	    if (!--rainbow_interval) {
-    	        rainbow_interval = 3;
-
+    	        rainbow_interval = 2;
     	        tlc_set_fun(1);
     	        tlc_set_gs(shift);
     	        tlc_set_fun(0);
@@ -172,6 +158,10 @@ int main(void)
     	    }
     	    f_time_loop = 0;
     	}
+        if (f_new_second) {
+            anim_next_frame();
+            f_new_second = 0;
+        }
 
     	__bis_SR_register(SLEEP_BITS);
     }
