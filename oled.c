@@ -29,7 +29,7 @@ void init_oled() {
 	GrFlush(&g_sContext);
 }
 
-void oled_draw_frame() {
+void oled_draw_pane() {
 	GrContextFontSet(&g_sContext, &g_sFontCmsc12);
 	GrStringDraw(&g_sContext, "DUPLiCO", -1, 0, 0, 1);
 	GrContextFontSet(&g_sContext, &g_sFontFixed6x8);
@@ -37,11 +37,11 @@ void oled_draw_frame() {
 	GrContextFontSet(&g_sContext, &g_sFontCmsc12); // &g_sFontFixed6x8);
 	GrStringDraw(&g_sContext, "    n00b", -1, 0, 18, 0);
 	GrLineDrawH(&g_sContext, 0, 64, 0);
+	GrLineDrawH(&g_sContext, 0, 64, 30);
 	GrLineDrawH(&g_sContext, 0, 64, 32);
-	GrLineDrawH(&g_sContext, 0, 64, 34);
-	GrLineDrawH(&g_sContext, 0, 64, 113);
-	GrLineDrawH(&g_sContext, 0, 64, 115);
+	GrLineDrawH(&g_sContext, 0, 64, 117);
+	GrLineDrawH(&g_sContext, 0, 64, 119);
 	GrContextFontSet(&g_sContext, &g_sFontFixed6x8);
-	GrStringDraw(&g_sContext, "   Play!  ", -1, 0, 116, 1);
+	GrStringDraw(&g_sContext, "   Play!  ", -1, 0, 120, 1);
 	GrFlush(&g_sContext);
 }

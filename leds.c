@@ -101,7 +101,7 @@ void tlc_set_fun(uint8_t blank) {
     // B121 / TMGRST
     // B120 / DSPRPT
 
-    usci_a_send(EUSCI_A0_BASE, 0x85);
+    usci_a_send(EUSCI_A0_BASE, 0b10000101); // 0x85 (ESPWM on)
 
     // B119 / BLANK
     // MSB is BLANK; remainder are BC:
