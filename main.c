@@ -105,26 +105,25 @@ void anim_next_frame() {
 
     if (anim_state == ANIM_DONE)
         return;
-    anim_state++;
 
-//    GrImageDraw(&g_sContext, anim_data.images[anim_index], 0, 48);
-//    GrFlush(&g_sContext);
+    GrImageDraw(&g_sContext, anim_data.images[anim_index], 0, 51);
+    GrFlush(&g_sContext);
 
-//    anim_index++;
+    anim_index++;
 
-//    // If we need to loop, loop:
-//    if (anim_loops && anim_data.looped) {
-//        if (anim_index == anim_data.loop_end) {
-//            anim_index = anim_data.loop_start;
-//            anim_loops--;
-//        }
-//    } else if (anim_loops && anim_index == anim_data.len) {
-//        anim_index = 0;
-//        anim_loops--;
-//    }
-//
-//    if (anim_index == anim_data.len)
-//        anim_state = ANIM_DONE;
+    // If we need to loop, loop:
+    if (anim_loops && anim_data.looped) {
+        if (anim_index == anim_data.loop_end) {
+            anim_index = anim_data.loop_start;
+            anim_loops--;
+        }
+    } else if (anim_loops && anim_index == anim_data.len) {
+        anim_index = 0;
+        anim_loops--;
+    }
+
+    if (anim_index == anim_data.len)
+        anim_state = ANIM_DONE;
 }
 
 void play_animation(qc12_anim_t anim, uint8_t loops) {
@@ -134,6 +133,8 @@ void play_animation(qc12_anim_t anim, uint8_t loops) {
     anim_state = ANIM_START;
 }
 
+// We need SMCLK in order to light our LEDs, so LPM1 is the
+// sleepiest we can get.
 #define SLEEP_BITS LPM1_bits
 
 int main(void)
@@ -145,6 +146,8 @@ int main(void)
     init();
     // TODO:
     //    post();
+
+    oled_draw_pane();
 
     uint8_t shift = 0;
 

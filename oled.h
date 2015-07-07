@@ -14,6 +14,7 @@
 tContext g_sContext;
 
 void init_oled();
+void oled_draw_pane();
 
 
 #endif /* OLED_H_ */
