@@ -50,9 +50,9 @@ void CS_A_graceInit(void)
     CS_turnOnLFXTWithTimeout(LFXTDRIVE_2, 100000);
 
     /*
-     * Setting MCLK source from CS_DCOCLK_SELECT with the divider of CS_CLOCK_DIVIDER_4.
+     * Setting MCLK source from CS_DCOCLK_SELECT with the divider of CS_CLOCK_DIVIDER_2.
      */
-    CS_initClockSignal(CS_MCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_4);
+    CS_initClockSignal(CS_MCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_2);
 
     /*
      * Setting SMCLK source from CS_DCOCLK_SELECT with the divider of CS_CLOCK_DIVIDER_2.

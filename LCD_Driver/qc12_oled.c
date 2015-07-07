@@ -591,7 +591,7 @@ __interrupt void EUSCI_A1_ISR(void)
         // The OLED display can't talk to us. It has no outputs.
         // TODO: make sure this never happens please.
         // We received some garbage sent to us while we were sending.
-        EUSCI_B_SPI_receiveData(EUSCI_B0_BASE); // Throw it away.
+        EUSCI_B_SPI_receiveData(EUSCI_A1_BASE); // Throw it away.
         break; // End of RXIFG ///////////////////////////////////////////////////////
 
     case 4: // Vector 4 - TXIFG : I just sent a byte.
