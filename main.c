@@ -154,7 +154,7 @@ int main(void)
 
     play_animation(waving, 5);
 
-    uint8_t rainbow_interval = 10;
+    uint8_t rainbow_interval = 3;
 
     while (1) {
     	if (f_new_second) {
@@ -163,7 +163,7 @@ int main(void)
     	}
     	if (f_time_loop) {
     	    if (!--rainbow_interval) {
-    	        rainbow_interval = 10;
+    	        rainbow_interval = 3;
 
     	        tlc_set_fun(1);
     	        tlc_set_gs(shift);
