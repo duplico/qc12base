@@ -99,7 +99,7 @@ void anim_next_frame() {
         return;
 
     GrImageDraw(&g_sContext, anim_data.images[anim_index], 0, 51);
-//    GrFlush(&g_sContext);
+    GrFlush(&g_sContext);
 
     anim_index++;
 
@@ -147,13 +147,12 @@ int main(void)
 
     uint8_t rainbow_interval = 2;
 
+    tlc_set_fun(0);
     while (1) {
     	if (f_time_loop) {
     	    if (!--rainbow_interval) {
     	        rainbow_interval = 2;
-    	        tlc_set_fun(1);
     	        tlc_set_gs(shift);
-    	        tlc_set_fun(0);
     	        shift = (shift + 3) % 15;
     	    }
     	    f_time_loop = 0;
