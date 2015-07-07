@@ -69,8 +69,9 @@ void usci_a_send(uint16_t base, uint8_t data) {
 }
 
 void init_rtc() {
-	RTC_B_clearInterrupt(RTC_B_BASE, RTCRDYIFG + RTCTEVIFG + RTCAIFG);
-	RTC_B_enableInterrupt(RTC_B_BASE, RTCRDYIE + RTCTEVIE + RTCAIE);
+    RTC_B_definePrescaleEvent(RTC_B_BASE, RTC_B_PRESCALE_1, RTC_B_PSEVENTDIVIDER_4); // 32 Hz
+	RTC_B_clearInterrupt(RTC_B_BASE, RTC_B_CLOCK_READ_READY_INTERRUPT + RTC_B_TIME_EVENT_INTERRUPT + RTC_B_CLOCK_ALARM_INTERRUPT + RTC_B_PRESCALE_TIMER1_INTERRUPT);
+	RTC_B_enableInterrupt(RTC_B_BASE, RTC_B_CLOCK_READ_READY_INTERRUPT + RTC_B_TIME_EVENT_INTERRUPT + RTC_B_CLOCK_ALARM_INTERRUPT + RTC_B_PRESCALE_TIMER1_INTERRUPT);
 }
 
 void init() {
@@ -153,14 +154,23 @@ int main(void)
 
     play_animation(waving, 5);
 
+    uint8_t rainbow_interval = 10;
+
     while (1) {
     	if (f_new_second) {
-            tlc_set_fun(1);
-            tlc_set_gs(shift);
-            tlc_set_fun(0);
-            shift = (shift + 3) % 15;
             anim_next_frame();
             f_new_second = 0;
+    	}
+    	if (f_time_loop) {
+    	    if (!--rainbow_interval) {
+    	        rainbow_interval = 10;
+
+    	        tlc_set_fun(1);
+    	        tlc_set_gs(shift);
+    	        tlc_set_fun(0);
+    	        shift = (shift + 3) % 15;
+    	    }
+    	    f_time_loop = 0;
     	}
 
     	__bis_SR_register(SLEEP_BITS);
