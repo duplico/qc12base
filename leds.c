@@ -22,8 +22,6 @@
 #define LATPORT     GPIO_PORT_P1
 #define LATPIN      GPIO_PIN4
 
-volatile uint8_t f_time_loop = 0; // TODO
-
 uint16_t led_tx_light = 0xffff;
 
 uint16_t gs_data[15] = {

@@ -1,8 +1,3 @@
-/*
- * ======== Standard MSP430 includes ========
- */
-#include <msp430fr5949.h>
-#include <driverlib/MSP430FR5xx_6xx/driverlib.h>
 #include <stdint.h>
 #include <grlib.h>
 #include <qc12_oled.h>
@@ -16,6 +11,10 @@
 #include "qc12.h"
 #include "radio.h"
 #include "leds.h"
+#include "oled.h"
+
+volatile uint8_t f_time_loop = 0;
+volatile uint8_t f_new_second = 0;
 
 /*
  * Peripherals:
@@ -58,13 +57,6 @@
  *   BTN2      P3.5
  *   BTN3      P3.4
  */
-    // CS   1.3 (STE)
-    // RES  1.5 (pull low to reset, otherwise high)
-    // D/C  1.7
-    // D0   2.2 (CLK)
-    // D1   1.6 (MOSI)
-
-tContext g_sContext;
 
 void usci_a_send(uint16_t base, uint8_t data) {
 	while (EUSCI_A_SPI_isBusy(base));
@@ -74,6 +66,11 @@ void usci_a_send(uint16_t base, uint8_t data) {
 	while (!EUSCI_A_SPI_getInterruptStatus(base,
 			EUSCI_A_SPI_TRANSMIT_INTERRUPT));
 	while (EUSCI_A_SPI_isBusy(base));
+}
+
+void init_rtc() {
+	RTC_B_clearInterrupt(RTC_B_BASE, RTCRDYIFG + RTCTEVIFG + RTCAIFG);
+	RTC_B_enableInterrupt(RTC_B_BASE, RTCRDYIE + RTCTEVIE + RTCAIE);
 }
 
 void init() {
@@ -91,64 +88,53 @@ void init() {
      *        RESET     P3.2
      */
     init_radio();
-
     init_leds();
+    init_oled();
+    init_rtc();
+}
 
-    /*
-     *   OLED (OLED_0.96)
-     *        (write on rise, change on fall,
-     *         CS active low, MSB first)
-     *        eUSCI_A1
-     *        ste, miso, clk
-     *        DC        P2.6
-     *        RES       P2.7
-     */
-    qc12_oledInit();
-    GrContextInit(&g_sContext, &g_sqc12_oled);
-    GrContextBackgroundSet(&g_sContext, ClrBlack);
-    GrContextForegroundSet(&g_sContext, ClrWhite);
-    GrContextFontSet(&g_sContext, &g_sFontCmsc12); // &g_sFontFixed6x8);
-    GrClearDisplay(&g_sContext);
-//    GrImageDraw(&g_sContext, &standing_1, 0, 48);
-    GrStringDraw(&g_sContext, "DUPLiCO", -1, 0, 0, 1);
-    GrContextFontSet(&g_sContext, &g_sFontFixed6x8);
-    GrStringDraw(&g_sContext, "  the", -1, 0, 12, 0);
-    GrContextFontSet(&g_sContext, &g_sFontCmsc12); // &g_sFontFixed6x8);
-    GrStringDraw(&g_sContext, "    n00b", -1, 0, 18, 0);
-    GrLineDrawH(&g_sContext, 0, 64, 0);
-    GrLineDrawH(&g_sContext, 0, 64, 32);
-    GrLineDrawH(&g_sContext, 0, 64, 34);
-    GrLineDrawH(&g_sContext, 0, 64, 113);
-    GrLineDrawH(&g_sContext, 0, 64, 115);
-    GrStringDraw(&g_sContext, "<  Play! >", -1, 0, 116, 1);
-    GrFlush(&g_sContext);
+#define ANIM_START 1
+#define ANIM_DONE  0
+
+uint8_t anim_state = ANIM_DONE;
+uint8_t anim_index = 0;
+uint8_t anim_loops = 0;
+qc12_anim_t anim_data;
+
+void anim_next_frame() {
+
+    if (anim_state == ANIM_DONE)
+        return;
+    anim_state++;
+
+//    GrImageDraw(&g_sContext, anim_data.images[anim_index], 0, 48);
+//    GrFlush(&g_sContext);
+
+//    anim_index++;
+
+//    // If we need to loop, loop:
+//    if (anim_loops && anim_data.looped) {
+//        if (anim_index == anim_data.loop_end) {
+//            anim_index = anim_data.loop_start;
+//            anim_loops--;
+//        }
+//    } else if (anim_loops && anim_index == anim_data.len) {
+//        anim_index = 0;
+//        anim_loops--;
+//    }
+//
+//    if (anim_index == anim_data.len)
+//        anim_state = ANIM_DONE;
 }
 
 void play_animation(qc12_anim_t anim, uint8_t loops) {
-    // TODO: make non-blocking.
-    if (anim.looped) {
-        for (uint8_t i=0; i<anim.loop_start; i++) {
-            GrImageDraw(&g_sContext, anim.images[i], 0, 48);
-            GrFlush(&g_sContext);
-            __delay_cycles(1000000);
-        }
-    }
-    for (uint8_t loop=loops; loop; loop--) {
-        for (uint8_t i=anim.loop_start; i<anim.loop_end; i++) {
-            GrImageDraw(&g_sContext, anim.images[i], 0, 48);
-            GrFlush(&g_sContext);
-            __delay_cycles(1000000);
-        }
-    }
-    // go from anim.loop_start to anim.loop_end
-    if (anim.looped) {
-        for (uint8_t i=anim.loop_end; i<anim.len; i++) {
-            GrImageDraw(&g_sContext, anim.images[i], 0, 48);
-            GrFlush(&g_sContext);
-            __delay_cycles(1000000);
-        }
-    }
+    anim_index = 0;
+    anim_loops = loops;
+    anim_data = anim;
+    anim_state = ANIM_START;
 }
+
+#define SLEEP_BITS LPM1_bits
 
 int main(void)
 {
@@ -165,10 +151,45 @@ int main(void)
     play_animation(waving, 5);
 
     while (1) {
-    	tlc_set_fun(1);
-    	tlc_set_gs(shift);
-    	tlc_set_fun(0);
-    	shift = (shift + 3) % 15;
-    	__delay_cycles(600000);
+    	if (f_new_second) {
+            tlc_set_fun(1);
+            tlc_set_gs(shift);
+            tlc_set_fun(0);
+            shift = (shift + 3) % 15;
+            anim_next_frame();
+            f_new_second = 0;
+    	}
+
+    	__bis_SR_register(SLEEP_BITS);
+    }
+}
+
+#pragma vector=RTC_VECTOR
+__interrupt
+void RTC_A_ISR(void) {
+    switch (__even_in_range(RTCIV, 16)) {
+    case 0: break;  //No interrupts
+    case 2:         //RTCRDYIFG
+        f_new_second = 1;
+        __bic_SR_register_on_exit(SLEEP_BITS);
+        break;
+    case 4:         //RTCEVIFG
+        //Interrupts every minute // We don't use this.
+        __bic_SR_register_on_exit(SLEEP_BITS);
+        break;
+    case 6:         //RTCAIFG
+                    // Alarm!
+        break;
+    case 8: break;  //RT0PSIFG
+    case 10:		// Rollover of prescale counter
+        f_time_loop = 1; // We know what it does! It's a TIME LOOP MACHINE.
+        // ...who would build a device that loops time every 32 milliseconds?
+        // WHO KNOWS. But that's what it does.
+        __bic_SR_register_on_exit(SLEEP_BITS);
+        break; //RT1PSIFG
+    case 12: break; //Reserved
+    case 14: break; //Reserved
+    case 16: break; //Reserved
+    default: break;
     }
 }

@@ -31,7 +31,7 @@ volatile uint8_t rfm_reg_state = RFM_REG_IDLE;
 // The protocol machine:
 volatile uint8_t rfm_proto_state = 0;
 
-qcxipayload in_payload, out_payload;
+qc12payload in_payload, out_payload;
 
 // temp buffer:
 uint8_t in_bytes[sizeof(in_payload)];
@@ -83,7 +83,7 @@ void init_radio() {
 
 	// Other configuration:
 
-	write_single_register(0x3c, sizeof(qcxipayload));
+	write_single_register(0x3c, sizeof(qc12payload));
 
 	/// Output configuration:
 	write_single_register(0x11, 0b10011010); // Output power
@@ -93,7 +93,7 @@ void init_radio() {
 
 	// Setup addresses and length:
 	write_single_register(0x37, 0b00110100); // Packet configuration (see DS)
-	write_single_register(0x38, sizeof(qcxipayload)); // PayloadLength
+	write_single_register(0x38, sizeof(qc12payload)); // PayloadLength
 //	write_single_register(0x39, my_conf.badge_id); // NodeAddress // TODO
 	write_single_register(0x3A, RFM_BROADCAST); // BroadcastAddress
 
@@ -256,7 +256,7 @@ __interrupt void EUSCI_B0_ISR(void)
 			// Got a data byte from the FIFO. Put it into its proper place.
 			(in_bytes)[rfm_reg_rx_index] = EUSCI_B_SPI_receiveData(EUSCI_B0_BASE);
 			rfm_reg_rx_index++;
-			if (rfm_reg_rx_index == sizeof(qcxipayload)) {
+			if (rfm_reg_rx_index == sizeof(qc12payload)) {
 				// That was the last one we were expecting.
 				rfm_reg_ifgs++; // RX thread is ready to go IDLE.
 			}
@@ -265,7 +265,7 @@ __interrupt void EUSCI_B0_ISR(void)
 			// Got a data byte from the FIFO, but we're writing so it's stale garbage.
 			EUSCI_B_SPI_receiveData(EUSCI_B0_BASE); // Throw it away.
 			rfm_reg_rx_index++;
-			if (rfm_reg_rx_index == sizeof(qcxipayload)) {
+			if (rfm_reg_rx_index == sizeof(qc12payload)) {
 				// That was the last one we were expecting.
 				rfm_reg_ifgs++; // RX thread is ready to go IDLE.
 			}
@@ -311,7 +311,7 @@ __interrupt void EUSCI_B0_ISR(void)
 			// Fall through and send the first data byte's corresponsing 0 as below:
 		case RFM_REG_RX_FIFO_DAT:
 			// We just finished sending the blank message of index rfm_reg_tx_index-1.
-			if (rfm_reg_tx_index == sizeof(qcxipayload)) {
+			if (rfm_reg_tx_index == sizeof(qc12payload)) {
 				// We just finished sending the last one.
 				rfm_reg_ifgs++; // TX thread is ready to go IDLE.
 			} else {
@@ -327,7 +327,7 @@ __interrupt void EUSCI_B0_ISR(void)
 			// Fall through and send the first data byte as below:
 		case RFM_REG_TX_FIFO_DAT:
 			// We just finished sending the message of index rfm_reg_tx_index-1.
-			if (rfm_reg_tx_index == sizeof(qcxipayload)) {
+			if (rfm_reg_tx_index == sizeof(qc12payload)) {
 				// We just finished sending the last one.
 				rfm_reg_ifgs++; // TX thread is ready to go IDLE.
 			} else {
@@ -359,7 +359,7 @@ __interrupt void EUSCI_B0_ISR(void)
 			break;
 		case RFM_REG_RX_FIFO_DAT:
 			rfm_reg_state = RFM_REG_IDLE;
-			memcpy(&in_payload, in_bytes, sizeof(qcxipayload));
+			memcpy(&in_payload, in_bytes, sizeof(qc12payload));
 //			f_rfm_rx_done = 1; // TODO
 			break;
 		case RFM_REG_TX_FIFO_DAT:

@@ -15,7 +15,7 @@
  *  ==== ALL OTHER CHANGES WILL BE OVERWRITTEN WHEN IT IS REGENERATED ====
  *
  *  This file was generated from
- *      C:/ti/grace_3_10_00_82/packages/ti/mcu/msp430/csl2/rtc/RTC_B_init.xdt
+ *      D:/ti/grace_3_10_00_82/packages/ti/mcu/msp430/csl2/rtc/RTC_B_init.xdt
  */
 #include <driverlib/MSP430FR5xx_6xx/inc/hw_memmap.h>
 #include <driverlib/MSP430FR5xx_6xx/rtc_b.h>
@@ -44,7 +44,7 @@ void RTC_B_graceInit(void)
     /* Initialize the Calendar struct */
     calendarTime.Seconds = 0;
     calendarTime.Minutes = 0;
-    calendarTime.Hours = 12;
+    calendarTime.Hours = 0;
     calendarTime.DayOfWeek = 3;
     calendarTime.DayOfMonth = 5;
     calendarTime.Month = 8;
@@ -63,8 +63,8 @@ void RTC_B_graceInit(void)
     /* Set a single specified Calendar interrupt condition */
     RTC_B_setCalendarEvent(RTC_B_BASE, RTC_B_CALENDAREVENT_MINUTECHANGE);
 
-    /* Hold the RTC */
-    RTC_B_holdClock(RTC_B_BASE);
+    /* Start the RTC */
+    RTC_B_startClock(RTC_B_BASE);
 
     /* USER CODE START (section: RTC_B_graceInit_epilogue) */
     /* User code */

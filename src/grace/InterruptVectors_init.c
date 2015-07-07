@@ -36,6 +36,14 @@ void InterruptVectors_graceInit(void)
  * ======== Preserved user code snippets ========
  */
 #if 0
+/* USER CODE START (section: RTC_ISR_HOOK) */
+    /* replace this comment with your code */
+    /* USER CODE END (section: RTC_ISR_HOOK) */
+
+/* USER CODE START (section: TIMER2_A0_ISR_HOOK) */
+    /* replace this comment with your code */
+    /* USER CODE END (section: TIMER2_A0_ISR_HOOK) */
+
 /* USER CODE START (section: TIMER1_A1_ISR_HOOK) */
     /* replace this comment with your code */
     /* USER CODE END (section: TIMER1_A1_ISR_HOOK) */
