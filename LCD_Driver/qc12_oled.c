@@ -123,19 +123,25 @@ WriteCommand(uint8_t ucCommand)
 	EUSCI_A_SPI_transmitData(EUSCI_A1_BASE, ucCommand);
 }
 
+uint8_t zero_address_cmds[] = {
+        0x20,
+        0x00, // horizontal addressing mode
+
+        0x21,
+        0x00, // starting column
+        LCD_X_SIZE-1, // ending column
+
+        0x22,
+        0x00, // starting page
+        PAGES-1 // ending page
+};
+
 // Zeros the pixel address of the LCD driver
-void SetAddress(int16_t lX, int16_t lY)
+void ZeroAddress()
 {
-	WriteCommand(0x20);
-	WriteCommand(0x00); // Horizontal addressing mode.
-
-	WriteCommand(0x21);
-	WriteCommand(0); // Starting column - TODO
-	WriteCommand(LCD_X_SIZE-1); // Ending column - TODO
-
-	WriteCommand(0x22);
-	WriteCommand(0); // Starting page
-	WriteCommand(PAGES-1); // Ending page
+    for (uint8_t i=0; i<8; i++) {
+        WriteCommand(zero_address_cmds[i]);
+    }
 }
 
 
@@ -543,6 +549,13 @@ qc12_oledColorTranslate(void *pvDisplayData,
     return(DPYCOLORTRANSLATE(ulValue));
 }
 
+#define OLED_STATE_IDLE 0
+#define OLED_STATE_ZEROING 1
+#define OLED_STATE_DATA 2
+
+uint8_t oled_state = OLED_STATE_IDLE;
+uint8_t zeroing_index = 0;
+
 uint16_t writing_data = 0;
 
 //*****************************************************************************
@@ -564,12 +577,11 @@ qc12_oledFlush(void *pvDisplayData)
 {
   // Flush Buffer here. This function is not needed if a buffer is not used,
   // or if the buffer is always updated with the screen writes.
-
-	SetAddress(0, 0);
-	THISISDATA;
-
-	writing_data = 1; // represents next thing to send.
-    EUSCI_A_SPI_transmitData(EUSCI_A1_BASE, oled_memory[0]);
+    oled_state = OLED_STATE_ZEROING;
+    THISISCMD;
+    writing_data = 0;
+    zeroing_index = 1;
+    EUSCI_A_SPI_transmitData(EUSCI_A1_BASE, zero_address_cmds[0]);
 
 //	for (uint16_t i=0; i<LCD_X_SIZE*8; i++) { // TODO
 //		WriteData(oled_memory[i]);
@@ -595,16 +607,30 @@ __interrupt void EUSCI_A1_ISR(void)
         break; // End of RXIFG ///////////////////////////////////////////////////////
 
     case 4: // Vector 4 - TXIFG : I just sent a byte.
-        if (writing_data == LCD_X_SIZE*8) {
-            writing_data = 0;
-            // done with the data.
+        if (oled_state == OLED_STATE_DATA) {
+            if (writing_data == LCD_X_SIZE*8) {
+                writing_data = 0;
+                oled_state = OLED_STATE_IDLE;
+                ok_to_send = 1;
+                // done with the data.
+            }
+            else if (writing_data) { // still more data to send:
+                EUSCI_A_SPI_transmitData(EUSCI_A1_BASE, oled_memory[writing_data]);
+                writing_data++;
+            }
+        } else if (oled_state == OLED_STATE_ZEROING) {
+            if (zeroing_index == 8) { // Done zeroing... // TODO: Demeter
+                oled_state = OLED_STATE_DATA;
+                THISISDATA;
+                EUSCI_A_SPI_transmitData(EUSCI_A1_BASE, oled_memory[0]);
+                writing_data = 1;
+            } else {
+                EUSCI_A_SPI_transmitData(EUSCI_A1_BASE, zero_address_cmds[zeroing_index]);
+                zeroing_index++;
+            }
+        } else { // OLED_STATE_IDLE
+            ok_to_send = 1;
         }
-        else if (writing_data) { // still more data to send:
-            EUSCI_A_SPI_transmitData(EUSCI_A1_BASE, oled_memory[writing_data]);
-            writing_data++;
-            break;
-        }
-        ok_to_send = 1;
 
         break; // End of TXIFG /////////////////////////////////////////////////////
 

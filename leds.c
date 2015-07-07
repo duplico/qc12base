@@ -48,8 +48,8 @@ uint16_t gs_data[15] = {
 };
 
 #define SEND_TYPE_GS  1
-#define SEND_TYPE_DAT 2
-uint8_t send_type = SEND_TYPE_DAT;
+#define SEND_TYPE_FUN 2
+uint8_t send_type = SEND_TYPE_FUN;
 uint8_t tx_index = 0;
 
 uint8_t led_ok_to_send = 1;
@@ -135,27 +135,19 @@ void tlc_stage_bc(uint8_t bc) {
 }
 
 void tlc_set_fun(uint8_t blank) {
-    send_type = SEND_TYPE_DAT;
+    send_type = SEND_TYPE_FUN;
 
     usci_a_send(EUSCI_A0_BASE, 0x01); // 1 for Function
 
     for (uint8_t i=0; i<14; i++) {
         usci_a_send(EUSCI_A0_BASE, 0x00);
     }
-
     usci_a_send(EUSCI_A0_BASE, 0x00); // LSB of this is PSM(D2)
-
-
     usci_a_send(EUSCI_A0_BASE, 0x01);
-
-
-    usci_a_send(EUSCI_A0_BASE, 0b10000101); // 0x85 (ESPWM on)
-
+    usci_a_send(EUSCI_A0_BASE, 0b10000111); // 0x85 (ESPWM on)
     // B119 / BLANK
     // MSB is BLANK; remainder are BC:
     usci_a_send(EUSCI_A0_BASE, 0x08 + (blank << 7));
-
-
     UCA0CTLW0 |= UCSWRST;
     UCA0CTLW0 |= UC7BIT;
     UCA0CTLW0 &= ~UCSWRST;
@@ -171,13 +163,6 @@ void tlc_set_fun(uint8_t blank) {
 
     // Plus one for the TX light:
     usci_a_send(EUSCI_A0_BASE, 0x7F);
-
-
-
-
-
-
-
 
     // WHEN FINISHED:
     // LATCH:
@@ -239,8 +224,6 @@ void init_leds() {
     EUSCI_A_SPI_enableInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
 
     tlc_set_fun(1);
-    tlc_set_gs(0);
-    tlc_set_fun(0);
 }
 
 void led_enable(uint16_t duty_cycle) {
