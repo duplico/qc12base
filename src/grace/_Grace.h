@@ -18,6 +18,7 @@ void EUSCI_B0_graceInit(void);
 void PMM_graceInit(void);
 void InterruptVectors_graceInit(void);
 void System_graceInit(void);
+void RTC_B_graceInit(void);
 void WDT_A_graceInit(void);
 void Grace_init(void);
 
