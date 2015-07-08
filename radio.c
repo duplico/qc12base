@@ -5,6 +5,16 @@
  * 3-clause BSD license; see license.md.
  */
 
+/*
+ *  Radio (RFM69CW)
+ *        (MSB first, clock inactive low,
+ *         write on rise, change on fall, MSB first)
+ *        eUSCI_B0 - radio
+ *        somi, miso, clk, ste
+ *        DIO0      P3.1
+ *        RESET     P3.2
+ */
+
 #include "radio.h"
 #include "qc12.h"
 #include "leds.h"
