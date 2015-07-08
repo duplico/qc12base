@@ -10,6 +10,7 @@
 
 #include <qc12.h>
 #include <grlib.h>
+#include <img.h>
 
 #define OLED_ANIM_START 1
 #define OLED_ANIM_DONE  0
