@@ -50,15 +50,6 @@ volatile uint8_t f_new_second = 0;
  *        RES       P2.7
  */
 
-/*
- *   Buttons
- *   (active low)
- *   BTN1      P3.6
- *   BTN2      P3.5
- *   BTN3      P3.4
- */
-
-
 void init_rtc() {
     RTC_B_definePrescaleEvent(RTC_B_BASE, RTC_B_PRESCALE_1, RTC_B_PSEVENTDIVIDER_4); // 32 Hz
 	RTC_B_clearInterrupt(RTC_B_BASE, RTC_B_CLOCK_READ_READY_INTERRUPT + RTC_B_TIME_EVENT_INTERRUPT + RTC_B_CLOCK_ALARM_INTERRUPT + RTC_B_PRESCALE_TIMER1_INTERRUPT);
@@ -129,6 +120,24 @@ void play_animation(qc12_anim_t anim, uint8_t loops) {
 // sleepiest we can get.
 #define SLEEP_BITS LPM1_bits
 
+#define BUTTON_PRESS 1
+#define BUTTON_RELEASE 2
+
+uint8_t bl_read_prev = 0;
+uint8_t bl_read = 0;
+uint8_t bl_state = 0;
+uint8_t f_bl = 0;
+
+uint8_t br_read_prev = 0;
+uint8_t br_read = 0;
+uint8_t br_state = 0;
+uint8_t f_br = 0;
+
+uint8_t bs_read_prev = 0;
+uint8_t bs_read = 0;
+uint8_t bs_state = 0;
+uint8_t f_bs = 0;
+
 int main(void)
 {
     // TODO: Remove
@@ -145,20 +154,50 @@ int main(void)
 
     play_animation(waving, 5);
 
-    uint8_t rainbow_interval = 2;
+    uint8_t rainbow_interval = 4;
 
     tlc_set_fun(0);
+
     while (1) {
     	if (f_time_loop) {
+
+    	    // Poll the buttons two time loops in a row to debounce and
+    	    // if there's a change, raise a flag.
+    	    // Left button:
+    	    bl_read = GPIO_getInputPinValue(GPIO_PORT_P3, GPIO_PIN6);
+    	    if (bl_read == bl_read_prev && bl_read != bl_state) {
+    	        f_bl = bl_read? BUTTON_RELEASE : BUTTON_PRESS; // active high
+    	        bl_state = bl_read;
+    	    }
+    	    bl_read_prev = bl_read;
+
+    	    // Softkey button:
+            bs_read = GPIO_getInputPinValue(GPIO_PORT_P3, GPIO_PIN5);
+            if (bs_read == bs_read_prev && bs_read != bs_state) {
+                f_bs = bs_read? BUTTON_RELEASE : BUTTON_PRESS; // active high
+                bs_state = bs_read;
+            }
+            bs_read_prev = bs_read;
+
+            // Right button:
+            br_read = GPIO_getInputPinValue(GPIO_PORT_P3, GPIO_PIN4);
+            if (br_read == br_read_prev && br_read != br_state) {
+                f_br = br_read? BUTTON_RELEASE : BUTTON_PRESS; // active high
+                br_state = br_read;
+            }
+            br_read_prev = br_read;
+
+            // Done with buttons.
+
     	    if (!--rainbow_interval) {
-    	        rainbow_interval = 2;
+                anim_next_frame();
+    	        rainbow_interval = 4;
     	        tlc_set_gs(shift);
     	        shift = (shift + 3) % 15;
     	    }
     	    f_time_loop = 0;
     	}
         if (f_new_second) {
-            anim_next_frame();
             f_new_second = 0;
         }
 
