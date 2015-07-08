@@ -22,7 +22,7 @@
 #define LATPORT     GPIO_PORT_P1
 #define LATPIN      GPIO_PIN4
 
-uint16_t led_tx_light = 0xffff;
+uint16_t tlc_tx_light = 0xffff;
 
 uint16_t gs_data[15] = {
 		// Mid-right (front view)
@@ -38,13 +38,13 @@ uint16_t gs_data[15] = {
 		0x1fff, // G
 		0x0000, // B
 		// Mid-left
-		0x0000,
-		0x0000,
-		0x1ff0,
+		0x0000, // R
+		0x0000, // G
+		0x1ff0, // B
 		// Top-middle
-		0x1f00,
-		0x0f00,
-		0x0a00,
+		0x1f00, // R
+		0x0f00, // G
+		0x0a00, // B
 };
 
 uint8_t fun_base[] = {
@@ -107,25 +107,39 @@ uint8_t fun_base[] = {
 
 #define SEND_TYPE_GS  1
 #define SEND_TYPE_FUN 2
-uint8_t send_type = SEND_TYPE_FUN;
-uint8_t tx_index = 0;
+uint8_t tlc_send_type = SEND_TYPE_FUN;
+uint8_t tlc_tx_index = 0;
 
-uint8_t led_ok_to_send = 1;
+uint8_t tlc_ok_to_send = 1;
 
-uint8_t shift = 0;
+uint8_t tlc_shift_px = 0;
+
+void init_tlc() {
+
+    // TODO: Shouldn't really need to do this:
+    UCA0CTLW0 |= UCSWRST;
+    UCA0CTLW0 &= ~UC7BIT;
+    UCA0CTLW0 &= ~UCSWRST;
+
+    EUSCI_A_SPI_clearInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
+    EUSCI_A_SPI_enableInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
+
+    tlc_stage_blank(1);
+    tlc_set_fun();
+}
 
 void tlc_set_gs(uint8_t shift_amt) {
-    while (!led_ok_to_send); // shouldn't ever actually have to block on this please.
-    shift = shift_amt;
-    send_type = SEND_TYPE_GS;
-    tx_index = 0;
+    while (!tlc_ok_to_send); // shouldn't ever actually have to block on this please.
+    tlc_shift_px = shift_amt;
+    tlc_send_type = SEND_TYPE_GS;
+    tlc_tx_index = 0;
     EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, 0x00);
 }
 
 void tlc_set_fun() {
-    while (!led_ok_to_send); // shouldn't ever actually have to block on this please.
-    send_type = SEND_TYPE_FUN;
-    tx_index = 0;
+    while (!tlc_ok_to_send); // shouldn't ever actually have to block on this please.
+    tlc_send_type = SEND_TYPE_FUN;
+    tlc_tx_index = 0;
     EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, 0x01);
 }
 
@@ -145,6 +159,14 @@ void tlc_stage_bc(uint8_t bc) {
     fun_base[17] |= bc;
 }
 
+void tlc_timestep() {
+    static uint8_t shift = 0;
+    tlc_set_gs(shift);
+    shift = (shift + 3) % 15;
+}
+
+volatile uint8_t gs_index = 15;
+
 #pragma vector=USCI_A0_VECTOR
 __interrupt void EUSCI_A0_ISR(void)
 {
@@ -156,69 +178,58 @@ __interrupt void EUSCI_A0_ISR(void)
         break; // End of RXIFG ///////////////////////////////////////////////////////
 
     case 4: // Vector 4 - TXIFG : I just sent a byte.
-        if (send_type == SEND_TYPE_GS) {
-            if (tx_index == 0) { // txl, msb
-                EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, (uint8_t) (led_tx_light >> 8));
-            } else if (tx_index == 1) { // txl, lsb
-                EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, (uint8_t) (led_tx_light & 0x00ff));
-            } else if (tx_index == 32) { // done
+        if (tlc_send_type == SEND_TYPE_GS) {
+            if (tlc_tx_index == 0) { // txl, msb
+                EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, (uint8_t) (tlc_tx_light >> 8));
+            } else if (tlc_tx_index == 1) { // txl, lsb
+                EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, (uint8_t) (tlc_tx_light & 0x00ff));
+                gs_index = 14;
+            } else if (tlc_tx_index == 32) { // done
                 GPIO_pulse(GPIO_PORT_P1, GPIO_PIN4); // LATCH.
-                led_ok_to_send = 1;
+                tlc_ok_to_send = 1;
                 break;
             } else { // gs
-                // ((tx_index/2) + shift) % 15
-                if (tx_index & 0x01) { // if it's odd (LSB)
-                    EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, (uint8_t) (gs_data[((tx_index/2) + shift) % 15] & 0x00ff));
-                } else { // even (MSB)
-                    EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, (uint8_t) (gs_data[((tx_index/2) + shift) % 15] >> 8));
+                // gs_index here starts at 14
+                // tx_index here starts at 2
+                // gs_index can get inced when tx_index is odd.
+
+                // So if gs_index=14 and tx_index=2 we send
+                // gs_data[14] >> 8
+                // and gs_index=15 and tx_index=3 we send
+                // gs_data[14] & 0xff
+
+                if (tlc_tx_index & 0x01) { // it's odd (LSB)
+                    EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, (uint8_t) (gs_data[(gs_index + tlc_shift_px) % 15] & 0x00ff));
+                    gs_index--;
+                } else { // it's even:
+                    EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, (uint8_t) (gs_data[(gs_index + tlc_shift_px) % 15] >> 8));
                 }
             }
-            tx_index++;
-        } else if (send_type == SEND_TYPE_FUN) {
-            if (tx_index == 18) { // after 18 we have to switch to 7-bit mode.
+            tlc_tx_index++;
+        } else if (tlc_send_type == SEND_TYPE_FUN) {
+            if (tlc_tx_index == 18) { // after 18 we have to switch to 7-bit mode.
                 UCA0CTLW0 |= UCSWRST;
                 UCA0CTLW0 |= UC7BIT;
                 UCA0CTLW0 &= ~UCSWRST;
                 EUSCI_A_SPI_clearInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
                 EUSCI_A_SPI_enableInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
-            } else if (tx_index == 33) {
+            } else if (tlc_tx_index == 33) {
                 GPIO_pulse(GPIO_PORT_P1, GPIO_PIN4); // LATCH.
                 UCA0CTLW0 |= UCSWRST;
                 UCA0CTLW0 &= ~UC7BIT;
                 UCA0CTLW0 &= ~UCSWRST;
                 EUSCI_A_SPI_clearInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
                 EUSCI_A_SPI_enableInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
-                led_ok_to_send = 1;
+                tlc_ok_to_send = 1;
                 break;
             }
-            EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, fun_base[tx_index]);
-            tx_index++;
+            EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, fun_base[tlc_tx_index]);
+            tlc_tx_index++;
         } else {
-            led_ok_to_send = 1;
+            tlc_ok_to_send = 1;
         }
         break; // End of TXIFG /////////////////////////////////////////////////////
 
     default: break;
     } // End of ISR flag switch ////////////////////////////////////////////////////
-}
-
-void init_leds() {
-
-    // TODO: Shouldn't really need to do this:
-    UCA0CTLW0 |= UCSWRST;
-    UCA0CTLW0 &= ~UC7BIT;
-    UCA0CTLW0 &= ~UCSWRST;
-
-    EUSCI_A_SPI_clearInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
-    EUSCI_A_SPI_enableInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
-
-    tlc_stage_blank(1);
-    tlc_set_fun();
-}
-
-void led_enable(uint16_t duty_cycle) {
-}
-
-void led_disable( void )
-{
 }
