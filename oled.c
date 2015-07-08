@@ -18,6 +18,7 @@
 #include <oled.h>
 #include <grlib.h>
 #include <qc12_oled.h>
+#include <qc12.h>
 
 uint8_t anim_state = OLED_ANIM_DONE;
 uint8_t anim_index = 0;

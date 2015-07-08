@@ -41,7 +41,7 @@ void init() {
      *        RESET     P3.2
      */
     init_radio();
-    init_leds();
+    init_tlc();
     init_oled();
     init_rtc();
 }
@@ -100,8 +100,6 @@ int main(void)
 
     oled_draw_pane();
 
-    uint8_t shift = 0;
-
     oled_play_animation(standing, 0);
     oled_anim_next_frame();
 
@@ -120,26 +118,22 @@ int main(void)
     	    // New LED animation frame if needed:
     	    if (!--rainbow_interval) {
     	        oled_anim_next_frame();
-    	        rainbow_interval = 4;
-    	        tlc_set_gs(shift);
-    	        shift = (shift + 3) % 15;
+    	        rainbow_interval = 12;
+    	        tlc_timestep();
     	    }
 
 
     	    // Do stuff:
 
     	    if (f_bl) {
-    	        str[0] = '0' + f_bl;
     	        oled_play_animation(standing, 0);
     	        f_bl = 0;
     	    }
     	    if (f_bs) {
-    	        str[1] = '0' + f_bs;
     	        oled_play_animation(walking, 2);
     	        f_bs = 0;
     	    }
     	    if (f_br) {
-    	        str[2] = '0' + f_br;
     	        oled_play_animation(waving, 3);
     	        f_br = 0;
     	    }
@@ -147,7 +141,6 @@ int main(void)
     	}
         if (f_new_second) {
             f_new_second = 0;
-            GrStringDraw(&g_sContext, str, -1, 16, 33, 1);
         }
 
     	__bis_SR_register(SLEEP_BITS);
