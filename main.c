@@ -123,26 +123,57 @@ void play_animation(qc12_anim_t anim, uint8_t loops) {
 #define BUTTON_PRESS 1
 #define BUTTON_RELEASE 2
 
-uint8_t bl_read_prev = 0;
-uint8_t bl_read = 0;
-uint8_t bl_state = 0;
 uint8_t f_bl = 0;
-
-uint8_t br_read_prev = 0;
-uint8_t br_read = 0;
-uint8_t br_state = 0;
 uint8_t f_br = 0;
-
-uint8_t bs_read_prev = 0;
-uint8_t bs_read = 0;
-uint8_t bs_state = 0;
 uint8_t f_bs = 0;
+
+void poll_buttons() {
+
+    static uint8_t bl_read_prev = 1;
+    static uint8_t bl_read = 1;
+    static uint8_t bl_state = 1;
+
+    static uint8_t br_read_prev = 1;
+    static uint8_t br_read = 1;
+    static uint8_t br_state = 1;
+
+    static uint8_t bs_read_prev = 1;
+    static uint8_t bs_read = 1;
+    static uint8_t bs_state = 1;
+
+
+    // Poll the buttons two time loops in a row to debounce and
+    // if there's a change, raise a flag.
+    // Left button:
+    bl_read = GPIO_getInputPinValue(GPIO_PORT_P3, GPIO_PIN6);
+    if (bl_read == bl_read_prev && bl_read != bl_state) {
+        f_bl = bl_read? BUTTON_RELEASE : BUTTON_PRESS; // active high
+        bl_state = bl_read;
+    }
+    bl_read_prev = bl_read;
+
+    // Softkey button:
+    bs_read = GPIO_getInputPinValue(GPIO_PORT_P3, GPIO_PIN5);
+    if (bs_read == bs_read_prev && bs_read != bs_state) {
+        f_bs = bs_read? BUTTON_RELEASE : BUTTON_PRESS; // active high
+        bs_state = bs_read;
+    }
+    bs_read_prev = bs_read;
+
+    // Right button:
+    br_read = GPIO_getInputPinValue(GPIO_PORT_P3, GPIO_PIN4);
+    if (br_read == br_read_prev && br_read != br_state) {
+        f_br = br_read? BUTTON_RELEASE : BUTTON_PRESS; // active high
+        br_state = br_read;
+    }
+    br_read_prev = br_read;
+}
 
 int main(void)
 {
     // TODO: Remove
     volatile uint8_t in = 0;
-    char str[16] = "";
+    char str[16] = "000";
 
     init();
     // TODO:
@@ -152,53 +183,52 @@ int main(void)
 
     uint8_t shift = 0;
 
-    play_animation(waving, 5);
+    play_animation(standing, 0);
+    anim_next_frame();
 
     uint8_t rainbow_interval = 4;
 
-    tlc_set_fun(0);
+    tlc_stage_blank(0);
+    tlc_set_fun();
 
     while (1) {
     	if (f_time_loop) {
+            f_time_loop = 0;
 
-    	    // Poll the buttons two time loops in a row to debounce and
-    	    // if there's a change, raise a flag.
-    	    // Left button:
-    	    bl_read = GPIO_getInputPinValue(GPIO_PORT_P3, GPIO_PIN6);
-    	    if (bl_read == bl_read_prev && bl_read != bl_state) {
-    	        f_bl = bl_read? BUTTON_RELEASE : BUTTON_PRESS; // active high
-    	        bl_state = bl_read;
-    	    }
-    	    bl_read_prev = bl_read;
+    	    // Debounce & generate flags from the buttons:
+    	    poll_buttons();
 
-    	    // Softkey button:
-            bs_read = GPIO_getInputPinValue(GPIO_PORT_P3, GPIO_PIN5);
-            if (bs_read == bs_read_prev && bs_read != bs_state) {
-                f_bs = bs_read? BUTTON_RELEASE : BUTTON_PRESS; // active high
-                bs_state = bs_read;
-            }
-            bs_read_prev = bs_read;
-
-            // Right button:
-            br_read = GPIO_getInputPinValue(GPIO_PORT_P3, GPIO_PIN4);
-            if (br_read == br_read_prev && br_read != br_state) {
-                f_br = br_read? BUTTON_RELEASE : BUTTON_PRESS; // active high
-                br_state = br_read;
-            }
-            br_read_prev = br_read;
-
-            // Done with buttons.
-
+    	    // New LED animation frame if needed:
     	    if (!--rainbow_interval) {
-                anim_next_frame();
+    	        anim_next_frame();
     	        rainbow_interval = 4;
     	        tlc_set_gs(shift);
     	        shift = (shift + 3) % 15;
     	    }
-    	    f_time_loop = 0;
+
+
+    	    // Do stuff:
+
+    	    if (f_bl) {
+    	        str[0] = '0' + f_bl;
+    	        play_animation(standing, 0);
+    	        f_bl = 0;
+    	    }
+    	    if (f_bs) {
+    	        str[1] = '0' + f_bs;
+    	        play_animation(walking, 2);
+    	        f_bs = 0;
+    	    }
+    	    if (f_br) {
+    	        str[2] = '0' + f_br;
+    	        play_animation(waving, 3);
+    	        f_br = 0;
+    	    }
+
     	}
         if (f_new_second) {
             f_new_second = 0;
+            GrStringDraw(&g_sContext, str, -1, 16, 33, 1);
         }
 
     	__bis_SR_register(SLEEP_BITS);
