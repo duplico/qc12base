@@ -15,12 +15,17 @@
 // Configuration flags
 #define BADGE_TARGET 1
 #define BADGES_IN_SYSTEM 200
+#define SLEEP_BITS LPM1_bits // because we need SMCLK for the TLC.
 
 // Configuration of pins
 
 // Radio:
 #define RFM_NSS_PORT_OUT P1OUT
 #define RFM_NSS_PIN GPIO_PIN3
+
+// Button events:
+#define BUTTON_PRESS 1
+#define BUTTON_RELEASE 2
 
 // Useful defines:
 #define GPIO_pulse(port, pin) do { GPIO_setOutputHighOnPin(port, pin); GPIO_setOutputLowOnPin(port, pin); } while (0)

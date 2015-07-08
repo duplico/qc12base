@@ -13,42 +13,12 @@
 #include "leds.h"
 #include "oled.h"
 
+uint8_t f_bl = 0;
+uint8_t f_br = 0;
+uint8_t f_bs = 0;
+
 volatile uint8_t f_time_loop = 0;
 volatile uint8_t f_new_second = 0;
-
-/*
- * Peripherals:
- *
- *  Radio (RFM69CW)
- *        (MSB first, clock inactive low,
- *         write on rise, change on fall, MSB first)
- *        eUSCI_B0 - radio
- *        somi, miso, clk, ste
- *        DIO0      P3.1
- *        RESET     P3.2
- */
-
-/*
- *   Flash chip (S25FL216K)
- *        (write on rise, change on fall,
- *         CS active low, clock inactive low, MSB first)
- *        eUSCI_A0 (shared)
- *        somi, miso, clk
- *        CS        P1.1
- *        WP        P3.0
- *        HOLD      P1.0
- *        TODO: DMA: https://e2e.ti.com/support/microcontrollers/msp430/f/166/t/235583
- */
-
-/*
- *   OLED (OLED_0.96)
- *        (write on rise, change on fall,
- *         CS active low, MSB first)
- *        eUSCI_A1
- *        ste, miso, clk
- *        DC        P2.6
- *        RES       P2.7
- */
 
 void init_rtc() {
     RTC_B_definePrescaleEvent(RTC_B_BASE, RTC_B_PRESCALE_1, RTC_B_PSEVENTDIVIDER_4); // 32 Hz
@@ -75,57 +45,6 @@ void init() {
     init_oled();
     init_rtc();
 }
-
-#define ANIM_START 1
-#define ANIM_DONE  0
-
-uint8_t anim_state = ANIM_DONE;
-uint8_t anim_index = 0;
-uint8_t anim_loops = 0;
-qc12_anim_t anim_data;
-
-void anim_next_frame() {
-
-    if (anim_state == ANIM_DONE)
-        return;
-
-    GrImageDraw(&g_sContext, anim_data.images[anim_index], 0, 51);
-    GrFlush(&g_sContext);
-
-    anim_index++;
-
-    // If we need to loop, loop:
-    if (anim_loops && anim_data.looped) {
-        if (anim_index == anim_data.loop_end) {
-            anim_index = anim_data.loop_start;
-            anim_loops--;
-        }
-    } else if (anim_loops && anim_index == anim_data.len) {
-        anim_index = 0;
-        anim_loops--;
-    }
-
-    if (anim_index == anim_data.len)
-        anim_state = ANIM_DONE;
-}
-
-void play_animation(qc12_anim_t anim, uint8_t loops) {
-    anim_index = 0;
-    anim_loops = loops;
-    anim_data = anim;
-    anim_state = ANIM_START;
-}
-
-// We need SMCLK in order to light our LEDs, so LPM1 is the
-// sleepiest we can get.
-#define SLEEP_BITS LPM1_bits
-
-#define BUTTON_PRESS 1
-#define BUTTON_RELEASE 2
-
-uint8_t f_bl = 0;
-uint8_t f_br = 0;
-uint8_t f_bs = 0;
 
 void poll_buttons() {
 
@@ -183,8 +102,8 @@ int main(void)
 
     uint8_t shift = 0;
 
-    play_animation(standing, 0);
-    anim_next_frame();
+    oled_play_animation(standing, 0);
+    oled_anim_next_frame();
 
     uint8_t rainbow_interval = 4;
 
@@ -200,7 +119,7 @@ int main(void)
 
     	    // New LED animation frame if needed:
     	    if (!--rainbow_interval) {
-    	        anim_next_frame();
+    	        oled_anim_next_frame();
     	        rainbow_interval = 4;
     	        tlc_set_gs(shift);
     	        shift = (shift + 3) % 15;
@@ -211,17 +130,17 @@ int main(void)
 
     	    if (f_bl) {
     	        str[0] = '0' + f_bl;
-    	        play_animation(standing, 0);
+    	        oled_play_animation(standing, 0);
     	        f_bl = 0;
     	    }
     	    if (f_bs) {
     	        str[1] = '0' + f_bs;
-    	        play_animation(walking, 2);
+    	        oled_play_animation(walking, 2);
     	        f_bs = 0;
     	    }
     	    if (f_br) {
     	        str[2] = '0' + f_br;
-    	        play_animation(waving, 3);
+    	        oled_play_animation(waving, 3);
     	        f_br = 0;
     	    }
 

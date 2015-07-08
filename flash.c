@@ -5,6 +5,18 @@
  *      Author: George
  */
 
+/*
+ *   Flash chip (S25FL216K)
+ *        (write on rise, change on fall,
+ *         CS active low, clock inactive low, MSB first)
+ *        eUSCI_A0 (shared)
+ *        somi, miso, clk
+ *        CS#       P1.1 (normally high - selected when low)
+ *        WP#       P3.0 (normally high - write protect when low)
+ *        HOLD#     P1.0 (normally high - held when low)
+ *        TODO: DMA: https://e2e.ti.com/support/microcontrollers/msp430/f/166/t/235583
+ */
+
 #include <stdint.h>
 #include <qc12.h>
 
@@ -182,14 +194,4 @@ void flash_wake() {
 void init_flash() {
     flash_state = 0;
     flash_get_status();
-
-    // Flash:
-    // CS#          P1.1
-    // HOLD#   P1.0
-    // WP#          P3.0
-
-    // CS# high normally
-    // HOLD# high normally
-    // WP# high normally (write protect when low)
-
 }
