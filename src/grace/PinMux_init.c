@@ -55,7 +55,7 @@ void PinMux_graceInit(void)
     /* USER CODE END (section: PinMux_graceInit_prologue) */
 
     /* Port 1 Output Register */
-    P1OUT = BIT0 | BIT1;
+    P1OUT = 0;
 
     /* Port 1 Port Select Register 0 */
     P1SEL0 = BIT2;
