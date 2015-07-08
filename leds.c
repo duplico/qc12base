@@ -47,29 +47,6 @@ uint16_t gs_data[15] = {
 		0x0a00,
 };
 
-#define SEND_TYPE_GS  1
-#define SEND_TYPE_FUN 2
-uint8_t send_type = SEND_TYPE_FUN;
-uint8_t tx_index = 0;
-
-uint8_t led_ok_to_send = 1;
-
-void usci_a_send(uint16_t base, uint8_t data) {
-    while (!led_ok_to_send);
-    led_ok_to_send = 0;
-    EUSCI_A_SPI_transmitData(base, data);
-    while (!led_ok_to_send);
-}
-
-uint8_t shift = 0;
-
-void tlc_set_gs(uint8_t shift_amt) {
-    shift = shift_amt;
-    send_type = SEND_TYPE_GS;
-    tx_index = 0;
-    EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, 0x00);
-}
-
 uint8_t fun_base[] = {
         0x00,
         0x00,
@@ -101,12 +78,12 @@ uint8_t fun_base[] = {
         // B124 / LODVLT(D1)    0
         // B123 / LODVLT(D0)    0
         // B122 / ESPWM         1
-        // B121 / TMGRST        0
+        // B121 / TMGRST        1
         // B120 / DSPRPT        1:
-        0x85,
+        0x87,
         // B119 / BLANK
-        // remainder are BC:
-        0x88,
+        // and 7 bits of global brightness correction:
+        0x08,
         // HERE WE SWITCH TO 7-BIT SPI.
         // The following index is 18:
         0x4F, // rgb0
@@ -128,51 +105,44 @@ uint8_t fun_base[] = {
 
 };
 
-void tlc_stage_blank(uint8_t blank) {
+#define SEND_TYPE_GS  1
+#define SEND_TYPE_FUN 2
+uint8_t send_type = SEND_TYPE_FUN;
+uint8_t tx_index = 0;
+
+uint8_t led_ok_to_send = 1;
+
+uint8_t shift = 0;
+
+void tlc_set_gs(uint8_t shift_amt) {
+    while (!led_ok_to_send); // shouldn't ever actually have to block on this please.
+    shift = shift_amt;
+    send_type = SEND_TYPE_GS;
+    tx_index = 0;
+    EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, 0x00);
 }
 
-void tlc_stage_bc(uint8_t bc) {
-}
-
-void tlc_set_fun(uint8_t blank) {
+void tlc_set_fun() {
+    while (!led_ok_to_send); // shouldn't ever actually have to block on this please.
     send_type = SEND_TYPE_FUN;
+    tx_index = 0;
+    EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, 0x01);
+}
 
-    usci_a_send(EUSCI_A0_BASE, 0x01); // 1 for Function
-
-    for (uint8_t i=0; i<14; i++) {
-        usci_a_send(EUSCI_A0_BASE, 0x00);
+// Stage the blank bit:
+void tlc_stage_blank(uint8_t blank) {
+    if (blank) {
+        fun_base[17] |= BIT7;
+    } else {
+        fun_base[17] &= ~BIT7;
     }
-    usci_a_send(EUSCI_A0_BASE, 0x00); // LSB of this is PSM(D2)
-    usci_a_send(EUSCI_A0_BASE, 0x01);
-    usci_a_send(EUSCI_A0_BASE, 0b10000111); // 0x85 (ESPWM on)
-    // B119 / BLANK
-    // MSB is BLANK; remainder are BC:
-    usci_a_send(EUSCI_A0_BASE, 0x08 + (blank << 7));
-    UCA0CTLW0 |= UCSWRST;
-    UCA0CTLW0 |= UC7BIT;
-    UCA0CTLW0 &= ~UCSWRST;
-    EUSCI_A_SPI_clearInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
-    EUSCI_A_SPI_enableInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
+}
 
-    // 5 dot-correct 3x 7-tets for the RGBs:
-    for (uint8_t i=0; i<5; i++) {
-    	usci_a_send(EUSCI_A0_BASE, 0x4F); // RED
-    	usci_a_send(EUSCI_A0_BASE, 0x7F); // BLUE
-    	usci_a_send(EUSCI_A0_BASE, 0x7F); // GREEN
-    }
-
-    // Plus one for the TX light:
-    usci_a_send(EUSCI_A0_BASE, 0x7F);
-
-    // WHEN FINISHED:
-    // LATCH:
-    GPIO_pulse(GPIO_PORT_P1, GPIO_PIN4);
-
-    UCA0CTLW0 |= UCSWRST;
-    UCA0CTLW0 &= ~UC7BIT;
-    UCA0CTLW0 &= ~UCSWRST;
-    EUSCI_A_SPI_clearInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
-    EUSCI_A_SPI_enableInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
+// Stage global brightness if different from default:
+void tlc_stage_bc(uint8_t bc) {
+    bc = bc & 0b01111111; // Mask out BLANK just in case.
+    fun_base[17] &= 0b10000000;
+    fun_base[17] |= bc;
 }
 
 #pragma vector=USCI_A0_VECTOR
@@ -194,6 +164,7 @@ __interrupt void EUSCI_A0_ISR(void)
             } else if (tx_index == 32) { // done
                 GPIO_pulse(GPIO_PORT_P1, GPIO_PIN4); // LATCH.
                 led_ok_to_send = 1;
+                break;
             } else { // gs
                 // ((tx_index/2) + shift) % 15
                 if (tx_index & 0x01) { // if it's odd (LSB)
@@ -202,11 +173,29 @@ __interrupt void EUSCI_A0_ISR(void)
                     EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, (uint8_t) (gs_data[((tx_index/2) + shift) % 15] >> 8));
                 }
             }
+            tx_index++;
+        } else if (send_type == SEND_TYPE_FUN) {
+            if (tx_index == 18) { // after 18 we have to switch to 7-bit mode.
+                UCA0CTLW0 |= UCSWRST;
+                UCA0CTLW0 |= UC7BIT;
+                UCA0CTLW0 &= ~UCSWRST;
+                EUSCI_A_SPI_clearInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
+                EUSCI_A_SPI_enableInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
+            } else if (tx_index == 33) {
+                GPIO_pulse(GPIO_PORT_P1, GPIO_PIN4); // LATCH.
+                UCA0CTLW0 |= UCSWRST;
+                UCA0CTLW0 &= ~UC7BIT;
+                UCA0CTLW0 &= ~UCSWRST;
+                EUSCI_A_SPI_clearInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
+                EUSCI_A_SPI_enableInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
+                led_ok_to_send = 1;
+                break;
+            }
+            EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, fun_base[tx_index]);
+            tx_index++;
         } else {
             led_ok_to_send = 1;
-            break;
         }
-        tx_index++;
         break; // End of TXIFG /////////////////////////////////////////////////////
 
     default: break;
@@ -223,7 +212,8 @@ void init_leds() {
     EUSCI_A_SPI_clearInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
     EUSCI_A_SPI_enableInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
 
-    tlc_set_fun(1);
+    tlc_stage_blank(1);
+    tlc_set_fun();
 }
 
 void led_enable(uint16_t duty_cycle) {
