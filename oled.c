@@ -30,24 +30,21 @@ void init_oled() {
     GrContextInit(&g_sContext, &g_sqc12_oled);
     GrContextBackgroundSet(&g_sContext, ClrBlack);
     GrContextForegroundSet(&g_sContext, ClrWhite);
-    GrContextFontSet(&g_sContext, &g_sFontCmsc12); // TODO: Demeter: default font?
+    GrContextFontSet(&g_sContext, &SYS_FONT);
     GrClearDisplay(&g_sContext);
     GrFlush(&g_sContext);
 }
 
 void oled_draw_pane() {
-	GrContextFontSet(&g_sContext, &NAME_FONT);
-	GrStringDraw(&g_sContext, "Diiiiiiiiiiii", -1, 0, 0, 1); // TODO: from conf
-    GrStringDraw(&g_sContext, "the", -1, 0, NAME_FONT_HEIGHT, 0);
-	GrStringDraw(&g_sContext, "    Spastic", -1, 0, NAME_FONT_HEIGHT, 0); // TODO: from conf
-//	GrLineDrawH(&g_sContext, 0, 64, 0);
-	GrLineDrawH(&g_sContext, 0, 64, 2*NAME_FONT_HEIGHT+1);
-//	GrLineDrawH(&g_sContext, 0, 64, 32);
-//	GrLineDrawH(&g_sContext, 0, 64, 117);
-	GrLineDrawH(&g_sContext, 0, 64, 119);
-	GrContextFontSet(&g_sContext, &g_sFontFixed6x8);
-	GrStringDraw(&g_sContext, "   Play!  ", -1, 0, 121, 1);
-	GrFlush(&g_sContext);
+    GrContextFontSet(&g_sContext, &NAME_FONT);
+    GrStringDraw(&g_sContext, "DUPLiCO", -1, 0, 0, 1); // TODO: from conf
+    GrStringDraw(&g_sContext, "the", -1, -1, NAME_FONT_HEIGHT, 0);
+    GrStringDraw(&g_sContext, "Spastic", -1, GrStringWidthGet(&g_sContext, "the", -1)+2, NAME_FONT_HEIGHT, 1); // TODO: from conf
+    GrLineDrawH(&g_sContext, 0, 64, 2*NAME_FONT_HEIGHT+1);
+    GrLineDrawH(&g_sContext, 0, 64, 119);
+    GrContextFontSet(&g_sContext, &g_sFontFixed6x8);
+    GrStringDrawCentered(&g_sContext, "Play!", -1, 31, 122, 1);
+    GrFlush(&g_sContext);
 }
 
 void oled_anim_next_frame() {
