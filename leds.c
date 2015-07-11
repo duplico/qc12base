@@ -147,8 +147,10 @@ void tlc_set_fun() {
 void tlc_stage_blank(uint8_t blank) {
     if (blank) {
         fun_base[17] |= BIT7;
+        fun_base[16] &= ~BIT1;
     } else {
         fun_base[17] &= ~BIT7;
+        fun_base[16] |= BIT1;
     }
 }
 

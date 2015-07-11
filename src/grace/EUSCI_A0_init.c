@@ -15,7 +15,7 @@
  *  ==== ALL OTHER CHANGES WILL BE OVERWRITTEN WHEN IT IS REGENERATED ====
  *
  *  This file was generated from
- *      D:/ti/grace_3_10_00_82/packages/ti/mcu/msp430/csl2/communication/EUSCI_init.xdt
+ *      C:/ti/grace_3_10_00_82/packages/ti/mcu/msp430/csl2/communication/EUSCI_init.xdt
  */
 #include <stdint.h>
 #include "_Grace.h"

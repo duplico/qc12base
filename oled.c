@@ -27,12 +27,12 @@ qc12_anim_t anim_data;
 
 void init_oled() {
     qc12_oledInit();
-	GrContextInit(&g_sContext, &g_sqc12_oled);
-	GrContextBackgroundSet(&g_sContext, ClrBlack);
-	GrContextForegroundSet(&g_sContext, ClrWhite);
-	GrContextFontSet(&g_sContext, &g_sFontCmsc12); // TODO: Demeter: default font?
-	GrClearDisplay(&g_sContext);
-	GrFlush(&g_sContext);
+    GrContextInit(&g_sContext, &g_sqc12_oled);
+    GrContextBackgroundSet(&g_sContext, ClrBlack);
+    GrContextForegroundSet(&g_sContext, ClrWhite);
+    GrContextFontSet(&g_sContext, &g_sFontCmsc12); // TODO: Demeter: default font?
+    GrClearDisplay(&g_sContext);
+    GrFlush(&g_sContext);
 }
 
 void oled_draw_pane() {
