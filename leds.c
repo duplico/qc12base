@@ -18,10 +18,19 @@
 #include "leds.h"
 #include <string.h>
 
-// Defines for the TLC:
-#define LATPORT     GPIO_PORT_P1
-#define LATPIN      GPIO_PIN4
+// Current TLC sending state:
+uint8_t tlc_send_type = TLC_SEND_IDLE;
 
+uint8_t tlc_tx_index = 0;   // Index of currently sending buffer
+uint8_t tlc_ok_to_send = 1; // SPI bus busy or not?
+uint8_t tlc_shift_px = 0;   // Number of channels to shift gs_data by
+
+// Index of the current GS entry to send (counts down):
+volatile uint8_t gs_index = 14;
+
+// Buffers containing actual data to send to the TLC:
+
+// Utility light:
 uint16_t tlc_tx_light = 0xffff;
 
 uint16_t gs_data[15] = {
@@ -102,20 +111,9 @@ uint8_t fun_base[] = {
         0x7F,
         0x7F,
         0x7F, // tx
-
 };
 
-#define SEND_TYPE_GS  1
-#define SEND_TYPE_FUN 2
-uint8_t tlc_send_type = SEND_TYPE_FUN;
-uint8_t tlc_tx_index = 0;
-
-uint8_t tlc_ok_to_send = 1;
-
-uint8_t tlc_shift_px = 0;
-
 void init_tlc() {
-
     // TODO: Shouldn't really need to do this:
     UCA0CTLW0 |= UCSWRST;
     UCA0CTLW0 &= ~UC7BIT;
@@ -129,16 +127,16 @@ void init_tlc() {
 }
 
 void tlc_set_gs(uint8_t shift_amt) {
-    while (!tlc_ok_to_send); // shouldn't ever actually have to block on this please.
+    while (tlc_send_type != TLC_SEND_IDLE); // shouldn't ever actually have to block on this please.
     tlc_shift_px = shift_amt;
-    tlc_send_type = SEND_TYPE_GS;
+    tlc_send_type = TLC_SEND_TYPE_GS;
     tlc_tx_index = 0;
     EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, 0x00);
 }
 
 void tlc_set_fun() {
-    while (!tlc_ok_to_send); // shouldn't ever actually have to block on this please.
-    tlc_send_type = SEND_TYPE_FUN;
+    while (tlc_send_type != TLC_SEND_IDLE); // shouldn't ever actually have to block on this please.
+    tlc_send_type = TLC_SEND_TYPE_FUN;
     tlc_tx_index = 0;
     EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, 0x01);
 }
@@ -167,8 +165,6 @@ void tlc_timestep() {
     shift = (shift + 3) % 15;
 }
 
-volatile uint8_t gs_index = 15;
-
 #pragma vector=USCI_A0_VECTOR
 __interrupt void EUSCI_A0_ISR(void)
 {
@@ -180,15 +176,15 @@ __interrupt void EUSCI_A0_ISR(void)
         break; // End of RXIFG ///////////////////////////////////////////////////////
 
     case 4: // Vector 4 - TXIFG : I just sent a byte.
-        if (tlc_send_type == SEND_TYPE_GS) {
+        if (tlc_send_type == TLC_SEND_TYPE_GS) {
             if (tlc_tx_index == 0) { // txl, msb
                 EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, (uint8_t) (tlc_tx_light >> 8));
             } else if (tlc_tx_index == 1) { // txl, lsb
                 EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, (uint8_t) (tlc_tx_light & 0x00ff));
                 gs_index = 14;
             } else if (tlc_tx_index == 32) { // done
-                GPIO_pulse(GPIO_PORT_P1, GPIO_PIN4); // LATCH.
-                tlc_ok_to_send = 1;
+                GPIO_pulse(TLC_LATPORT, TLC_LATPIN); // LATCH.
+                tlc_send_type = TLC_SEND_IDLE;
                 break;
             } else { // gs
                 // gs_index here starts at 14
@@ -208,7 +204,7 @@ __interrupt void EUSCI_A0_ISR(void)
                 }
             }
             tlc_tx_index++;
-        } else if (tlc_send_type == SEND_TYPE_FUN) {
+        } else if (tlc_send_type == TLC_SEND_TYPE_FUN) {
             if (tlc_tx_index == 18) { // after 18 we have to switch to 7-bit mode.
                 UCA0CTLW0 |= UCSWRST;
                 UCA0CTLW0 |= UC7BIT;
@@ -216,19 +212,19 @@ __interrupt void EUSCI_A0_ISR(void)
                 EUSCI_A_SPI_clearInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
                 EUSCI_A_SPI_enableInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
             } else if (tlc_tx_index == 33) {
-                GPIO_pulse(GPIO_PORT_P1, GPIO_PIN4); // LATCH.
+                GPIO_pulse(TLC_LATPORT, TLC_LATPIN); // LATCH.
                 UCA0CTLW0 |= UCSWRST;
                 UCA0CTLW0 &= ~UC7BIT;
                 UCA0CTLW0 &= ~UCSWRST;
                 EUSCI_A_SPI_clearInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
                 EUSCI_A_SPI_enableInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
-                tlc_ok_to_send = 1;
+                tlc_send_type = TLC_SEND_IDLE;
                 break;
             }
             EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, fun_base[tlc_tx_index]);
             tlc_tx_index++;
         } else {
-            tlc_ok_to_send = 1;
+            tlc_send_type = TLC_SEND_IDLE; // TODO: probably shouldn't reach.
         }
         break; // End of TXIFG /////////////////////////////////////////////////////
 

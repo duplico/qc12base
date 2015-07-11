@@ -12,26 +12,55 @@
 #include <driverlib/MSP430FR5xx_6xx/driverlib.h>
 #include <msp430fr5949.h>
 
-// Configuration flags
-#define BADGE_TARGET 1
+// CONFIGURATION SETTINGS ///////////////////////////////////////////
+
+// System configuration
 #define BADGES_IN_SYSTEM 200
 #define SLEEP_BITS LPM1_bits // because we need SMCLK for the TLC.
 
-// Configuration of pins
+// Name configuration
+
+#define UNDERNAME_SEL_CHAR '*'
+#define MAX_NAME_LEN 14
+#define NAME_COMMIT_CYCLES 80
+#define NAME_FONT_HEIGHT 14
+#define NAME_FONT g_sFontCmss14
+
+#define NAME_INSTR_FONT g_sFontCmss12b
+#define NAME_INSTR_FONT_HEIGHT 12
+
+/////////////////////////////////////////////////////////////////////
+// Hardware related defines /////////////////////////////////////////
+
+// LED controller:
+#define TLC_LATPORT     GPIO_PORT_P1
+#define TLC_LATPIN      GPIO_PIN4
 
 // Radio:
 #define RFM_NSS_PORT_OUT P1OUT
-#define RFM_NSS_PIN GPIO_PIN3
+#define RFM_NSS_PIN      GPIO_PIN3
+
+/////////////////////////////////////////////////////////////////////
+// State constants //////////////////////////////////////////////////
 
 // Button events:
 #define BUTTON_PRESS 1
 #define BUTTON_RELEASE 2
 
-// Useful defines:
+// LED sending types:
+#define TLC_SEND_IDLE     0
+#define TLC_SEND_TYPE_GS  1
+#define TLC_SEND_TYPE_FUN 2
+
+//////////////////////////////////////////////////////////////////////
+// Functions etc. ////////////////////////////////////////////////////
+
 #define GPIO_pulse(port, pin) do { GPIO_setOutputHighOnPin(port, pin); GPIO_setOutputLowOnPin(port, pin); } while (0)
 
 // The delay function, which we don't really want to use much, please.
 void delay(unsigned int);
+
+// Interrupt flags:
 
 extern volatile uint8_t f_time_loop;
 extern volatile uint8_t f_rfm_rx_done;
