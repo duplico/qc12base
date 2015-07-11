@@ -8,3 +8,15 @@ src/makefile.libs
 src/grace/objs/
 img/img_append.c
 img/img_append.txt
+src/grace/CS_A_init.c
+src/grace/EUSCI_A0_init.c
+src/grace/EUSCI_A1_init.c
+src/grace/EUSCI_B0_init.c
+src/grace/InterruptVectors_init.c
+src/grace/PMM_init.c
+src/grace/PinMux_init.c
+src/grace/RTC_B_init.c
+src/grace/System_init.c
+src/grace/Timer1_A3_init.c
+src/grace/WDT_A_init.c
+src/grace/makefile
