@@ -125,7 +125,7 @@ void init_tlc() {
     EUSCI_A_SPI_enableInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
 
     tlc_stage_blank(1);
-    tlc_set_fun();
+//    tlc_set_fun();
 }
 
 void tlc_set_gs(uint8_t shift_amt) {

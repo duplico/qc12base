@@ -51,6 +51,13 @@ void post() {
 
 }
 
+// Play a cute animation when we first turn the badge on.
+void intro() {
+    GrImageDraw(&g_sContext, &fingerprint_1BPP_UNCOMP, 0, 0);
+    GrStringDraw(&g_sContext, "QC12", -1, 0, 94, 1);
+    GrFlush(&g_sContext);
+}
+
 void poll_buttons();
 
 #define UNDERNAME_SEL_CHAR '*'
@@ -123,7 +130,7 @@ void get_name() {
                 f_bs = 0;
                 bs_down_cycles = 0;
                 GrStringDraw(&g_sContext, name, -1, 0, name_y_offset, 1);
-            } else if (last_char_index && f_bs == BUTTON_PRESS) {
+            } else if ((last_char_index || name[0] != ' ') && f_bs == BUTTON_PRESS) {
                 bs_down_cycles = 1;
                 f_bs = 0;
             }
@@ -148,33 +155,17 @@ void get_name() {
     }
 }
 
+// TODO: This should be temporary:
+uint8_t rainbow_interval = 4;
+
 int main(void)
 {
-    // TODO: Remove
-    volatile uint8_t in = 0;
-    char str[16] = "000";
-
-    delay(100);
     init();
-    delay(100);
-    // TODO:
-    //post();
-
-    uint8_t rainbow_interval = 4;
-
-    tlc_stage_blank(1);
-    tlc_set_fun();
-
-    // Play a cute animation when we first turn the badge on.
-
-    GrImageDraw(&g_sContext, &fingerprint_1BPP_UNCOMP, 0, 0);
-    GrStringDraw(&g_sContext, "QC12", -1, 0, 94, 1);
-    GrFlush(&g_sContext);
-
+    post();
+    intro(); // Play a cute animation when we first turn the badge on.
     delay(2000);
-
-    // At power-on, figure out the person's name
-    get_name();
+    // TODO: persistent.
+    get_name(); // Learn the badge's name (if we don't have it already)
 
     // TODO: Reset all the flags
 
@@ -184,8 +175,8 @@ int main(void)
     oled_play_animation(standing, 0);
     oled_anim_next_frame();
 
-    tlc_stage_blank(0);
-    tlc_set_fun();
+//    tlc_stage_blank(1);
+//    tlc_set_fun();
 
 
     while (1) {
