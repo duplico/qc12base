@@ -1,24 +1,30 @@
+// System includes:
 #include <stdint.h>
 #include <grlib.h>
-#include <qc12_oled.h>
 #include <stdio.h>
 
 // Grace includes:
 #include <ti/mcu/msp430/Grace.h>
 
 // Project includes:
+#include <qc12_oled.h>
 #include "img.h"
 #include "qc12.h"
 #include "radio.h"
 #include "leds.h"
 #include "oled.h"
 
-uint8_t f_bl = 0;
-uint8_t f_br = 0;
-uint8_t f_bs = 0;
-
+// Interrupt flags:
+volatile uint8_t f_bl = 0;
+volatile uint8_t f_br = 0;
+volatile uint8_t f_bs = 0;
 volatile uint8_t f_time_loop = 0;
 volatile uint8_t f_new_second = 0;
+
+// Function declarations:
+void poll_buttons();
+
+// The code:
 
 void init_rtc() {
     RTC_B_definePrescaleEvent(RTC_B_BASE, RTC_B_PRESCALE_1, RTC_B_PSEVENTDIVIDER_4); // 32 Hz
@@ -58,26 +64,22 @@ void intro() {
     GrFlush(&g_sContext);
 }
 
-void poll_buttons();
-
-#define UNDERNAME_SEL_CHAR '*'
-#define MAX_NAME_LEN 12
-#define NAME_COMMIT_CYCLES 80
-
 void get_name() {
     GrClearDisplay(&g_sContext);
-    GrStringDraw(&g_sContext, "Enter a", -1, 0, 10, 1);
-    GrStringDraw(&g_sContext, "name.", -1, 0, 20, 1);
-    GrStringDraw(&g_sContext, "Hold", -1, 0, 40, 1);
-    GrStringDraw(&g_sContext, "middle", -1, 0, 50, 1);
-    GrStringDraw(&g_sContext, "button", -1, 0, 60, 1);
-    GrStringDraw(&g_sContext, "to finish.", -1, 0, 70, 1);
 
-    GrContextFontSet(&g_sContext, &g_sFontCmsc12); // &g_sFontFixed6x8);
+    GrContextFontSet(&g_sContext, &NAME_INSTR_FONT);
+    GrStringDraw(&g_sContext, "Enter a", -1, 0, 5, 1);
+    GrStringDraw(&g_sContext, "name.", -1, 0, 5+NAME_INSTR_FONT_HEIGHT, 1);
+    GrStringDraw(&g_sContext, "Hold", -1, 0, 5+NAME_INSTR_FONT_HEIGHT*3, 1);
+    GrStringDraw(&g_sContext, "middle", -1, 0, 5+NAME_INSTR_FONT_HEIGHT*4, 1);
+    GrStringDraw(&g_sContext, "button", -1, 0, 5+NAME_INSTR_FONT_HEIGHT*5, 1);
+    GrStringDraw(&g_sContext, "to finish.", -1, 0, 5+NAME_INSTR_FONT_HEIGHT*6, 1);
+
+    GrContextFontSet(&g_sContext, &NAME_FONT); // &g_sFontFixed6x8);
 
     GrFlush(&g_sContext);
 
-    uint8_t name_y_offset = 90;
+    uint8_t name_y_offset = 10+NAME_INSTR_FONT_HEIGHT*7;
     uint8_t char_entry_index = 0;
     uint8_t curr_char = ' ';
     char name[MAX_NAME_LEN+1] = "        ";
@@ -142,14 +144,14 @@ void get_name() {
             }
 
             underchar_x = GrStringWidthGet(&g_sContext, name, char_entry_index);
-            GrContextFontSet(&g_sContext, &g_sFontCmtt12); // &g_sFontFixed6x8);
+            GrContextFontSet(&g_sContext, &g_sFontCmtt12);
             GrStringDraw(&g_sContext, "        ", -1, 0, name_y_offset+13, 1);
             GrContextForegroundSet(&g_sContext, ClrBlack);
             GrLineDrawH(&g_sContext, 0, 64, name_y_offset+12);
             GrContextForegroundSet(&g_sContext, ClrWhite);
             GrLineDrawH(&g_sContext, 0, text_width, name_y_offset+12);
             GrStringDraw(&g_sContext, undername, -1, underchar_x, name_y_offset+13, 1);
-            GrContextFontSet(&g_sContext, &g_sFontCmsc12); // &g_sFontFixed6x8);
+            GrContextFontSet(&g_sContext, &NAME_FONT);
             GrFlush(&g_sContext);
         }
     }
@@ -162,8 +164,8 @@ int main(void)
 {
     init();
     post();
-    intro(); // Play a cute animation when we first turn the badge on.
-    delay(2000);
+//    intro(); // Play a cute animation when we first turn the badge on.
+//    delay(2000);
     // TODO: persistent.
     get_name(); // Learn the badge's name (if we don't have it already)
 

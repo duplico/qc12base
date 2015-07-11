@@ -36,19 +36,17 @@ void init_oled() {
 }
 
 void oled_draw_pane() {
-	GrContextFontSet(&g_sContext, &g_sFontCmsc12);
-	GrStringDraw(&g_sContext, "DUPLiCO", -1, 0, 0, 1);
-	GrContextFontSet(&g_sContext, &g_sFontFixed6x8);
-	GrStringDraw(&g_sContext, "  the", -1, 0, 12, 0);
-	GrContextFontSet(&g_sContext, &g_sFontCmsc12); // &g_sFontFixed6x8);
-	GrStringDraw(&g_sContext, "    n00b", -1, 0, 18, 0);
-	GrLineDrawH(&g_sContext, 0, 64, 0);
-	GrLineDrawH(&g_sContext, 0, 64, 30);
-	GrLineDrawH(&g_sContext, 0, 64, 32);
-	GrLineDrawH(&g_sContext, 0, 64, 117);
+	GrContextFontSet(&g_sContext, &NAME_FONT);
+	GrStringDraw(&g_sContext, "Diiiiiiiiiiii", -1, 0, 0, 1); // TODO: from conf
+    GrStringDraw(&g_sContext, "the", -1, 0, NAME_FONT_HEIGHT, 0);
+	GrStringDraw(&g_sContext, "    Spastic", -1, 0, NAME_FONT_HEIGHT, 0); // TODO: from conf
+//	GrLineDrawH(&g_sContext, 0, 64, 0);
+	GrLineDrawH(&g_sContext, 0, 64, 2*NAME_FONT_HEIGHT+1);
+//	GrLineDrawH(&g_sContext, 0, 64, 32);
+//	GrLineDrawH(&g_sContext, 0, 64, 117);
 	GrLineDrawH(&g_sContext, 0, 64, 119);
 	GrContextFontSet(&g_sContext, &g_sFontFixed6x8);
-	GrStringDraw(&g_sContext, "   Play!  ", -1, 0, 120, 1);
+	GrStringDraw(&g_sContext, "   Play!  ", -1, 0, 121, 1);
 	GrFlush(&g_sContext);
 }
 
@@ -57,7 +55,7 @@ void oled_anim_next_frame() {
     if (anim_state == OLED_ANIM_DONE)
         return;
 
-    GrImageDraw(&g_sContext, anim_data.images[anim_index], 0, 51);
+    GrImageDraw(&g_sContext, anim_data.images[anim_index], 0, 55);
     GrFlush(&g_sContext);
 
     anim_index++;
