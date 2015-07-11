@@ -24,10 +24,16 @@
 #define MAX_NAME_LEN 14
 #define NAME_COMMIT_CYCLES 80
 #define NAME_FONT_HEIGHT 14
-#define NAME_FONT g_sFontCmss14
+#define NAME_FONT g_sFontCmss12b
+//g_sFontCmss14 ???
 
-#define NAME_INSTR_FONT g_sFontCmss12b
-#define NAME_INSTR_FONT_HEIGHT 12
+#define SYS_FONT g_sFontCmss12b
+#define SYS_FONT_HEIGHT 12
+
+//////////////////////////
+// Derived definitions ///
+
+#define NAME_Y_OFFSET 10+SYS_FONT_HEIGHT*7
 
 /////////////////////////////////////////////////////////////////////
 // Hardware related defines /////////////////////////////////////////

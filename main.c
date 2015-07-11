@@ -60,29 +60,33 @@ void post() {
 // Play a cute animation when we first turn the badge on.
 void intro() {
     GrImageDraw(&g_sContext, &fingerprint_1BPP_UNCOMP, 0, 0);
-    GrStringDraw(&g_sContext, "QC12", -1, 0, 94, 1);
+    GrStringDrawCentered(&g_sContext, "Queercon", -1, 31, 94, 1);
+    GrStringDrawCentered(&g_sContext, "twelve", -1, 31, 94 + SYS_FONT_HEIGHT, 1);
+    GrStringDrawCentered(&g_sContext, "- 2015 -", -1, 31, 94 + SYS_FONT_HEIGHT*2, 1);
     GrFlush(&g_sContext);
 }
+
+const tRectangle name_erase = {0, NAME_Y_OFFSET, 63, NAME_Y_OFFSET + NAME_FONT_HEIGHT + SYS_FONT_HEIGHT};
 
 void get_name() {
     GrClearDisplay(&g_sContext);
 
-    GrContextFontSet(&g_sContext, &NAME_INSTR_FONT);
+    GrContextFontSet(&g_sContext, &SYS_FONT);
     GrStringDraw(&g_sContext, "Enter a", -1, 0, 5, 1);
-    GrStringDraw(&g_sContext, "name.", -1, 0, 5+NAME_INSTR_FONT_HEIGHT, 1);
-    GrStringDraw(&g_sContext, "Hold", -1, 0, 5+NAME_INSTR_FONT_HEIGHT*3, 1);
-    GrStringDraw(&g_sContext, "middle", -1, 0, 5+NAME_INSTR_FONT_HEIGHT*4, 1);
-    GrStringDraw(&g_sContext, "button", -1, 0, 5+NAME_INSTR_FONT_HEIGHT*5, 1);
-    GrStringDraw(&g_sContext, "to finish.", -1, 0, 5+NAME_INSTR_FONT_HEIGHT*6, 1);
+    GrStringDraw(&g_sContext, "name.", -1, 0, 5+SYS_FONT_HEIGHT, 1);
+    GrStringDraw(&g_sContext, "Hold", -1, 0, 5+SYS_FONT_HEIGHT*3, 1);
+    GrStringDraw(&g_sContext, "middle", -1, 0, 5+SYS_FONT_HEIGHT*4, 1);
+    GrStringDraw(&g_sContext, "button", -1, 0, 5+SYS_FONT_HEIGHT*5, 1);
+    GrStringDraw(&g_sContext, "to finish.", -1, 0, 5+SYS_FONT_HEIGHT*6, 1);
 
     GrContextFontSet(&g_sContext, &NAME_FONT); // &g_sFontFixed6x8);
 
     GrFlush(&g_sContext);
 
-    uint8_t name_y_offset = 10+NAME_INSTR_FONT_HEIGHT*7;
     uint8_t char_entry_index = 0;
     uint8_t curr_char = ' ';
-    char name[MAX_NAME_LEN+1] = "        ";
+    char name[MAX_NAME_LEN+1] = {0};
+    name[0] = ' ';
     char undername[2] = "X";
     undername[0] = UNDERNAME_SEL_CHAR;
     uint8_t underchar_x = 0;
@@ -111,6 +115,8 @@ void get_name() {
             if (f_br == BUTTON_RELEASE) {
                 if (char_entry_index < MAX_NAME_LEN && curr_char != ' ' && text_width < 58) {
                     char_entry_index++;
+                    if (!name[char_entry_index])
+                        name[char_entry_index] = ' ';
                     curr_char = name[char_entry_index];
                     if (char_entry_index > last_char_index)
                         last_char_index = char_entry_index;
@@ -131,7 +137,6 @@ void get_name() {
                 name[char_entry_index] = curr_char;
                 f_bs = 0;
                 bs_down_cycles = 0;
-                GrStringDraw(&g_sContext, name, -1, 0, name_y_offset, 1);
             } else if ((last_char_index || name[0] != ' ') && f_bs == BUTTON_PRESS) {
                 bs_down_cycles = 1;
                 f_bs = 0;
@@ -144,14 +149,16 @@ void get_name() {
             }
 
             underchar_x = GrStringWidthGet(&g_sContext, name, char_entry_index);
-            GrContextFontSet(&g_sContext, &g_sFontCmtt12);
-            GrStringDraw(&g_sContext, "        ", -1, 0, name_y_offset+13, 1);
+
+            // Clear the area:
             GrContextForegroundSet(&g_sContext, ClrBlack);
-            GrLineDrawH(&g_sContext, 0, 64, name_y_offset+12);
+            GrRectFill(&g_sContext, &name_erase);
             GrContextForegroundSet(&g_sContext, ClrWhite);
-            GrLineDrawH(&g_sContext, 0, text_width, name_y_offset+12);
-            GrStringDraw(&g_sContext, undername, -1, underchar_x, name_y_offset+13, 1);
-            GrContextFontSet(&g_sContext, &NAME_FONT);
+
+            // Rewrite it:
+            GrStringDraw(&g_sContext, name, -1, 0, NAME_Y_OFFSET, 1);
+            GrLineDrawH(&g_sContext, 0, text_width, NAME_Y_OFFSET+12);
+            GrStringDraw(&g_sContext, undername, -1, underchar_x, NAME_Y_OFFSET+13, 1);
             GrFlush(&g_sContext);
         }
     }
@@ -164,8 +171,8 @@ int main(void)
 {
     init();
     post();
-//    intro(); // Play a cute animation when we first turn the badge on.
-//    delay(2000);
+    intro(); // Play a cute animation when we first turn the badge on.
+    delay(8000);
     // TODO: persistent.
     get_name(); // Learn the badge's name (if we don't have it already)
 
