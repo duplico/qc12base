@@ -46,79 +46,18 @@ void init() {
     init_rtc();
 }
 
-void poll_buttons() {
+// Power-on self test
+void post() {
 
-    static uint8_t bl_read_prev = 1;
-    static uint8_t bl_read = 1;
-    static uint8_t bl_state = 1;
-
-    static uint8_t br_read_prev = 1;
-    static uint8_t br_read = 1;
-    static uint8_t br_state = 1;
-
-    static uint8_t bs_read_prev = 1;
-    static uint8_t bs_read = 1;
-    static uint8_t bs_state = 1;
-
-
-    // Poll the buttons two time loops in a row to debounce and
-    // if there's a change, raise a flag.
-    // Left button:
-    bl_read = GPIO_getInputPinValue(GPIO_PORT_P3, GPIO_PIN6);
-    if (bl_read == bl_read_prev && bl_read != bl_state) {
-        f_bl = bl_read? BUTTON_RELEASE : BUTTON_PRESS; // active high
-        bl_state = bl_read;
-    }
-    bl_read_prev = bl_read;
-
-    // Softkey button:
-    bs_read = GPIO_getInputPinValue(GPIO_PORT_P3, GPIO_PIN5);
-    if (bs_read == bs_read_prev && bs_read != bs_state) {
-        f_bs = bs_read? BUTTON_RELEASE : BUTTON_PRESS; // active high
-        bs_state = bs_read;
-    }
-    bs_read_prev = bs_read;
-
-    // Right button:
-    br_read = GPIO_getInputPinValue(GPIO_PORT_P3, GPIO_PIN4);
-    if (br_read == br_read_prev && br_read != br_state) {
-        f_br = br_read? BUTTON_RELEASE : BUTTON_PRESS; // active high
-        br_state = br_read;
-    }
-    br_read_prev = br_read;
 }
+
+void poll_buttons();
 
 #define UNDERNAME_SEL_CHAR '*'
 #define MAX_NAME_LEN 12
 #define NAME_COMMIT_CYCLES 80
 
-int main(void)
-{
-    // TODO: Remove
-    volatile uint8_t in = 0;
-    char str[16] = "000";
-
-    delay(100);
-    init();
-    delay(100);
-    // TODO:
-    //    post();
-
-    uint8_t rainbow_interval = 4;
-
-    tlc_stage_blank(1);
-    tlc_set_fun();
-
-    // Play a cute animation when we first turn the badge on.
-
-    // At power-on, figure out the person's name
-
-    GrImageDraw(&g_sContext, &fingerprint_1BPP_UNCOMP, 0, 0);
-    GrStringDraw(&g_sContext, "QC12", -1, 0, 94, 1);
-    GrFlush(&g_sContext);
-
-    delay(2000);
-
+void get_name() {
     GrClearDisplay(&g_sContext);
     GrStringDraw(&g_sContext, "Enter a", -1, 0, 10, 1);
     GrStringDraw(&g_sContext, "name.", -1, 0, 20, 1);
@@ -205,10 +144,37 @@ int main(void)
             GrStringDraw(&g_sContext, undername, -1, underchar_x, name_y_offset+13, 1);
             GrContextFontSet(&g_sContext, &g_sFontCmsc12); // &g_sFontFixed6x8);
             GrFlush(&g_sContext);
-
         }
-//        break;
     }
+}
+
+int main(void)
+{
+    // TODO: Remove
+    volatile uint8_t in = 0;
+    char str[16] = "000";
+
+    delay(100);
+    init();
+    delay(100);
+    // TODO:
+    //post();
+
+    uint8_t rainbow_interval = 4;
+
+    tlc_stage_blank(1);
+    tlc_set_fun();
+
+    // Play a cute animation when we first turn the badge on.
+
+    GrImageDraw(&g_sContext, &fingerprint_1BPP_UNCOMP, 0, 0);
+    GrStringDraw(&g_sContext, "QC12", -1, 0, 94, 1);
+    GrFlush(&g_sContext);
+
+    delay(2000);
+
+    // At power-on, figure out the person's name
+    get_name();
 
     // TODO: Reset all the flags
 
@@ -259,7 +225,49 @@ int main(void)
 
         __bis_SR_register(SLEEP_BITS);
     }
-}
+} // main
+
+void poll_buttons() {
+
+    static uint8_t bl_read_prev = 1;
+    static uint8_t bl_read = 1;
+    static uint8_t bl_state = 1;
+
+    static uint8_t br_read_prev = 1;
+    static uint8_t br_read = 1;
+    static uint8_t br_state = 1;
+
+    static uint8_t bs_read_prev = 1;
+    static uint8_t bs_read = 1;
+    static uint8_t bs_state = 1;
+
+
+    // Poll the buttons two time loops in a row to debounce and
+    // if there's a change, raise a flag.
+    // Left button:
+    bl_read = GPIO_getInputPinValue(GPIO_PORT_P3, GPIO_PIN6);
+    if (bl_read == bl_read_prev && bl_read != bl_state) {
+        f_bl = bl_read? BUTTON_RELEASE : BUTTON_PRESS; // active high
+        bl_state = bl_read;
+    }
+    bl_read_prev = bl_read;
+
+    // Softkey button:
+    bs_read = GPIO_getInputPinValue(GPIO_PORT_P3, GPIO_PIN5);
+    if (bs_read == bs_read_prev && bs_read != bs_state) {
+        f_bs = bs_read? BUTTON_RELEASE : BUTTON_PRESS; // active high
+        bs_state = bs_read;
+    }
+    bs_read_prev = bs_read;
+
+    // Right button:
+    br_read = GPIO_getInputPinValue(GPIO_PORT_P3, GPIO_PIN4);
+    if (br_read == br_read_prev && br_read != br_state) {
+        f_br = br_read? BUTTON_RELEASE : BUTTON_PRESS; // active high
+        br_state = br_read;
+    }
+    br_read_prev = br_read;
+} // poll_buttons
 
 #pragma vector=RTC_VECTOR
 __interrupt
@@ -289,4 +297,4 @@ void RTC_A_ISR(void) {
     case 16: break; //Reserved
     default: break;
     }
-}
+} // RTC_A_ISR

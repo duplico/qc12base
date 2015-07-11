@@ -201,10 +201,10 @@ __interrupt void EUSCI_A0_ISR(void)
                 // gs_data[14] & 0xff
 
                 if (tlc_tx_index & 0x01) { // it's odd (LSB)
-                    EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, (uint8_t) (gs_data[(gs_index + tlc_shift_px) % 15] & 0x00ff));
+                    EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, (uint8_t) (gs_data[(gs_index + (15-tlc_shift_px)) % 15] & 0x00ff));
                     gs_index--;
                 } else { // it's even:
-                    EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, (uint8_t) (gs_data[(gs_index + tlc_shift_px) % 15] >> 8));
+                    EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, (uint8_t) (gs_data[(gs_index + (15-tlc_shift_px)) % 15] >> 8));
                 }
             }
             tlc_tx_index++;
