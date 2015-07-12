@@ -85,6 +85,8 @@ typedef struct {
 
 extern qc12payload in_payload, out_payload;
 
+extern const char titles[][10];
+
 typedef struct {
     uint8_t badge_id;
     uint8_t mood;
