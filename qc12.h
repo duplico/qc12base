@@ -20,8 +20,8 @@
 #define SLEEP_BITS LPM1_bits // because we need SMCLK for the TLC.
 
 // Name entry configuration parameters:
-#define UNDERNAME_SEL_CHAR '*'
-#define MAX_NAME_LEN 14
+#define NAME_SEL_CHAR '*'
+#define NAME_MAX_LEN 14
 #define NAME_COMMIT_CYCLES 80
 
 // Character name & title font:
@@ -74,7 +74,6 @@
 void delay(unsigned int);
 
 // Interrupt flags:
-
 extern volatile uint8_t f_time_loop;
 extern volatile uint8_t f_rfm_rx_done;
 extern volatile uint8_t f_rfm_tx_done;
@@ -85,5 +84,17 @@ typedef struct {
 } qc12payload;
 
 extern qc12payload in_payload, out_payload;
+
+typedef struct {
+    uint8_t badge_id;
+    uint8_t mood;
+    uint8_t title_index;
+    uint16_t exp;
+    char handle[NAME_MAX_LEN+1];
+    uint16_t clobber;
+} qc12conf;
+
+extern const qc12conf my_conf;
+extern const qc12conf default_conf;
 
 #endif /* QC12_H_ */
