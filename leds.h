@@ -15,4 +15,10 @@ void tlc_stage_blank(uint8_t);
 
 void tlc_timestep();
 
+typedef struct {
+    uint16_t red;
+    uint16_t green;
+    uint16_t blue;
+} rgbcolor_t;
+
 #endif /* LEDS_H_ */
