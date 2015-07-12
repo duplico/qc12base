@@ -39,6 +39,14 @@ const qc12conf default_conf = {
         0x0C13
 };
 
+const char titles[][10] = {
+        "n00b",
+        "UBER",
+        "Spastic",
+        "Bored",
+        "Socialite",
+};
+
 // The code:
 
 void check_conf() {
@@ -82,9 +90,9 @@ void post() {
 // Play a cute animation when we first turn the badge on.
 void intro() {
     GrImageDraw(&g_sContext, &fingerprint_1BPP_UNCOMP, 0, 0);
-    GrStringDrawCentered(&g_sContext, "Queercon", -1, 31, 94, 1);
-    GrStringDrawCentered(&g_sContext, "twelve", -1, 31, 94 + SYS_FONT_HEIGHT, 1);
-    GrStringDrawCentered(&g_sContext, "- 2015 -", -1, 31, 94 + SYS_FONT_HEIGHT*2, 1);
+    GrStringDrawCentered(&g_sContext, "Queercon", -1, 31, 94 + SYS_FONT_HEIGHT/3, 0);
+    GrStringDrawCentered(&g_sContext, "twelve", -1, 31, 94 + SYS_FONT_HEIGHT/3 + SYS_FONT_HEIGHT, 0);
+    GrStringDrawCentered(&g_sContext, "- 2015 -", -1, 31, 94 + SYS_FONT_HEIGHT/3 + SYS_FONT_HEIGHT*2, 0);
     GrFlush(&g_sContext);
 }
 
