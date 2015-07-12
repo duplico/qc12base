@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <driverlib/MSP430FR5xx_6xx/driverlib.h>
 #include <msp430fr5949.h>
+#include <grlib.h>
 
 // CONFIGURATION SETTINGS ///////////////////////////////////////////
 
@@ -18,22 +19,28 @@
 #define BADGES_IN_SYSTEM 200
 #define SLEEP_BITS LPM1_bits // because we need SMCLK for the TLC.
 
-// Name configuration
-
+// Name entry configuration parameters:
 #define UNDERNAME_SEL_CHAR '*'
 #define MAX_NAME_LEN 14
 #define NAME_COMMIT_CYCLES 80
+
+// Character name & title font:
 #define NAME_FONT_HEIGHT 14
 #define NAME_FONT g_sFontCmss12b
-//g_sFontCmss14 ???
 
+// Main system font:
 #define SYS_FONT g_sFontCmss12b
 #define SYS_FONT_HEIGHT 12
+
+// Softkey label font:
+#define SOFTKEY_LABEL_FONT g_sFontCmsc12
+#define SOFTKEY_FONT_HEIGHT 10 // not 12 because we're using sm. caps only.
 
 //////////////////////////
 // Derived definitions ///
 
-#define NAME_Y_OFFSET 10+SYS_FONT_HEIGHT*7
+#define NAME_Y_OFFSET 10+SYS_FONT_HEIGHT*7 // Top of the name entry field.
+#define SPRITE_Y 128 - 64 - SOFTKEY_FONT_HEIGHT // Top of the char sprite.
 
 /////////////////////////////////////////////////////////////////////
 // Hardware related defines /////////////////////////////////////////
