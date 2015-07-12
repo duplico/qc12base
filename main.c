@@ -28,7 +28,8 @@ void poll_buttons();
 #pragma DATA_SECTION (my_conf, ".infoA");
 #pragma DATA_SECTION (default_conf, ".infoB");
 
-const qc12conf my_conf;
+qc12conf my_conf;
+const qc12conf backup_conf;
 
 const qc12conf default_conf = {
         0,
@@ -36,7 +37,7 @@ const qc12conf default_conf = {
         0,
         0,
         "", // NB: this is required to be a 0
-        0x0C13
+        0x0000
 };
 
 const char titles[][10] = {
@@ -50,8 +51,20 @@ const char titles[][10] = {
 // The code:
 
 void check_conf() {
-    if (my_conf.clobber != default_conf.clobber) {
+
+    CRC_setSeed(CRC_BASE, 0x0C12);
+    for (uint8_t i = 0; i < sizeof(qc12conf) - 2; i++) {
+        CRC_set8BitData(CRC_BASE, ((uint8_t *) &default_conf)[i]);
+    }
+
+    if (my_conf.crc16 != CRC_getResult(CRC_BASE)) {
         memcpy(&my_conf, &default_conf, sizeof(qc12conf));
+
+        CRC_setSeed(CRC_BASE, 0x0C12);
+        for (uint8_t i = 0; i < sizeof(qc12conf) - 2; i++) {
+            CRC_set8BitData(CRC_BASE, ((uint8_t *) &default_conf)[i]);
+        }
+        my_conf.crc16 = CRC_getResult(CRC_BASE);
     }
 }
 
@@ -64,18 +77,8 @@ void init_rtc() {
 void init() {
     Grace_init(); // Activate Grace-generated configuration
 
-    /*
-     * Peripherals:
-     *
-     *  Radio (RFM69CW)
-     *        (MSB first, clock inactive low,
-     *         write on rise, change on fall, MSB first)
-     *        eUSCI_B0 - radio
-     *        somi, miso, clk, ste
-     *        DIO0      P3.1
-     *        RESET     P3.2
-     */
     check_conf();
+
     init_tlc();
     init_radio();
     init_oled();
@@ -225,7 +228,6 @@ int main(void)
 
     tlc_stage_blank(1);
     tlc_set_fun();
-
 
     while (1) {
         if (f_time_loop) {

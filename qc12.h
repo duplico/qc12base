@@ -93,10 +93,10 @@ typedef struct {
     uint8_t title_index;
     uint16_t exp;
     char handle[NAME_MAX_LEN+1];
-    uint16_t clobber;
+    uint16_t crc16;
 } qc12conf;
 
-extern const qc12conf my_conf;
+extern qc12conf my_conf;
 extern const qc12conf default_conf;
 
 #endif /* QC12_H_ */
