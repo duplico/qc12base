@@ -44,29 +44,13 @@ uint16_t tlc_tx_light = 0xffff;
 rgbcolor_t *tlc_curr_colors;
 uint8_t tlc_curr_colors_len;
 
-rgbcolor_t rainbow1[21] = {
+rgbcolor_t rainbow1[5] = {
         // rainbow colors
-        { 0xc, 0x17, 0x1 },
-        { 0x10, 0x15, 0x0 },
-        { 0x13, 0x12, 0x0 },
-        { 0x16, 0xe, 0x0 },
-        { 0x18, 0xa, 0x2 },
-        { 0x19, 0x7, 0x5 },
-        { 0x19, 0x4, 0x9 },
-        { 0x17, 0x1, 0xc },
-        { 0x15, 0x0, 0x10 },
-        { 0x12, 0x0, 0x14 },
-        { 0xe, 0x1, 0x16 },
-        { 0xa, 0x2, 0x18 },
-        { 0x7, 0x5, 0x19 },
-        { 0x4, 0x9, 0x19 },
-        { 0x1, 0xc, 0x17 },
-        { 0x0, 0x10, 0x15 },
-        { 0x0, 0x14, 0x12 },
-        { 0x1, 0x16, 0xe },
-        { 0x2, 0x18, 0xa },
-        { 0x5, 0x19, 0x7 },
-        { 0x9, 0x19, 0x4 },
+        { 0xff00, 0x00, 0x00 },
+        { 0x00, 0xff00, 0x00 },
+        { 0x00, 0x00, 0xff00 },
+        { 0xe00, 0xe00, 0xe00 },
+        { 0x00, 0x00, 0x000 },
 };
 
 // Buffers containing actual data to send to the TLC:
@@ -149,8 +133,11 @@ void tlc_set_gs(uint8_t starting_frame) {
     while (tlc_send_type != TLC_SEND_IDLE);
     tlc_shift_px = starting_frame;
     led_anim_mode = TLC_ANIM_MODE_SHIFT;
+//    led_anim_mode = TLC_ANIM_MODE_SAME;
     tlc_send_type = TLC_SEND_TYPE_GS;
     tlc_tx_index = 0;
+    tlc_curr_colors = rainbow1;
+    tlc_curr_colors_len = 5;
     EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, TLC_THISISGS);
 }
 
@@ -190,7 +177,7 @@ void tlc_stage_bc(uint8_t bc) {
 void tlc_timestep() {
     static uint8_t shift = 0;
     tlc_set_gs(shift);
-    shift = (shift + 3) % 15;
+    shift = (shift+1) % tlc_curr_colors_len;
 }
 
 #pragma vector=USCI_A0_VECTOR
@@ -216,7 +203,6 @@ __interrupt void EUSCI_A0_ISR(void)
                 tlc_send_type = TLC_SEND_IDLE;
                 break;
             } else { // gs
-
                 switch(rgb_element_index % 6) { // WATCH OUT! Weird order below:
                 case 1:
                     EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, (uint8_t) (tlc_curr_colors[tlc_color_index].blue & 0x00ff));
@@ -237,7 +223,7 @@ __interrupt void EUSCI_A0_ISR(void)
                     EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, (uint8_t) (tlc_curr_colors[tlc_color_index].red & 0x00ff));
 
                     if (led_anim_mode == TLC_ANIM_MODE_SHIFT) {
-                        tlc_color_index = (tlc_color_index + (tlc_curr_colors_len-1)) % tlc_curr_colors_len; // going backwards in the array...
+                        tlc_color_index = (tlc_color_index + 1) % tlc_curr_colors_len;
                     } // otherwise we keep the same color for all the RGB LEDs.
                     break;
                 }

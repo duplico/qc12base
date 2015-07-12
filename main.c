@@ -208,7 +208,7 @@ void get_name() {
 } // get_name
 
 // TODO: This should be temporary:
-uint8_t rainbow_interval = 4;
+uint8_t rainbow_interval = 6;
 
 int main(void)
 {
@@ -239,7 +239,7 @@ int main(void)
             // New LED animation frame if needed:
             if (!--rainbow_interval) {
                 oled_anim_next_frame();
-                rainbow_interval = 12;
+                rainbow_interval = 6;
                 tlc_timestep();
             }
 
@@ -264,7 +264,8 @@ int main(void)
             f_new_second = 0;
         }
 
-        __bis_SR_register(SLEEP_BITS);
+        // TODO: check all flags?
+//        __bis_SR_register(SLEEP_BITS);
     }
 } // main
 
