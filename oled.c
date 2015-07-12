@@ -41,9 +41,9 @@ void oled_draw_pane() {
     GrStringDraw(&g_sContext, "the", -1, -1, NAME_FONT_HEIGHT, 0);
     GrStringDraw(&g_sContext, "Spastic", -1, GrStringWidthGet(&g_sContext, "the", -1)+2, NAME_FONT_HEIGHT, 1); // TODO: from conf
     GrLineDrawH(&g_sContext, 0, 64, 2*NAME_FONT_HEIGHT+1);
+    GrContextFontSet(&g_sContext, &SOFTKEY_LABEL_FONT);
+    GrStringDrawCentered(&g_sContext, "play", -1, 31, 128 - SOFTKEY_FONT_HEIGHT/2, 1);
     GrLineDrawH(&g_sContext, 0, 64, 119);
-    GrContextFontSet(&g_sContext, &g_sFontFixed6x8);
-    GrStringDrawCentered(&g_sContext, "Play!", -1, 31, 122, 1);
     GrFlush(&g_sContext);
 }
 
@@ -52,7 +52,7 @@ void oled_anim_next_frame() {
     if (anim_state == OLED_ANIM_DONE)
         return;
 
-    GrImageDraw(&g_sContext, anim_data.images[anim_index], 0, 55);
+    GrImageDraw(&g_sContext, anim_data.images[anim_index], 0, SPRITE_Y);
     GrFlush(&g_sContext);
 
     anim_index++;
