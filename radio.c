@@ -104,13 +104,13 @@ void init_radio() {
 	// Setup addresses and length:
 	write_single_register(0x37, 0b00110100); // Packet configuration (see DS)
 	write_single_register(0x38, sizeof(qc12payload)); // PayloadLength
-//	write_single_register(0x39, my_conf.badge_id); // NodeAddress // TODO
+	write_single_register(0x39, my_conf.badge_id); // NodeAddress
 	write_single_register(0x3A, RFM_BROADCAST); // BroadcastAddress
 
 	write_single_register(0x3c, 0x8f); // TxStartCondition - FifoNotEmpty
 
 	for (uint8_t sync_addr=0x2f; sync_addr<=0x36; sync_addr++) {
-		write_single_register(sync_addr, "QCXI"[sync_addr%4]);
+		write_single_register(sync_addr, "QuCo12XII"[sync_addr%9]);
 	}
 
 	// Now that we're done with this setup business, we can enable the
@@ -244,7 +244,6 @@ inline void radio_recv_start() {
 #pragma vector=USCI_B0_VECTOR
 __interrupt void EUSCI_B0_ISR(void)
 {
-//	switch (__even_in_range(UCB0IV, 4)) { // TODO: eUSCI
 	switch (__even_in_range(UCB0IV, 4)) {
 	//Vector 2 - RXIFG
 	case 2:
