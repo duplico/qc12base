@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <grlib.h>
 #include <stdio.h>
+#include <string.h>
 
 // Grace includes:
 #include <ti/mcu/msp430/Grace.h>
@@ -24,7 +25,27 @@ volatile uint8_t f_new_second = 0;
 // Function declarations:
 void poll_buttons();
 
+#pragma DATA_SECTION (my_conf, ".infoA");
+#pragma DATA_SECTION (default_conf, ".infoB");
+
+const qc12conf my_conf;
+
+const qc12conf default_conf = {
+        0,
+        50,
+        0,
+        0,
+        "", // NB: this is required to be a 0
+        0x0C13
+};
+
 // The code:
+
+void check_conf() {
+    if (my_conf.clobber != default_conf.clobber) {
+        memcpy(&my_conf, &default_conf, sizeof(qc12conf));
+    }
+}
 
 void init_rtc() {
     RTC_B_definePrescaleEvent(RTC_B_BASE, RTC_B_PRESCALE_1, RTC_B_PSEVENTDIVIDER_4); // 32 Hz
@@ -46,6 +67,7 @@ void init() {
      *        DIO0      P3.1
      *        RESET     P3.2
      */
+    check_conf();
     init_tlc();
     init_radio();
     init_oled();
@@ -69,6 +91,10 @@ void intro() {
 const tRectangle name_erase = {0, NAME_Y_OFFSET, 63, NAME_Y_OFFSET + NAME_FONT_HEIGHT + SYS_FONT_HEIGHT};
 
 void get_name() {
+
+    if (my_conf.handle[0])
+        return; // Already have a name set.
+
     GrClearDisplay(&g_sContext);
 
     GrContextFontSet(&g_sContext, &SYS_FONT);
@@ -85,10 +111,10 @@ void get_name() {
 
     uint8_t char_entry_index = 0;
     uint8_t curr_char = ' ';
-    char name[MAX_NAME_LEN+1] = {0};
+    char name[NAME_MAX_LEN+1] = {0};
     name[0] = ' ';
     char undername[2] = "X";
-    undername[0] = UNDERNAME_SEL_CHAR;
+    undername[0] = NAME_SEL_CHAR;
     uint8_t underchar_x = 0;
     uint8_t text_width = 0;
     uint8_t last_char_index = 0;
@@ -113,7 +139,7 @@ void get_name() {
                 f_bl = 0;
             }
             if (f_br == BUTTON_RELEASE) {
-                if (char_entry_index < MAX_NAME_LEN && curr_char != ' ' && text_width < 58) {
+                if (char_entry_index < NAME_MAX_LEN && curr_char != ' ' && text_width < 58) {
                     char_entry_index++;
                     if (!name[char_entry_index])
                         name[char_entry_index] = ' ';
@@ -162,7 +188,13 @@ void get_name() {
             GrFlush(&g_sContext);
         }
     }
-}
+
+    uint8_t name_len = 0;
+    while (name[name_len] && name[name_len] != ' ')
+        name_len++;
+    name[name_len] = 0; // null terminate.
+    strcpy(my_conf.handle, name);
+} // get_name
 
 // TODO: This should be temporary:
 uint8_t rainbow_interval = 4;
@@ -173,7 +205,6 @@ int main(void)
     post();
     intro(); // Play a cute animation when we first turn the badge on.
     delay(8000);
-    // TODO: persistent.
     get_name(); // Learn the badge's name (if we don't have it already)
 
     // TODO: Reset all the flags

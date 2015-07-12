@@ -37,7 +37,7 @@ void init_oled() {
 
 void oled_draw_pane() {
     GrContextFontSet(&g_sContext, &NAME_FONT);
-    GrStringDraw(&g_sContext, "DUPLiCO", -1, 0, 0, 1); // TODO: from conf
+    GrStringDraw(&g_sContext, my_conf.handle, -1, 0, 0, 1);
     GrStringDraw(&g_sContext, "the", -1, -1, NAME_FONT_HEIGHT, 0);
     GrStringDraw(&g_sContext, "Spastic", -1, GrStringWidthGet(&g_sContext, "the", -1)+2, NAME_FONT_HEIGHT, 1); // TODO: from conf
     GrLineDrawH(&g_sContext, 0, 64, 2*NAME_FONT_HEIGHT+1);
