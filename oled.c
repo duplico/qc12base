@@ -41,7 +41,7 @@ void oled_draw_pane() {
     uint8_t title_width = GrStringWidthGet(&g_sContext, titles[my_conf.title_index], -1);
     uint8_t the_width = GrStringWidthGet(&g_sContext, "the", -1);
     GrStringDraw(&g_sContext, "the", -1, 63 - title_width - the_width - 3, NAME_FONT_HEIGHT, 0);
-    GrStringDraw(&g_sContext, titles[my_conf.title_index], -1, 63 - title_width, NAME_FONT_HEIGHT, 1); // TODO: from conf
+    GrStringDraw(&g_sContext, titles[my_conf.title_index], -1, 63 - title_width, NAME_FONT_HEIGHT, 1);
     GrLineDrawH(&g_sContext, 0, 64, 2*NAME_FONT_HEIGHT+1);
     GrContextFontSet(&g_sContext, &SOFTKEY_LABEL_FONT);
     GrStringDrawCentered(&g_sContext, "play", -1, 31, 128 - SOFTKEY_FONT_HEIGHT/2, 1);
@@ -50,7 +50,6 @@ void oled_draw_pane() {
 }
 
 void oled_anim_next_frame() {
-
     if (anim_state == OLED_ANIM_DONE)
         return;
 
@@ -81,3 +80,8 @@ void oled_play_animation(qc12_anim_t anim, uint8_t loops) {
     anim_state = OLED_ANIM_START;
 }
 
+void oled_timestep() {
+    // TODO: if we're animating...
+    if (anim_state)
+        oled_anim_next_frame();
+}

@@ -21,6 +21,8 @@ volatile uint8_t f_br = 0;
 volatile uint8_t f_bs = 0;
 volatile uint8_t f_time_loop = 0;
 volatile uint8_t f_new_second = 0;
+volatile uint8_t f_rfm_rx_done = 0;
+volatile uint8_t f_rfm_tx_done = 0;
 
 // Function declarations:
 void poll_buttons();
@@ -51,7 +53,6 @@ const char titles[][10] = {
 // The code:
 
 void check_conf() {
-
     CRC_setSeed(CRC_BASE, 0x0C12);
     for (uint8_t i = 0; i < sizeof(qc12conf) - 2; i++) {
         CRC_set8BitData(CRC_BASE, ((uint8_t *) &default_conf)[i]);
@@ -87,6 +88,14 @@ void init() {
 
 // Power-on self test
 void post() {
+    // Check the crystal.
+    uint8_t crystal_error = CSCTL5 & LFXTOFFG;
+    // Check the shift register of the TLC.
+    // Check the radio if possible. (NB: if we can't talk to it at all, we
+    //    may not even get this far.)
+    // Check the flash chip.
+    GrClearDisplay(&g_sContext);
+    GrContextFontSet(&g_sContext, &SYS_FONT);
 
 }
 
@@ -101,13 +110,14 @@ void intro() {
 
 const tRectangle name_erase = {0, NAME_Y_OFFSET, 63, NAME_Y_OFFSET + NAME_FONT_HEIGHT + SYS_FONT_HEIGHT};
 
+// Read the badgeholder's name if appropriate:
 void get_name() {
 
     if (my_conf.handle[0])
         return; // Already have a name set.
 
+    // Clear the screen and display the instructions.
     GrClearDisplay(&g_sContext);
-
     GrContextFontSet(&g_sContext, &SYS_FONT);
     GrStringDraw(&g_sContext, "Enter a", -1, 0, 5, 1);
     GrStringDraw(&g_sContext, "name.", -1, 0, 5+SYS_FONT_HEIGHT, 1);
@@ -115,26 +125,35 @@ void get_name() {
     GrStringDraw(&g_sContext, "middle", -1, 0, 5+SYS_FONT_HEIGHT*4, 1);
     GrStringDraw(&g_sContext, "button", -1, 0, 5+SYS_FONT_HEIGHT*5, 1);
     GrStringDraw(&g_sContext, "to finish.", -1, 0, 5+SYS_FONT_HEIGHT*6, 1);
-
-    GrContextFontSet(&g_sContext, &NAME_FONT); // &g_sFontFixed6x8);
-
     GrFlush(&g_sContext);
 
+    // Switch to the NAME font so it's the expected width.
+    GrContextFontSet(&g_sContext, &NAME_FONT);
+
+    // Temporary buffer to hold the selected name.
+    // (In the event of a power cycle we don't wand to be messing around
+    //  with the actual config's handle)
+    char name[NAME_MAX_LEN+1] = {' ', 0};
     uint8_t char_entry_index = 0;
     uint8_t curr_char = ' ';
-    char name[NAME_MAX_LEN+1] = {0};
-    name[0] = ' ';
-    char undername[2] = "X";
-    undername[0] = NAME_SEL_CHAR;
+
+    // String to display under the name; it's just the selection character,
+    // configured in qc12.h
+    char undername[2] = {NAME_SEL_CHAR, 0};
+
+    // For figuring out where to put the underline & selection character:
     uint8_t underchar_x = 0;
     uint8_t text_width = 0;
     uint8_t last_char_index = 0;
 
-    uint8_t bs_down_cycles = 0;
+    // For determining whether name entry is complete:
+    uint8_t bs_down_loops = 0;
 
     while (1) {
         if (f_time_loop) {
             f_time_loop = 0;
+
+            // Poll and debounce the buttons.
             poll_buttons();
             // Check for left/right buttons to change character slot
             text_width = GrStringWidthGet(&g_sContext, name, last_char_index+1);
@@ -143,7 +162,6 @@ void get_name() {
                     // check for deletion:
                     if (char_entry_index == last_char_index && curr_char == ' ')
                         last_char_index--;
-
                     char_entry_index--;
                     curr_char = name[char_entry_index];
                 }
@@ -161,27 +179,37 @@ void get_name() {
                 f_br = 0;
             }
             if (f_bs == BUTTON_RELEASE) {
-                if (curr_char == 'Z')
+                // Softkey button cycles the current character.
+                // This is a massive PITA for the person entering their name,
+                // but they only have to do it once so whatever.
+                if (curr_char == 'Z') // First comes capital letters
                     curr_char = 'a';
-                else if (curr_char == 'z')
+                else if (curr_char == 'z') // Then lower case
                     curr_char = '0';
-                else if (curr_char == '9')
+                else if (curr_char == '9') // Then numbers
                     curr_char = ' ';
-                else if (curr_char == ' ')
+                else if (curr_char == ' ') // Then a space, and then we cycle.
                     curr_char = 'A';
                 else
                     curr_char++;
                 name[char_entry_index] = curr_char;
                 f_bs = 0;
-                bs_down_cycles = 0;
+                // Since it's released, clear the depressed loop count.
+                bs_down_loops = 0;
             } else if ((last_char_index || name[0] != ' ') && f_bs == BUTTON_PRESS) {
-                bs_down_cycles = 1;
+                // If we're in a valid state to complete the name entry, and
+                // the softkey button is depressed, then it's time to start
+                // counting the number of time loops for which it is depressed.
+                bs_down_loops = 1;
                 f_bs = 0;
             }
 
-            if (bs_down_cycles && bs_down_cycles < NAME_COMMIT_CYCLES) {
-                bs_down_cycles++;
-            } else if (bs_down_cycles) {
+            // If we're counting the number of loops for which the softkey is
+            // depressed, go ahead and increment it. This is going to do one
+            // double-count at the beginning, but I don't care.
+            if (bs_down_loops && bs_down_loops < NAME_COMMIT_LOOPS) {
+                bs_down_loops++;
+            } else if (bs_down_loops) {
                 break;
             }
 
@@ -200,15 +228,13 @@ void get_name() {
         }
     }
 
+    // Commit the name with a correctly placed null termination character..
     uint8_t name_len = 0;
     while (name[name_len] && name[name_len] != ' ')
         name_len++;
     name[name_len] = 0; // null terminate.
     strcpy(my_conf.handle, name);
 } // get_name
-
-// TODO: This should be temporary:
-uint8_t rainbow_interval = 6;
 
 int main(void)
 {
@@ -218,7 +244,9 @@ int main(void)
     delay(8000);
     get_name(); // Learn the badge's name (if we don't have it already)
 
-    // TODO: Reset all the flags
+    // Reset all the flags after leaving the intro/post/name entry:
+    f_bl = f_br = f_bs = f_new_second = 0;
+    f_rfm_rx_done = f_rfm_tx_done = f_time_loop = 0;
 
     GrClearDisplay(&g_sContext);
     oled_draw_pane();
@@ -230,6 +258,17 @@ int main(void)
     tlc_set_fun();
 
     while (1) {
+        // The following operating modes are possible:
+        //   [ ] POST/intro (handled above)
+        //   [ ] Name setting (handled above)
+        //   [ ] Friend request (outgoing or accepting)
+        //   [ ] Status summary
+        //   [ ] Flag setting?
+        //   [ ] Character/idle
+        //       (this is the big, main one, and event/actions are queued or
+        //        ignored until we return to this mode.)
+        //   [ ] Sleep mode?
+
         if (f_time_loop) {
             f_time_loop = 0;
 
@@ -237,12 +276,10 @@ int main(void)
             poll_buttons();
 
             // New LED animation frame if needed:
-            if (!--rainbow_interval) {
-                oled_anim_next_frame();
-                rainbow_interval = 3;
-                tlc_timestep();
-            }
+            tlc_timestep();
 
+            oled_timestep();
+            oled_anim_next_frame();
 
             // Do stuff:
 
@@ -264,8 +301,10 @@ int main(void)
             f_new_second = 0;
         }
 
-        // TODO: check all flags?
-//        __bis_SR_register(SLEEP_BITS);
+        // If there are no more flags left to service, go to sleep.
+        if (!(f_bl || f_br || f_bs || f_new_second || f_rfm_rx_done || f_rfm_tx_done || f_time_loop)) {
+            __bis_SR_register(SLEEP_BITS);
+        }
     }
 } // main
 
