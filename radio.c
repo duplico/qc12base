@@ -81,12 +81,28 @@ void init_radio() {
 	rfm_reg_state = RFM_REG_IDLE;
 	mode_sync(RFM_MODE_SB);
 
+	// One weird thing about this radio module. The datasheet lists
+	// "default (recommended)" values for the config registers. For all but
+	// 8 registers, these are truly default; however, for those 8, the
+	// "default" values and "reset (built-in)" values (the latter of which I
+	// would describe as "default," and the former, "recommended," but what
+	// do I know?) are different. Those are:
+	//   Addr Name           Desc
+	//   0x18 RegLna         LNA settings
+	//   0x19 RegRxBw        Channel filter bandwidth control
+	//   0x8b RegAfcBw       Channel filter bandwidth control during AFC
+	//   0x26 RegDioMapping2 Mapping DIO5, ClkOut frequency
+	//   0x29 RegRssiThresh  RSSI Threshold control
+	// 0x2f-
+	//  -0x36 RegSyncValue   Sync Word bytes 1-8
+	//   0x3c RegFifoThresh  Fifo threshold, Tx start condition
+	//   0x6f RegTestDagc    Fading Margin Improvement
+
 	// init radio to recommended "defaults" (seriously, wtf are they
 	//  calling them defaults for if they're not set BY DEFAULT?????
 	//  Sheesh.), per datasheet:
 	write_single_register(0x18, 0b00001000); // Low-noise amplifier
 	write_single_register(0x19, 0b01010101); // Bandwidth control "default"
-//	write_single_register(0x1a, 0b10001011); // Auto Frequency Correction BW
 	write_single_register(0x1a, 0x8b); // Auto Frequency Correction BW "default"
 	write_single_register(0x26, 0x07); // Disable ClkOut
 	write_single_register(0x29, 210); // RSSI Threshold
@@ -189,7 +205,7 @@ void radio_send_sync() {
 	expected_dio_interrupt = 1; // will be xmit finished.
 
 	rfm_reg_state = RFM_REG_TX_FIFO_CMD;
-//	GPIO_setOutputLowOnPin(RFM_NSS_PORT, RFM_NSS_PIN); // Hold NSS low to begin frame.
+     // Hold NSS low to begin frame.
 	RFM_NSS_PORT_OUT &= ~RFM_NSS_PIN;
 	EUSCI_B_SPI_transmitData(EUSCI_B0_BASE, RFM_FIFO | 0b10000000); // Send write command.
 	while (rfm_reg_state != RFM_REG_IDLE);
@@ -201,7 +217,7 @@ inline void radio_recv_start() {
 		return;
 	}
 	rfm_reg_state = RFM_REG_RX_FIFO_CMD;
-//	GPIO_setOutputLowOnPin(RFM_NSS_PORT, RFM_NSS_PIN); // Hold NSS low to begin frame.
+	// Hold NSS low to begin frame.
 	RFM_NSS_PORT_OUT &= ~RFM_NSS_PIN;
 	EUSCI_B_SPI_transmitData(EUSCI_B0_BASE, RFM_FIFO); // Send our read command.
 }
@@ -369,7 +385,7 @@ __interrupt void EUSCI_B0_ISR(void)
 		case RFM_REG_RX_FIFO_DAT:
 			rfm_reg_state = RFM_REG_IDLE;
 			memcpy(&in_payload, in_bytes, sizeof(qc12payload));
-//			f_rfm_rx_done = 1; // TODO
+			f_rfm_rx_done = 1; // TODO
 			break;
 		case RFM_REG_TX_FIFO_DAT:
 			// After we send the FIFO, we need to set the mode to RX so the
@@ -401,7 +417,7 @@ __interrupt void EUSCI_B0_ISR(void)
 __interrupt void radio_interrupt_0(void) {
 	if (expected_dio_interrupt) { // tx finished.
 		// Auto packet mode: RX->SB->RX on receive.
-//		f_rfm_tx_done = 1; // TODO
+		f_rfm_tx_done = 1; // TODO
 		expected_dio_interrupt = 0;
 	} else { // rx
 		radio_recv_start();
