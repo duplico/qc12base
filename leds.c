@@ -42,8 +42,8 @@ uint8_t led_anim_index = 0;
 // Utility light:
 uint16_t tlc_tx_light = 0xffff;
 
-rgbcolor_t *tlc_curr_colors;
-uint8_t tlc_curr_colors_len;
+rgbcolor_t *tlc_curr_anim;
+uint8_t tlc_curr_anim_len;
 
 rgbcolor_t rainbow1[10] = {
         // rainbow colors
@@ -57,6 +57,48 @@ rgbcolor_t rainbow1[10] = {
         { 0xe00, 0xe00, 0xe00 },
         { 0x100, 0x100, 0x100 },
         { 0x00, 0x00, 0x000 },
+};
+
+rgbcolor_t rainbow2[5] = {
+        { 0xff00, 0x00, 0x00 },
+        { 0x00, 0xff00, 0x00 },
+        { 0x00, 0x00, 0xff00 },
+        { 0xe00, 0xe00, 0xe00 },
+        { 0x00, 0x00, 0x000 },
+};
+
+rgbcolor_t test_colors[3] = {
+        // rainbow colors
+        { 0xff00, 0x00, 0x00},
+        { 0x00, 0xff00, 0x00 },
+        { 0x00, 0x00, 0xff00 },
+};
+
+uint8_t ring_fade_index = 0;
+uint8_t ring_fade_steps = 0;
+
+rgbcolor_t tlc_curr_colors[5] = {
+        {0, 0, 0},
+        {0, 0, 0},
+        {0, 0, 0},
+        {0, 0, 0},
+        {0, 0, 0},
+};
+
+rgbcolor_t rainbow_ring_dest[5] = {
+        {0, 0, 0},
+        {0, 0, 0},
+        {0, 0, 0},
+        {0, 0, 0},
+        {0, 0, 0},
+};
+
+rgbdelta_t rainbow_ring_step[5] = {
+        {0, 0, 0},
+        {0, 0, 0},
+        {0, 0, 0},
+        {0, 0, 0},
+        {0, 0, 0},
 };
 
 // Buffers containing actual data to send to the TLC:
@@ -118,31 +160,11 @@ uint8_t fun_base[] = {
         0x7F, // tx
 };
 
-void init_tlc() {
-    // TODO: Shouldn't really need to do this:
-    UCA0CTLW0 |= UCSWRST;
-    UCA0CTLW0 &= ~UC7BIT;
-    UCA0CTLW0 &= ~UCSWRST;
-
-    EUSCI_A_SPI_clearInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
-    EUSCI_A_SPI_enableInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
-
-    tlc_stage_blank(1);
-    tlc_set_fun();
-}
-
-void tlc_set_gs(uint8_t starting_frame, uint8_t all_lights_same) {
+void tlc_set_gs() {
     if (tlc_send_type != TLC_SEND_IDLE)
         return; // TODO: let's try to make sure this never happens.
-    tlc_light_offset = starting_frame;
-    if (all_lights_same)
-        led_anim_mode = TLC_ANIM_MODE_SAME;
-    else
-        led_anim_mode = TLC_ANIM_MODE_SHIFT;
     tlc_send_type = TLC_SEND_TYPE_GS;
     tlc_tx_index = 0;
-    tlc_curr_colors = rainbow1;
-    tlc_curr_colors_len = 10;
     EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, TLC_THISISGS);
 }
 
@@ -171,10 +193,117 @@ void tlc_stage_bc(uint8_t bc) {
     fun_base[17] |= bc;
 }
 
+void init_tlc() {
+    // TODO: Shouldn't really need to do this:
+    UCA0CTLW0 |= UCSWRST;
+    UCA0CTLW0 &= ~UC7BIT;
+    UCA0CTLW0 &= ~UCSWRST;
+
+    EUSCI_A_SPI_clearInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
+    EUSCI_A_SPI_enableInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
+
+    tlc_stage_blank(1);
+    tlc_set_fun();
+
+
+    tlc_start_anim(rainbow2, 5, 10, 0);
+
+}
+
+void tlc_load_colors() {
+    // Load index 0 no matter what.
+    memcpy(&tlc_curr_colors[0], &tlc_curr_anim[tlc_light_offset], sizeof(rgbcolor_t));
+    memcpy(&rainbow_ring_dest[0], &tlc_curr_anim[(tlc_light_offset + 1) % tlc_curr_anim_len], sizeof(rgbcolor_t));
+
+    rainbow_ring_step[0].red = ((int_fast32_t) rainbow_ring_dest[0].red - tlc_curr_colors[0].red) / ring_fade_steps;
+    rainbow_ring_step[0].green = ((int_fast32_t) rainbow_ring_dest[0].green - tlc_curr_colors[0].green) / ring_fade_steps;
+    rainbow_ring_step[0].blue = ((int_fast32_t) rainbow_ring_dest[0].blue - tlc_curr_colors[0].blue) / ring_fade_steps;
+
+    if (led_anim_mode == TLC_ANIM_MODE_SHIFT) {
+        for (uint8_t i=1; i<5; i++) {
+            memcpy(&tlc_curr_colors[i], &tlc_curr_anim[(tlc_light_offset + 1) % tlc_curr_anim_len], sizeof(rgbcolor_t));
+            memcpy(&rainbow_ring_dest[i], &tlc_curr_anim[(tlc_light_offset + i + 1) % tlc_curr_anim_len], sizeof(rgbcolor_t));
+            rainbow_ring_step[i].red = ((int_fast32_t) rainbow_ring_dest[i].red - tlc_curr_colors[i].red);
+            rainbow_ring_step[i].green = ((int_fast32_t) rainbow_ring_dest[i].green - tlc_curr_colors[i].green);
+            rainbow_ring_step[i].blue = ((int_fast32_t) rainbow_ring_dest[i].blue - tlc_curr_colors[i].blue);
+        }
+    }
+}
+
+void tlc_fade_colors() {
+    // TODO: there's a bit of resiliency we could add here to avoid the
+    // potential for odd behavior caused by roundoff errors.
+
+    // Load index 0 no matter what.
+    tlc_curr_colors[0].red += rainbow_ring_step[0].red;
+    tlc_curr_colors[0].green += rainbow_ring_step[0].green;
+    tlc_curr_colors[0].blue += rainbow_ring_step[0].blue;
+
+    // If we're shifting (i.e. using the rest of the buffer), then do the rest
+    if (led_anim_mode == TLC_ANIM_MODE_SHIFT) {
+        for (uint8_t i=1; i<5; i++) {
+            tlc_curr_colors[i].red += rainbow_ring_step[i].red;
+            tlc_curr_colors[i].green += rainbow_ring_step[i].green;
+            tlc_curr_colors[i].blue += rainbow_ring_step[i].blue;
+        }
+    }
+}
+
+void tlc_start_anim(rgbcolor_t *anim, uint8_t anim_len, uint8_t fade_steps, uint8_t all_lights_same) {
+    tlc_light_offset = 0;
+    if (all_lights_same)
+        led_anim_mode = TLC_ANIM_MODE_SAME;
+    else
+        led_anim_mode = TLC_ANIM_MODE_SHIFT;
+    tlc_curr_anim = anim;
+    tlc_curr_anim_len = anim_len;
+    ring_fade_steps = fade_steps;
+    ring_fade_index = 0;
+    if (all_lights_same) {
+        led_anim_mode = TLC_ANIM_MODE_SAME;
+    } else {
+        led_anim_mode = TLC_ANIM_MODE_SHIFT;
+    }
+    // TODO: looping?
+    tlc_load_colors();
+}
+
 void tlc_timestep() {
-    static uint8_t shift = 0;
-    tlc_set_gs(shift, 0);
-    shift = (shift+1) % tlc_curr_colors_len;
+    if (led_anim_mode == TLC_ANIM_MODE_IDLE) {
+        return;
+    }
+
+    // Display currently loaded frame:
+    tlc_set_gs();
+
+    // Now compute the next frame:
+    // If we're shifting, we use all of tlc_curr_colors;
+    //  if they're all the same, we only care about index 0.
+
+    // Start by incrementing the between-frame index.
+    ring_fade_index++;
+
+    if (ring_fade_index >= ring_fade_steps) {
+        // If we're done cycling between frames, then we can increment the shift.
+        ring_fade_index = 0;
+        tlc_light_offset++;
+
+        // If the shift will overflow, we're finished.
+        // TODO: unless we're looping?
+        if (tlc_light_offset == tlc_curr_anim_len) {
+            led_anim_mode = TLC_ANIM_MODE_IDLE;
+        } else {
+            // Otherwise load the next color sets.
+            tlc_load_colors();
+        }
+    } else { // Otherwise, we're still fading...
+        // Compute the next step fade.
+        tlc_fade_colors();
+    }
+
+    if (led_anim_mode == TLC_ANIM_MODE_SHIFT) {
+        tlc_color_index++;
+    } // otherwise we keep the same color for all the RGB LEDs.
 }
 
 #pragma vector=USCI_A0_VECTOR
@@ -194,7 +323,8 @@ __interrupt void EUSCI_A0_ISR(void)
             } else if (tlc_tx_index == 1) { // txl, lsb
                 EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, (uint8_t) (tlc_tx_light & 0x00ff));
                 rgb_element_index = 0;
-                tlc_color_index = tlc_light_offset % tlc_curr_colors_len;
+//                tlc_color_index = tlc_light_offset % tlc_curr_colors_len;
+                tlc_color_index = 0;
             } else if (tlc_tx_index == 32) { // done
                 GPIO_pulse(TLC_LATPORT, TLC_LATPIN); // LATCH.
                 tlc_send_type = TLC_SEND_IDLE;
@@ -220,8 +350,9 @@ __interrupt void EUSCI_A0_ISR(void)
                     EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, (uint8_t) (tlc_curr_colors[tlc_color_index].red & 0x00ff));
 
                     if (led_anim_mode == TLC_ANIM_MODE_SHIFT) {
-                        tlc_color_index = (tlc_color_index + 1) % tlc_curr_colors_len;
+                        tlc_color_index++;
                     } // otherwise we keep the same color for all the RGB LEDs.
+
                     break;
                 }
                 rgb_element_index++;

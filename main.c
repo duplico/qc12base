@@ -239,7 +239,7 @@ int main(void)
             // New LED animation frame if needed:
             if (!--rainbow_interval) {
                 oled_anim_next_frame();
-                rainbow_interval = 6;
+                rainbow_interval = 3;
                 tlc_timestep();
             }
 
