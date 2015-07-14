@@ -26,10 +26,11 @@ uint8_t tlc_send_type = TLC_SEND_IDLE;
 
 uint8_t tlc_tx_index = 0;   // Index of currently sending buffer
 uint8_t tlc_ok_to_send = 1; // SPI bus busy or not?
-uint8_t tlc_shift_px = 0;   // Number of channels to shift gs_data by
+uint8_t tlc_light_offset = 0;   // Number of channels to shift gs_data by
 
-// Index of the current GS entry to send (counts down):
+// GS entry transmission handling indices:
 volatile uint8_t rgb_element_index = 14;
+volatile uint8_t tlc_color_index = 0;
 
 #define TLC_ANIM_MODE_IDLE  0
 #define TLC_ANIM_MODE_SHIFT 1
@@ -44,12 +45,17 @@ uint16_t tlc_tx_light = 0xffff;
 rgbcolor_t *tlc_curr_colors;
 uint8_t tlc_curr_colors_len;
 
-rgbcolor_t rainbow1[5] = {
+rgbcolor_t rainbow1[10] = {
         // rainbow colors
+        { 0x0f00, 0x00, 0x00},
         { 0xff00, 0x00, 0x00 },
+        { 0x0f00, 0x0f00, 0x00},
         { 0x00, 0xff00, 0x00 },
+        { 0x00, 0x0f00, 0x0f00 },
         { 0x00, 0x00, 0xff00 },
+        { 0x100, 0x100, 0x2000 },
         { 0xe00, 0xe00, 0xe00 },
+        { 0x100, 0x100, 0x100 },
         { 0x00, 0x00, 0x000 },
 };
 
@@ -125,29 +131,20 @@ void init_tlc() {
     tlc_set_fun();
 }
 
-// TODO: badly needs to be simplified:
-uint8_t tlc_color_index = 0;
-
-// This is the rolling one:
-void tlc_set_gs(uint8_t starting_frame) {
-    while (tlc_send_type != TLC_SEND_IDLE);
-    tlc_shift_px = starting_frame;
-    led_anim_mode = TLC_ANIM_MODE_SHIFT;
-//    led_anim_mode = TLC_ANIM_MODE_SAME;
+void tlc_set_gs(uint8_t starting_frame, uint8_t all_lights_same) {
+    if (tlc_send_type != TLC_SEND_IDLE)
+        return; // TODO: let's try to make sure this never happens.
+    tlc_light_offset = starting_frame;
+    if (all_lights_same)
+        led_anim_mode = TLC_ANIM_MODE_SAME;
+    else
+        led_anim_mode = TLC_ANIM_MODE_SHIFT;
     tlc_send_type = TLC_SEND_TYPE_GS;
     tlc_tx_index = 0;
     tlc_curr_colors = rainbow1;
-    tlc_curr_colors_len = 5;
+    tlc_curr_colors_len = 10;
     EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, TLC_THISISGS);
 }
-
-//void tlc_set_gs(uint8_t shift_amt) {
-//    while (tlc_send_type != TLC_SEND_IDLE); // shouldn't ever actually have to block on this please.
-//    tlc_shift_px = shift_amt;
-//    tlc_send_type = TLC_SEND_TYPE_GS;
-//    tlc_tx_index = 0;
-//    EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, TLC_THISISGS);
-//}
 
 void tlc_set_fun() {
     while (tlc_send_type != TLC_SEND_IDLE); // shouldn't ever actually have to block on this please.
@@ -176,7 +173,7 @@ void tlc_stage_bc(uint8_t bc) {
 
 void tlc_timestep() {
     static uint8_t shift = 0;
-    tlc_set_gs(shift);
+    tlc_set_gs(shift, 0);
     shift = (shift+1) % tlc_curr_colors_len;
 }
 
@@ -197,7 +194,7 @@ __interrupt void EUSCI_A0_ISR(void)
             } else if (tlc_tx_index == 1) { // txl, lsb
                 EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, (uint8_t) (tlc_tx_light & 0x00ff));
                 rgb_element_index = 0;
-                tlc_color_index = tlc_shift_px % tlc_curr_colors_len;
+                tlc_color_index = tlc_light_offset % tlc_curr_colors_len;
             } else if (tlc_tx_index == 32) { // done
                 GPIO_pulse(TLC_LATPORT, TLC_LATPIN); // LATCH.
                 tlc_send_type = TLC_SEND_IDLE;

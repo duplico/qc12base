@@ -9,7 +9,7 @@
 
 void init_tlc();
 
-void tlc_set_gs(uint8_t);
+void tlc_set_gs(uint8_t, uint8_t);
 void tlc_set_fun();
 void tlc_stage_blank(uint8_t);
 

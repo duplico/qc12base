@@ -226,7 +226,7 @@ int main(void)
     oled_play_animation(standing, 0);
     oled_anim_next_frame();
 
-    tlc_stage_blank(1);
+    tlc_stage_blank(0);
     tlc_set_fun();
 
     while (1) {
