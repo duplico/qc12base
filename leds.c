@@ -300,10 +300,6 @@ void tlc_timestep() {
         // Compute the next step fade.
         tlc_fade_colors();
     }
-
-    if (led_anim_mode == TLC_ANIM_MODE_SHIFT) {
-        tlc_color_index++;
-    } // otherwise we keep the same color for all the RGB LEDs.
 }
 
 #pragma vector=USCI_A0_VECTOR
