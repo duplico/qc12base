@@ -237,7 +237,7 @@ __interrupt void EUSCI_A0_ISR(void)
                 UCA0CTLW0 &= ~UCSWRST;
                 EUSCI_A_SPI_clearInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
                 EUSCI_A_SPI_enableInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
-            } else if (tlc_tx_index == 33) {
+            } else if (tlc_tx_index == 34) {
                 GPIO_pulse(TLC_LATPORT, TLC_LATPIN); // LATCH.
                 UCA0CTLW0 |= UCSWRST;
                 UCA0CTLW0 &= ~UC7BIT;
