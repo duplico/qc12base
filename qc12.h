@@ -22,7 +22,8 @@
 // Name entry configuration parameters:
 #define NAME_SEL_CHAR '*'
 #define NAME_MAX_LEN 14
-#define NAME_COMMIT_CYCLES 80
+// this will break everything if it's 1 or possibly 2:
+#define NAME_COMMIT_LOOPS 80
 
 // Character name & title font:
 #define NAME_FONT_HEIGHT 14

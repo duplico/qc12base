@@ -186,6 +186,10 @@ void tlc_stage_blank(uint8_t blank) {
     }
 }
 
+void tlc_test_loopback(uint8_t test_pattern) {
+
+}
+
 // Stage global brightness if different from default:
 void tlc_stage_bc(uint8_t bc) {
     bc = bc & 0b01111111; // Mask out BLANK just in case.
