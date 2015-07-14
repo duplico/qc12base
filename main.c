@@ -91,6 +91,8 @@ void post() {
     // Check the crystal.
     uint8_t crystal_error = CSCTL5 & LFXTOFFG;
     // Check the shift register of the TLC.
+    uint8_t led_error = tlc_test_loopback(0b10101010);
+    led_error = led_error || tlc_test_loopback(0b01010101);
     // Check the radio if possible. (NB: if we can't talk to it at all, we
     //    may not even get this far.)
     // Check the flash chip.

@@ -186,8 +186,29 @@ void tlc_stage_blank(uint8_t blank) {
     }
 }
 
-void tlc_test_loopback(uint8_t test_pattern) {
+uint8_t tlc_loopback_data_out = 0x00;
+uint8_t tlc_loopback_data_in = 0x00;
 
+// Test the TLC chip with a shift-register loopback.
+// Returns 0 for success and 1 for failure.
+uint8_t tlc_test_loopback(uint8_t test_pattern) {
+    // Send the test pattern 34 times, and expect to receive it shifted
+    // a bit.
+    tlc_loopback_data_out = test_pattern;
+    while (tlc_send_type != TLC_SEND_IDLE); // I don't see this happening...
+
+    EUSCI_A_SPI_clearInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_RECEIVE_INTERRUPT);
+    EUSCI_A_SPI_enableInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_RECEIVE_INTERRUPT);
+
+    tlc_send_type = TLC_SEND_TYPE_LB;
+    tlc_tx_index = 0;
+    EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, test_pattern);
+    // Spin while we send and receive:
+    while (tlc_send_type != TLC_SEND_IDLE);
+
+    EUSCI_A_SPI_disableInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_RECEIVE_INTERRUPT);
+
+    return tlc_loopback_data_in != (test_pattern << 7) | (test_pattern >> 1);
 }
 
 // Stage global brightness if different from default:
@@ -313,7 +334,12 @@ __interrupt void EUSCI_A0_ISR(void)
     //Vector 2 - RXIFG
     case 2:
         // We received some garbage sent to us while we were sending.
-        EUSCI_B_SPI_receiveData(EUSCI_A0_BASE); // Throw it away.
+        if (tlc_send_type == TLC_SEND_TYPE_LB) {
+            // We're only interested in it if we're doing a loopback test.
+            tlc_loopback_data_in = EUSCI_B_SPI_receiveData(EUSCI_A0_BASE);
+        } else {
+            EUSCI_B_SPI_receiveData(EUSCI_A0_BASE); // Throw it away.
+        }
         break; // End of RXIFG ///////////////////////////////////////////////////////
 
     case 4: // Vector 4 - TXIFG : I just sent a byte.
@@ -376,6 +402,13 @@ __interrupt void EUSCI_A0_ISR(void)
                 break;
             }
             EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, fun_base[tlc_tx_index]);
+            tlc_tx_index++;
+        } else if (tlc_send_type == TLC_SEND_TYPE_LB) { // Loopback for POST
+            if (tlc_tx_index == 33) { // TODO: make sure this is the right #.
+                tlc_send_type = TLC_SEND_IDLE;
+                break;
+            }
+            EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, tlc_loopback_data_out);
             tlc_tx_index++;
         } else {
             tlc_send_type = TLC_SEND_IDLE; // TODO: probably shouldn't reach.

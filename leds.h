@@ -21,6 +21,8 @@ typedef struct {
 
 void init_tlc();
 
+uint8_t tlc_test_loopback(uint8_t);
+
 void tlc_set_gs();
 void tlc_set_fun();
 void tlc_stage_blank(uint8_t);
