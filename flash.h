@@ -8,6 +8,6 @@
 #ifndef FLASH_H_
 #define FLASH_H_
 
-
+uint8_t flash_post();
 
 #endif /* FLASH_H_ */
