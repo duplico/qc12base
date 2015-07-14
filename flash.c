@@ -195,3 +195,16 @@ void init_flash() {
     flash_state = 0;
     flash_get_status();
 }
+
+// Do a test of the flash.
+// Returns 1 if a problem is detected.
+uint8_t flash_post() {
+    uint8_t initial_status = flash_get_status();
+    flash_wr_en();
+    if (flash_get_status() != (initial_status | BIT1))
+        return 1;
+    flash_wr_dis();
+    if (flash_get_status() != (initial_status & ~BIT1))
+        return 1;
+    return 0;
+}
