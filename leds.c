@@ -231,7 +231,7 @@ void init_tlc() {
     tlc_set_fun();
 
 
-    tlc_start_anim(rainbow2, 5, 10, 0);
+    tlc_start_anim(rainbow2, 5, 20, 0);
 
 }
 
@@ -246,11 +246,11 @@ void tlc_load_colors() {
 
     if (led_anim_mode == TLC_ANIM_MODE_SHIFT) {
         for (uint8_t i=1; i<5; i++) {
-            memcpy(&tlc_curr_colors[i], &tlc_curr_anim[(tlc_light_offset + 1) % tlc_curr_anim_len], sizeof(rgbcolor_t));
+            memcpy(&tlc_curr_colors[i], &tlc_curr_anim[(tlc_light_offset + i) % tlc_curr_anim_len], sizeof(rgbcolor_t));
             memcpy(&rainbow_ring_dest[i], &tlc_curr_anim[(tlc_light_offset + i + 1) % tlc_curr_anim_len], sizeof(rgbcolor_t));
-            rainbow_ring_step[i].red = ((int_fast32_t) rainbow_ring_dest[i].red - tlc_curr_colors[i].red);
-            rainbow_ring_step[i].green = ((int_fast32_t) rainbow_ring_dest[i].green - tlc_curr_colors[i].green);
-            rainbow_ring_step[i].blue = ((int_fast32_t) rainbow_ring_dest[i].blue - tlc_curr_colors[i].blue);
+            rainbow_ring_step[i].red = ((int_fast32_t) rainbow_ring_dest[i].red - tlc_curr_colors[i].red) / ring_fade_steps;
+            rainbow_ring_step[i].green = ((int_fast32_t) rainbow_ring_dest[i].green - tlc_curr_colors[i].green) / ring_fade_steps;
+            rainbow_ring_step[i].blue = ((int_fast32_t) rainbow_ring_dest[i].blue - tlc_curr_colors[i].blue) / ring_fade_steps;
         }
     }
 }
