@@ -114,24 +114,22 @@ void post() {
     GrContextFontSet(&g_sContext, &SYS_FONT);
     uint8_t print_loc = 32;
 
-    GrStringDraw(&g_sContext, "- POST -", -1, 0, 5, 0);
+    GrStringDraw(&g_sContext, "- POST -", -1, 0, 5, 1);
 
     if (crystal_error) {
-        GrStringDraw(&g_sContext, "Err: XTAL!", -1, 0, print_loc, 0);
+        GrStringDraw(&g_sContext, "Err: XTAL!", -1, 0, print_loc, 1);
         print_loc += 12;
     }
 
     if (led_error) {
-        GrStringDraw(&g_sContext, "Err: LED!", -1, 0, print_loc, 0);
+        GrStringDraw(&g_sContext, "Err: LED!", -1, 0, print_loc, 1);
         print_loc += 12;
     }
 
     if (flash_error) {
-        GrStringDraw(&g_sContext, "Err: Mem!", -1, 0, print_loc, 0);
+        GrStringDraw(&g_sContext, "Err: Mem!", -1, 0, print_loc, 1);
         print_loc += 12;
     }
-
-    delay(5000);
 }
 
 // Play a cute animation when we first turn the badge on.
@@ -274,9 +272,10 @@ void get_name() {
 int main(void)
 {
     init();
-    post();
     intro(); // Play a cute animation when we first turn the badge on.
-    delay(8000);
+    delay(1000);
+    post();
+    delay(6000);
     get_name(); // Learn the badge's name (if we don't have it already)
 
     // Reset all the flags after leaving the intro/post/name entry:
@@ -294,8 +293,6 @@ int main(void)
 
     while (1) {
         // The following operating modes are possible:
-        //   [ ] POST/intro (handled above)
-        //   [ ] Name setting (handled above)
         //   [ ] Friend request (outgoing or accepting)
         //   [ ] Status summary
         //   [ ] Flag setting?
