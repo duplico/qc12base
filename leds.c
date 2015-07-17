@@ -229,10 +229,6 @@ void init_tlc() {
 
     tlc_stage_blank(1);
     tlc_set_fun();
-
-
-    tlc_start_anim(rainbow2, 5, 20, 0);
-
 }
 
 void tlc_load_colors() {
@@ -275,6 +271,8 @@ void tlc_fade_colors() {
 }
 
 void tlc_start_anim(rgbcolor_t *anim, uint8_t anim_len, uint8_t fade_steps, uint8_t all_lights_same) {
+    tlc_stage_blank(0);
+    tlc_set_fun();
     tlc_light_offset = 0;
     if (all_lights_same)
         led_anim_mode = TLC_ANIM_MODE_SAME;
@@ -291,6 +289,13 @@ void tlc_start_anim(rgbcolor_t *anim, uint8_t anim_len, uint8_t fade_steps, uint
     }
     // TODO: looping?
     tlc_load_colors();
+}
+
+void tlc_stop_anim(uint8_t blank) {
+    if (blank)
+        tlc_stage_blank(0);
+        tlc_set_fun();
+    led_anim_mode = TLC_ANIM_MODE_IDLE;
 }
 
 void tlc_timestep() {

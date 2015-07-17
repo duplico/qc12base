@@ -25,6 +25,8 @@ volatile uint8_t f_new_second = 0;
 volatile uint8_t f_rfm_rx_done = 0;
 volatile uint8_t f_rfm_tx_done = 0;
 
+volatile uint8_t f_default_conf_loaded = 0;
+
 // Function declarations:
 void poll_buttons();
 
@@ -35,12 +37,12 @@ qc12conf my_conf;
 const qc12conf backup_conf;
 
 const qc12conf default_conf = {
-        0,
-        50,
-        0,
-        0,
-        "", // NB: this is required to be a 0
-        0x0000
+        0,     // id
+        50,    // mood
+        0,     // title
+        0,     // exp
+        "", // handle: this is required to be empty (i.e. first element is \0)
+        0x0000 // crc16
 };
 
 const char titles[][10] = {
@@ -49,6 +51,19 @@ const char titles[][10] = {
         "Spastic",
         "Bored",
         "Socialite",
+};
+
+// In the "modal" sense:
+uint8_t op_mode = OP_MODE_IDLE;
+
+char sk_labels[][10] = {
+       "PLAY",
+       "A/S/L?",
+       "Befriend",
+       "Wave flag",
+       "Pick flag",
+       "RPS",
+       "Set name"
 };
 
 // The code:
@@ -67,6 +82,7 @@ void check_conf() {
             CRC_set8BitData(CRC_BASE, ((uint8_t *) &default_conf)[i]);
         }
         my_conf.crc16 = CRC_getResult(CRC_BASE);
+        f_default_conf_loaded = 1;
     }
 }
 
@@ -141,14 +157,32 @@ void intro() {
     GrFlush(&g_sContext);
 }
 
-const tRectangle name_erase = {0, NAME_Y_OFFSET, 63, NAME_Y_OFFSET + NAME_FONT_HEIGHT + SYS_FONT_HEIGHT};
+// Shared activities between modes are:
+//   Infrastructure service
+//   LED actions
+//   Character actions
+
+void handle_infrastructure_services() {
+    if (f_time_loop) {
+        poll_buttons();
+    }
+}
+
+void handle_led_actions() {
+    if (f_time_loop) {
+        tlc_timestep();
+    }
+}
+
+void handle_character_actions() {
+    oled_timestep();
+    oled_anim_next_frame();
+}
+
+const tRectangle name_erase_rect = {0, NAME_Y_OFFSET, 63, NAME_Y_OFFSET + NAME_FONT_HEIGHT + SYS_FONT_HEIGHT};
 
 // Read the badgeholder's name if appropriate:
-void get_name() {
-
-    if (my_conf.handle[0])
-        return; // Already have a name set.
-
+void handle_mode_name() {
     // Clear the screen and display the instructions.
     GrClearDisplay(&g_sContext);
     GrContextFontSet(&g_sContext, &SYS_FONT);
@@ -183,11 +217,11 @@ void get_name() {
     uint8_t bs_down_loops = 0;
 
     while (1) {
+        handle_infrastructure_services();
+        handle_led_actions();
+
         if (f_time_loop) {
             f_time_loop = 0;
-
-            // Poll and debounce the buttons.
-            poll_buttons();
             // Check for left/right buttons to change character slot
             text_width = GrStringWidthGet(&g_sContext, name, last_char_index+1);
             if (f_bl == BUTTON_RELEASE) {
@@ -250,7 +284,7 @@ void get_name() {
 
             // Clear the area:
             GrContextForegroundSet(&g_sContext, ClrBlack);
-            GrRectFill(&g_sContext, &name_erase);
+            GrRectFill(&g_sContext, &name_erase_rect);
             GrContextForegroundSet(&g_sContext, ClrWhite);
 
             // Rewrite it:
@@ -267,51 +301,22 @@ void get_name() {
         name_len++;
     name[name_len] = 0; // null terminate.
     strcpy(my_conf.handle, name);
-} // get_name
+    op_mode = OP_MODE_IDLE;
+} // handle_mode_name
 
-int main(void)
-{
-    init();
-    intro(); // Play a cute animation when we first turn the badge on.
-    delay(1000);
-    post();
-    delay(6000);
-    get_name(); // Learn the badge's name (if we don't have it already)
+uint8_t softkey_sel = 0;
 
-    // Reset all the flags after leaving the intro/post/name entry:
-    f_bl = f_br = f_bs = f_new_second = 0;
-    f_rfm_rx_done = f_rfm_tx_done = f_time_loop = 0;
-
-    GrClearDisplay(&g_sContext);
+void handle_mode_idle() {
     oled_draw_pane();
-
     oled_play_animation(standing, 0);
     oled_anim_next_frame();
-
-    tlc_stage_blank(0);
-    tlc_set_fun();
-
+    tlc_start_anim(rainbow2, 5, 20, 0);
     while (1) {
-        // The following operating modes are possible:
-        //   [ ] Friend request (outgoing or accepting)
-        //   [ ] Status summary
-        //   [ ] Flag setting?
-        //   [ ] Character/idle
-        //       (this is the big, main one, and event/actions are queued or
-        //        ignored until we return to this mode.)
-        //   [ ] Sleep mode?
-
+        handle_infrastructure_services();
+        handle_led_actions();
+        handle_character_actions();
         if (f_time_loop) {
-            f_time_loop = 0;
-
-            // Debounce & generate flags from the buttons:
-            poll_buttons();
-
-            // New LED animation frame if needed:
-            tlc_timestep();
-
-            oled_timestep();
-            oled_anim_next_frame();
+            // These are SPRITE animations:
 
             // Do stuff:
 
@@ -327,11 +332,95 @@ int main(void)
                 oled_play_animation(waving, 3);
                 f_br = 0;
             }
+        }
+    }
+    tlc_stop_anim(1);
+}
 
+void handle_mode_asl() {
+    // Radio does background stuff but character actions ignored.
+    // TLC continues to animate.
+    while (1) {
+        handle_infrastructure_services();
+        handle_led_actions();
+    }
+}
+
+void handle_mode_sleep() {
+    while (1) {
+
+    }
+}
+
+void handle_mode_setflag() {
+    while (1) {
+        handle_infrastructure_services();
+    }
+
+}
+
+void handle_mode_rps() {
+    while (1) {
+        handle_infrastructure_services();
+    }
+}
+
+int main(void)
+{
+    init();
+    intro(); // Play a cute animation when we first turn the badge on.
+    delay(1000);
+    post();
+    delay(6000);
+
+    GrClearDisplay(&g_sContext);
+
+    if (!my_conf.handle[0] || f_default_conf_loaded) { // Name is not set:
+        op_mode = OP_MODE_NAME;
+        f_default_conf_loaded = 0;
+    }
+
+    while (1) {
+        switch(op_mode) {
+        case OP_MODE_IDLE:
+            handle_mode_idle();
+            break;
+        case OP_MODE_NAME:
+            handle_mode_name(); // Learn the badge's name (if we don't have it already)
+            break;
         }
-        if (f_new_second) {
-            f_new_second = 0;
+
+        // Reset user-interactive flags after switching modes:
+        f_bl = f_br = f_bs = 0;
+    }
+
+
+    while (1) {
+        // The following operating modes are possible:
+        //   [ ] Friend request (outgoing or accepting)
+        //   [ ] Status summary
+        //   [ ] Flag setting?
+        //   [ ] Character/idle
+        //       (this is the big, main one, and event/actions are queued or
+        //        ignored until we return to this mode.)
+        //   [ ] Sleep mode?
+
+        switch(__even_in_range(op_mode, OP_MODE_MAX)) {
+        case OP_MODE_IDLE:
+            handle_mode_idle();
         }
+        // Universal time loop behavior:
+        if (f_time_loop) {
+            // Clear the time loop flag:
+            f_time_loop = 0;
+
+            // Debounce and poll buttons:
+            poll_buttons();
+
+            // New LED animation frame if needed:
+            tlc_timestep();
+        }
+
 
         // If there are no more flags left to service, go to sleep.
         if (!(f_bl || f_br || f_bs || f_new_second || f_rfm_rx_done || f_rfm_tx_done || f_time_loop)) {
