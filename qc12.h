@@ -67,6 +67,27 @@
 #define TLC_SEND_TYPE_FUN 2
 #define TLC_SEND_TYPE_LB  3
 
+// Overall operating modes:
+#define OP_MODE_IDLE 0
+#define OP_MODE_NAME 2
+#define OP_MODE_ASL 4
+#define OP_MODE_SLEEP 6
+#define OP_MODE_SETFLAG 8
+#define OP_MODE_BEFRIEND 10
+#define OP_MODE_MAX OP_MODE_BEFRIEND
+
+// Softkey options:
+#define SK_SEL_PLAY 0
+#define SK_SEL_ASL 1
+#define SK_SEL_FRIEND 2
+#define SK_SEL_FLAG 3
+#define SK_SEL_SETFLAG 4
+#define SK_SEL_RPS 5
+#define SK_SEL_NAME 6
+#define SK_SEL_MAX SK_SEL_NAME
+
+extern char sk_labels[][];
+
 //////////////////////////////////////////////////////////////////////
 // Functions etc. ////////////////////////////////////////////////////
 
@@ -100,5 +121,7 @@ typedef struct {
 
 extern qc12conf my_conf;
 extern const qc12conf default_conf;
+
+extern uint8_t op_mode;
 
 #endif /* QC12_H_ */
