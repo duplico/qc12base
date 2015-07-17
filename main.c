@@ -27,6 +27,9 @@ volatile uint8_t f_rfm_tx_done = 0;
 
 volatile uint8_t f_default_conf_loaded = 0;
 
+uint8_t softkey_sel = 0;
+uint8_t softkey_en = BIT0 | BIT1;
+
 // Function declarations:
 void poll_buttons();
 
@@ -56,7 +59,7 @@ const char titles[][10] = {
 // In the "modal" sense:
 uint8_t op_mode = OP_MODE_IDLE;
 
-char sk_labels[][10] = {
+const char sk_labels[][10] = {
        "PLAY",
        "A/S/L?",
        "Befriend",
@@ -163,6 +166,7 @@ void intro() {
 //   Character actions
 
 void handle_infrastructure_services() {
+    // Handle inbound and outbound background radio functionality.
     if (f_time_loop) {
         poll_buttons();
     }
@@ -175,8 +179,17 @@ void handle_led_actions() {
 }
 
 void handle_character_actions() {
-    oled_timestep();
-    oled_anim_next_frame();
+    if (f_time_loop) {
+        oled_timestep();
+        oled_anim_next_frame();
+    }
+}
+
+void try_to_sleep() {
+    // If there are no more flags left to service, go to sleep.
+    if (!(f_bl || f_br || f_bs || f_new_second || f_rfm_rx_done || f_rfm_tx_done || f_time_loop)) {
+        __bis_SR_register(SLEEP_BITS);
+    }
 }
 
 const tRectangle name_erase_rect = {0, NAME_Y_OFFSET, 63, NAME_Y_OFFSET + NAME_FONT_HEIGHT + SYS_FONT_HEIGHT};
@@ -292,8 +305,11 @@ void handle_mode_name() {
             GrLineDrawH(&g_sContext, 0, text_width, NAME_Y_OFFSET+12);
             GrStringDraw(&g_sContext, undername, -1, underchar_x, NAME_Y_OFFSET+13, 1);
             GrFlush(&g_sContext);
-        }
-    }
+        } // end if (f_time_loop)
+
+        try_to_sleep();
+
+    } // end while (1)
 
     // Commit the name with a correctly placed null termination character..
     uint8_t name_len = 0;
@@ -304,36 +320,80 @@ void handle_mode_name() {
     op_mode = OP_MODE_IDLE;
 } // handle_mode_name
 
-uint8_t softkey_sel = 0;
+uint8_t softkey_enabled(uint8_t index) {
+    return ((1<<index) & softkey_en)? 1 : 0;
+}
 
 void handle_mode_idle() {
+    // Clear any outstanding stray flags asking the character to do stuff
+    //    so we know we're in a consistent state when we enter this mode.
+
+    uint8_t s_new_pane = 0;
+
     oled_draw_pane();
+    // Pick our current appearance...
     oled_play_animation(standing, 0);
+
     oled_anim_next_frame();
     tlc_start_anim(rainbow2, 5, 20, 0);
     while (1) {
         handle_infrastructure_services();
         handle_led_actions();
         handle_character_actions();
-        if (f_time_loop) {
-            // These are SPRITE animations:
 
-            // Do stuff:
-
-            if (f_bl) {
-                oled_play_animation(standing, 0);
-                f_bl = 0;
-            }
-            if (f_bs) {
-                oled_play_animation(walking, 2);
-                f_bs = 0;
-            }
-            if (f_br) {
-                oled_play_animation(waving, 3);
-                f_br = 0;
+        if (f_bl) {
+            // Left button
+            do {
+                softkey_sel = (softkey_sel+1) % (SK_SEL_MAX+1);
+            } while (!softkey_enabled(softkey_sel));
+            s_new_pane = 1;
+        } else if (f_br) {
+            do {
+                softkey_sel = (softkey_sel+SK_SEL_MAX) % (SK_SEL_MAX+1);
+            } while (!softkey_enabled(softkey_sel));
+            s_new_pane = 1;
+        } else if (f_bs) {
+            // Select button
+            switch (softkey_sel) {
+            case SK_SEL_ASL:
+                break;
+            case SK_SEL_SETFLAG:
+                break;
+            case SK_SEL_NAME:
+                break;
+            case SK_SEL_PLAY:
+                break;
+            case SK_SEL_FLAG:
+                break;
+            case SK_SEL_RPS:
+                break;
+            case SK_SEL_FRIEND:
+                break;
+            default:
+                __never_executed();
             }
         }
+
+        if (f_time_loop) {
+            f_time_loop = 0;
+        }
+
+        if (s_new_pane) {
+            // Title or softkey or something changed:
+            s_new_pane = 0;
+            oled_draw_pane();
+        }
+
+        if (op_mode != OP_MODE_IDLE) {
+            break; // Escape the loop!
+        }
+
+        try_to_sleep();
+
     }
+
+    // Cleanup:
+
     tlc_stop_anim(1);
 }
 
@@ -343,25 +403,33 @@ void handle_mode_asl() {
     while (1) {
         handle_infrastructure_services();
         handle_led_actions();
+        try_to_sleep();
     }
 }
 
 void handle_mode_sleep() {
+    // Sleep the radio and TLC.
+    // Clear the screen.
     while (1) {
-
+        if (f_time_loop) {
+            // make some Zs
+            f_time_loop = 0;
+        }
+        try_to_sleep(); // This one needs to be different...
     }
 }
 
 void handle_mode_setflag() {
     while (1) {
         handle_infrastructure_services();
+        try_to_sleep();
     }
-
 }
 
 void handle_mode_rps() {
     while (1) {
         handle_infrastructure_services();
+        try_to_sleep();
     }
 }
 
@@ -388,45 +456,20 @@ int main(void)
         case OP_MODE_NAME:
             handle_mode_name(); // Learn the badge's name (if we don't have it already)
             break;
+        case OP_MODE_ASL:
+            handle_mode_asl();
+            break;
+        case OP_MODE_SETFLAG:
+            handle_mode_setflag();
+            break;
+        case OP_MODE_BEFRIEND:
+            break; // TODO... Is this even a mode?
         }
 
         // Reset user-interactive flags after switching modes:
         f_bl = f_br = f_bs = 0;
-    }
 
-
-    while (1) {
-        // The following operating modes are possible:
-        //   [ ] Friend request (outgoing or accepting)
-        //   [ ] Status summary
-        //   [ ] Flag setting?
-        //   [ ] Character/idle
-        //       (this is the big, main one, and event/actions are queued or
-        //        ignored until we return to this mode.)
-        //   [ ] Sleep mode?
-
-        switch(__even_in_range(op_mode, OP_MODE_MAX)) {
-        case OP_MODE_IDLE:
-            handle_mode_idle();
-        }
-        // Universal time loop behavior:
-        if (f_time_loop) {
-            // Clear the time loop flag:
-            f_time_loop = 0;
-
-            // Debounce and poll buttons:
-            poll_buttons();
-
-            // New LED animation frame if needed:
-            tlc_timestep();
-        }
-
-
-        // If there are no more flags left to service, go to sleep.
-        if (!(f_bl || f_br || f_bs || f_new_second || f_rfm_rx_done || f_rfm_tx_done || f_time_loop)) {
-            __bis_SR_register(SLEEP_BITS);
-        }
-    }
+    } // loop forever. Sleeping is done inside the mode handlers.
 } // main
 
 void poll_buttons() {
