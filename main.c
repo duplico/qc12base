@@ -28,7 +28,7 @@ volatile uint8_t f_rfm_tx_done = 0;
 volatile uint8_t f_default_conf_loaded = 0;
 
 uint8_t softkey_sel = 0;
-uint8_t softkey_en = BIT0 | BIT1;
+uint8_t softkey_en = BIT0 | BIT1 | BIT6;
 
 // Function declarations:
 void poll_buttons();
@@ -61,7 +61,7 @@ uint8_t op_mode = OP_MODE_IDLE;
 
 const char sk_labels[][10] = {
        "PLAY",
-       "A/S/L?",
+       "ASL?",
        "Befriend",
        "Wave flag",
        "Pick flag",
@@ -90,7 +90,7 @@ void check_conf() {
 }
 
 void init_rtc() {
-    RTC_B_definePrescaleEvent(RTC_B_BASE, RTC_B_PRESCALE_1, RTC_B_PSEVENTDIVIDER_4); // 32 Hz
+    RTC_B_definePrescaleEvent(RTC_B_BASE, RTC_B_PRESCALE_1, RTC_B_PSEVENTDIVIDER_2); // 64 Hz
     RTC_B_clearInterrupt(RTC_B_BASE, RTC_B_CLOCK_READ_READY_INTERRUPT + RTC_B_TIME_EVENT_INTERRUPT + RTC_B_CLOCK_ALARM_INTERRUPT + RTC_B_PRESCALE_TIMER1_INTERRUPT);
     RTC_B_enableInterrupt(RTC_B_BASE, RTC_B_CLOCK_READ_READY_INTERRUPT + RTC_B_TIME_EVENT_INTERRUPT + RTC_B_CLOCK_ALARM_INTERRUPT + RTC_B_PRESCALE_TIMER1_INTERRUPT);
 }
@@ -318,6 +318,9 @@ void handle_mode_name() {
     name[name_len] = 0; // null terminate.
     strcpy(my_conf.handle, name);
     op_mode = OP_MODE_IDLE;
+
+    GrClearDisplay(&g_sContext);
+    GrFlush(&g_sContext);
 } // handle_mode_name
 
 uint8_t softkey_enabled(uint8_t index) {
@@ -341,41 +344,44 @@ void handle_mode_idle() {
         handle_led_actions();
         handle_character_actions();
 
-        if (f_bl) {
-            // Left button
-            do {
-                softkey_sel = (softkey_sel+1) % (SK_SEL_MAX+1);
-            } while (!softkey_enabled(softkey_sel));
-            s_new_pane = 1;
-        } else if (f_br) {
-            do {
-                softkey_sel = (softkey_sel+SK_SEL_MAX) % (SK_SEL_MAX+1);
-            } while (!softkey_enabled(softkey_sel));
-            s_new_pane = 1;
-        } else if (f_bs) {
-            // Select button
-            switch (softkey_sel) {
-            case SK_SEL_ASL:
-                break;
-            case SK_SEL_SETFLAG:
-                break;
-            case SK_SEL_NAME:
-                break;
-            case SK_SEL_PLAY:
-                break;
-            case SK_SEL_FLAG:
-                break;
-            case SK_SEL_RPS:
-                break;
-            case SK_SEL_FRIEND:
-                break;
-            default:
-                __never_executed();
-            }
-        }
-
         if (f_time_loop) {
             f_time_loop = 0;
+            if (f_br == BUTTON_RELEASE) {
+                f_br = 0;
+                // Left button
+                do {
+                    softkey_sel = (softkey_sel+1) % (SK_SEL_MAX+1);
+                } while (!softkey_enabled(softkey_sel));
+                s_new_pane = 1;
+            } else if (f_bl == BUTTON_RELEASE) {
+                f_bl = 0;
+                do {
+                    softkey_sel = (softkey_sel+SK_SEL_MAX) % (SK_SEL_MAX+1);
+                } while (!softkey_enabled(softkey_sel));
+                s_new_pane = 1;
+            } else if (f_bs == BUTTON_RELEASE) {
+                f_bs = 0;
+                // Select button
+                switch (softkey_sel) {
+                case SK_SEL_ASL:
+                    break;
+                case SK_SEL_SETFLAG:
+                    break;
+                case SK_SEL_NAME:
+                    op_mode = OP_MODE_NAME;
+                    break;
+                case SK_SEL_PLAY:
+                    break;
+                case SK_SEL_FLAG:
+                    break;
+                case SK_SEL_RPS:
+                    break;
+                case SK_SEL_FRIEND:
+                    break;
+                default:
+                    __never_executed();
+                }
+            }
         }
 
         if (s_new_pane) {

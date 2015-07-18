@@ -34,8 +34,8 @@
 #define SYS_FONT_HEIGHT 12
 
 // Softkey label font:
-#define SOFTKEY_LABEL_FONT g_sFontCmsc12
-#define SOFTKEY_FONT_HEIGHT 10 // not 12 because we're using sm. caps only.
+#define SOFTKEY_LABEL_FONT SYS_FONT
+#define SOFTKEY_FONT_HEIGHT 12 // not 12 because we're using sm. caps only.
 
 //////////////////////////
 // Derived definitions ///
