@@ -292,9 +292,10 @@ void tlc_start_anim(rgbcolor_t *anim, uint8_t anim_len, uint8_t fade_steps, uint
 }
 
 void tlc_stop_anim(uint8_t blank) {
-    if (blank)
-        tlc_stage_blank(0);
+    if (blank) {
+        tlc_stage_blank(blank);
         tlc_set_fun();
+    }
     led_anim_mode = TLC_ANIM_MODE_IDLE;
 }
 
