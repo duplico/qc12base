@@ -355,7 +355,7 @@ void handle_mode_idle() {
     oled_play_animation(standing, 0);
 
     oled_anim_next_frame();
-    tlc_start_anim(rainbow2, 5, 20, 0);
+    tlc_start_anim(rainbow2, 5, 20, 0, 1);
     while (1) {
         handle_infrastructure_services();
         handle_led_actions();

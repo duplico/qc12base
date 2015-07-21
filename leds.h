@@ -28,7 +28,7 @@ uint8_t tlc_test_loopback(uint8_t);
 void tlc_set_gs();
 void tlc_set_fun();
 void tlc_stage_blank(uint8_t);
-void tlc_start_anim(rgbcolor_t *anim, uint8_t anim_len, uint8_t fade_steps, uint8_t all_lights_same);
+void tlc_start_anim(rgbcolor_t *, uint8_t, uint8_t, uint8_t, uint8_t);
 void tlc_stop_anim(uint8_t blank);
 
 void tlc_timestep();
