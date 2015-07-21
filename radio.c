@@ -432,10 +432,10 @@ __interrupt void radio_interrupt_0(void) {
             // point. So raise our interrupt flag for tx_done...
             f_rfm_tx_done = 1;
             expected_dio_interrupt = 0;
-            // And return to our normal receive automode:
+            // NB: We will still need to return to our normal receive automode:
             // RX->SB->RX on receive.
-            write_single_register(0x3b, RFM_AUTOMODE_RX); // TODO: This really needs to be done in a flag-handler.
-            write_single_register_async(RFM_OPMODE, RFM_MODE_RX);
+            // OUTSIDE AN ISR we need: write_single_register(0x3b, RFM_AUTOMODE_RX);
+            // and then: write_single_register_async(RFM_OPMODE, RFM_MODE_RX);
         } else { // rx
             radio_recv_start();
         }
