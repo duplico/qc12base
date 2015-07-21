@@ -44,6 +44,7 @@ uint16_t tlc_tx_light = 0xffff;
 
 rgbcolor_t *tlc_curr_anim;
 uint8_t tlc_curr_anim_len;
+uint8_t tlc_anim_looping;
 
 rgbcolor_t rainbow1[10] = {
         // rainbow colors
@@ -63,7 +64,7 @@ rgbcolor_t rainbow2[5] = {
         { 0xff00, 0x00, 0x00 },
         { 0x00, 0xff00, 0x00 },
         { 0x00, 0x00, 0xff00 },
-        { 0xe00, 0xe00, 0xe00 },
+        { 0xff00, 0xff00, 0xff00 },
         { 0x00, 0x00, 0x000 },
 };
 
@@ -208,7 +209,7 @@ uint8_t tlc_test_loopback(uint8_t test_pattern) {
 
     EUSCI_A_SPI_disableInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_RECEIVE_INTERRUPT);
 
-    return tlc_loopback_data_in != (test_pattern << 7) | (test_pattern >> 1);
+    return tlc_loopback_data_in != (uint8_t) ((test_pattern << 7) | (test_pattern >> 1));
 }
 
 // Stage global brightness if different from default:
@@ -219,7 +220,7 @@ void tlc_stage_bc(uint8_t bc) {
 }
 
 void init_tlc() {
-    // TODO: Shouldn't really need to do this:
+    // This is just out of an abundance of caution:
     UCA0CTLW0 |= UCSWRST;
     UCA0CTLW0 &= ~UC7BIT;
     UCA0CTLW0 &= ~UCSWRST;
@@ -270,9 +271,10 @@ void tlc_fade_colors() {
     }
 }
 
-void tlc_start_anim(rgbcolor_t *anim, uint8_t anim_len, uint8_t fade_steps, uint8_t all_lights_same) {
+void tlc_start_anim(rgbcolor_t *anim, uint8_t anim_len, uint8_t fade_steps, uint8_t all_lights_same, uint8_t loop) {
     tlc_stage_blank(0);
     tlc_set_fun();
+
     tlc_light_offset = 0;
     if (all_lights_same)
         led_anim_mode = TLC_ANIM_MODE_SAME;
@@ -287,7 +289,7 @@ void tlc_start_anim(rgbcolor_t *anim, uint8_t anim_len, uint8_t fade_steps, uint
     } else {
         led_anim_mode = TLC_ANIM_MODE_SHIFT;
     }
-    // TODO: looping?
+    tlc_anim_looping = loop;
     tlc_load_colors();
 }
 
@@ -320,13 +322,16 @@ void tlc_timestep() {
         tlc_light_offset++;
 
         // If the shift will overflow, we're finished.
-        // TODO: unless we're looping?
+        // unless we're looping.
         if (tlc_light_offset == tlc_curr_anim_len) {
-            led_anim_mode = TLC_ANIM_MODE_IDLE;
-        } else {
-            // Otherwise load the next color sets.
-            tlc_load_colors();
+            if (tlc_anim_looping) {
+                tlc_light_offset = 0;
+            } else {
+                led_anim_mode = TLC_ANIM_MODE_IDLE;
+            }
         }
+        // load the next color sets.
+        tlc_load_colors();
     } else { // Otherwise, we're still fading...
         // Compute the next step fade.
         tlc_fade_colors();
