@@ -27,6 +27,8 @@ volatile uint8_t f_rfm_tx_done = 0;
 
 volatile uint8_t f_default_conf_loaded = 0;
 
+uint8_t suppress_softkey = 0;
+
 uint8_t softkey_sel = 0;
 uint8_t softkey_en = BIT0 | BIT1 | BIT6;
 
@@ -166,9 +168,16 @@ void intro() {
 //   Character actions
 
 void handle_infrastructure_services() {
-    // Handle inbound and outbound background radio functionality.
+    // Handle inbound and outbound background radio functionality, and buttons.
     if (f_time_loop) {
         poll_buttons();
+    }
+    if (f_rfm_tx_done) {
+        f_rfm_tx_done = 0;
+        // And return to our normal receive automode:
+        // RX->SB->RX on receive.
+        write_single_register(0x3b, RFM_AUTOMODE_RX);
+        write_single_register(RFM_OPMODE, RFM_MODE_RX);
     }
 }
 
@@ -290,6 +299,7 @@ void handle_mode_name() {
             if (bs_down_loops && bs_down_loops < NAME_COMMIT_LOOPS) {
                 bs_down_loops++;
             } else if (bs_down_loops) {
+                suppress_softkey = 1; // And don't register the button release
                 break;
             }
 
@@ -492,13 +502,12 @@ void poll_buttons() {
     static uint8_t bs_read = 1;
     static uint8_t bs_state = 1;
 
-
     // Poll the buttons two time loops in a row to debounce and
     // if there's a change, raise a flag.
     // Left button:
     bl_read = GPIO_getInputPinValue(GPIO_PORT_P3, GPIO_PIN6);
     if (bl_read == bl_read_prev && bl_read != bl_state) {
-        f_bl = bl_read? BUTTON_RELEASE : BUTTON_PRESS; // active high
+        f_bl = bl_read? BUTTON_RELEASE : BUTTON_PRESS; // active low
         bl_state = bl_read;
     }
     bl_read_prev = bl_read;
@@ -506,7 +515,13 @@ void poll_buttons() {
     // Softkey button:
     bs_read = GPIO_getInputPinValue(GPIO_PORT_P3, GPIO_PIN5);
     if (bs_read == bs_read_prev && bs_read != bs_state) {
-        f_bs = bs_read? BUTTON_RELEASE : BUTTON_PRESS; // active high
+        if (suppress_softkey) {
+            // suppress_softkey means we don't generate a flag for the next
+            // release (or press, I guess, but we mostly care about releases.)
+            suppress_softkey = 0;
+        } else {
+            f_bs = bs_read? BUTTON_RELEASE : BUTTON_PRESS; // active low
+        }
         bs_state = bs_read;
     }
     bs_read_prev = bs_read;
@@ -514,7 +529,7 @@ void poll_buttons() {
     // Right button:
     br_read = GPIO_getInputPinValue(GPIO_PORT_P3, GPIO_PIN4);
     if (br_read == br_read_prev && br_read != br_state) {
-        f_br = br_read? BUTTON_RELEASE : BUTTON_PRESS; // active high
+        f_br = br_read? BUTTON_RELEASE : BUTTON_PRESS; // active low
         br_state = br_read;
     }
     br_read_prev = br_read;
