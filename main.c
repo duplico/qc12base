@@ -113,10 +113,13 @@ void post() {
     // If the radio is super-broken, we won't even get here.
     // Check the crystal.
     uint8_t crystal_error = CSCTL5 & LFXTOFFG;
+
     // Check the shift register of the TLC.
     uint8_t led_error = tlc_test_loopback(0b10101010);
     led_error = led_error || tlc_test_loopback(0b01010101);
+
     // Check the flash chip.
+    tlc_set_fun();
     EUSCI_A_SPI_disableInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_RECEIVE_INTERRUPT);
     EUSCI_A_SPI_disableInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
     uint8_t flash_error = flash_post();
@@ -135,22 +138,26 @@ void post() {
     GrContextFontSet(&g_sContext, &SYS_FONT);
     uint8_t print_loc = 32;
 
-    GrStringDraw(&g_sContext, "- POST -", -1, 0, 5, 1);
+    GrStringDraw(&g_sContext, "- POST -", -1, 0, 5, 0);
 
     if (crystal_error) {
-        GrStringDraw(&g_sContext, "Err: XTAL!", -1, 0, print_loc, 1);
+        GrStringDraw(&g_sContext, "Err: XTAL!", -1, 0, print_loc, 0);
         print_loc += 12;
     }
 
     if (led_error) {
-        GrStringDraw(&g_sContext, "Err: LED!", -1, 0, print_loc, 1);
+        GrStringDraw(&g_sContext, "Err: LED!", -1, 0, print_loc, 0);
         print_loc += 12;
     }
 
     if (flash_error) {
-        GrStringDraw(&g_sContext, "Err: Mem!", -1, 0, print_loc, 1);
+        GrStringDraw(&g_sContext, "Err: Mem!", -1, 0, print_loc, 0);
         print_loc += 12;
     }
+
+    GrFlush(&g_sContext);
+
+    delay(5000);
 }
 
 // Play a cute animation when we first turn the badge on.
