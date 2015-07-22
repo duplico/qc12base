@@ -181,6 +181,8 @@ SECTIONS
     .infoC     : {} > INFOC
     .infoD     : {} > INFOD
 
+    .ramdata   : {} > RAM
+
     /* MSP430 Interrupt vectors          */
     .int00       : {}               > INT00
     .int01       : {}               > INT01

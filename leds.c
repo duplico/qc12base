@@ -25,7 +25,6 @@
 uint8_t tlc_send_type = TLC_SEND_IDLE;
 
 uint8_t tlc_tx_index = 0;   // Index of currently sending buffer
-uint8_t tlc_ok_to_send = 1; // SPI bus busy or not?
 uint8_t tlc_light_offset = 0;   // Number of channels to shift gs_data by
 
 // GS entry transmission handling indices:
@@ -68,7 +67,7 @@ rgbcolor_t rainbow2[5] = {
         { 0x00, 0x00, 0x000 },
 };
 
-rgbcolor_t test_colors[3] = {
+const rgbcolor_t test_colors[3] = {
         // rainbow colors
         { 0xff00, 0x00, 0x00},
         { 0x00, 0xff00, 0x00 },
