@@ -18,6 +18,7 @@
 // System configuration
 #define BADGES_IN_SYSTEM 200
 #define SLEEP_BITS LPM1_bits // because we need SMCLK for the TLC.
+#define NUM_ACHIEVEMENTS 32
 
 // Name entry configuration parameters:
 #define NAME_SEL_CHAR '*'
@@ -90,10 +91,16 @@ extern const char sk_labels[][10];
 extern uint8_t softkey_sel;
 extern uint8_t softkey_en;
 
+// Badge count tracking:
+#define BADGE_SEEN_BIT BITF
+#define BADGE_FRIEND_BIT BITE
+#define BADGE_TICKS_MASK 0xffff & ~(BADGE_SEEN_BIT | BADGE_FRIEND_BIT)
+
 //////////////////////////////////////////////////////////////////////
 // Functions etc. ////////////////////////////////////////////////////
 
 #define GPIO_pulse(port, pin) do { GPIO_setOutputHighOnPin(port, pin); GPIO_setOutputLowOnPin(port, pin); } while (0)
+#define CEILING_DIV(x,y) (((x) + (y) - 1) / (y))
 
 // The delay function, which we don't really want to use much, please.
 void delay(unsigned int);
@@ -116,7 +123,12 @@ typedef struct {
     uint8_t badge_id;
     uint8_t mood;
     uint8_t title_index;
+    uint8_t flag_id;
+    uint8_t flag_cooldown;
     uint16_t exp;
+    uint8_t achievements[CEILING_DIV(NUM_ACHIEVEMENTS, 8)];
+    uint8_t top_seen[3];
+    char top_seen_handles[3][NAME_MAX_LEN];
     char handle[NAME_MAX_LEN+1];
     uint16_t crc16;
 } qc12conf;
