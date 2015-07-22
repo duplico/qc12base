@@ -3,6 +3,7 @@
 #include <grlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 // Grace includes:
 #include <ti/mcu/msp430/Grace.h>
@@ -25,7 +26,9 @@ volatile uint8_t f_new_second = 0;
 volatile uint8_t f_rfm_rx_done = 0;
 volatile uint8_t f_rfm_tx_done = 0;
 
-volatile uint8_t f_default_conf_loaded = 0;
+// Non-interrupt signal flags (no need to avoid optimization):
+uint8_t s_default_conf_loaded = 0;
+uint8_t s_need_rf_beacon = 0;
 
 uint8_t softkey_sel = 0;
 uint8_t softkey_en = BIT0 | BIT1 | BIT6;
@@ -49,6 +52,13 @@ const qc12conf default_conf = {
         {0},   // achievements
         0,
 };
+
+// Gaydar:
+uint8_t window_position = 0; // Currently only used for restarting radio & skipping windows.
+uint8_t skip_window = 1;
+uint8_t neighbor_count = 0;
+uint8_t window_seconds = RECEIVE_WINDOW_LENGTH_SECONDS;
+uint8_t neighbor_badges[BADGES_IN_SYSTEM] = {0};
 
 const char titles[][10] = {
         "n00b",
@@ -88,7 +98,7 @@ void check_conf() {
         }
         my_conf.crc16 = CRC_getResult(CRC_BASE);
         memset(badges_seen, 0, sizeof(uint16_t) * BADGES_IN_SYSTEM);
-        f_default_conf_loaded = 1;
+        s_default_conf_loaded = 1;
     }
 }
 
@@ -196,6 +206,34 @@ void handle_infrastructure_services() {
     // Handle inbound and outbound background radio functionality.
     if (f_time_loop) {
         poll_buttons();
+    }
+    if (f_new_second) {
+        window_seconds--;
+        if (!window_seconds) {
+            window_seconds = RECEIVE_WINDOW_LENGTH_SECONDS;
+            if (skip_window != window_position) {
+                s_need_rf_beacon = 1;
+            }
+            neighbor_count = 0;
+            for (uint8_t i=0; i<BADGES_IN_SYSTEM; i++) {
+                if (neighbor_badges[i]) {
+                    neighbor_count++;
+                    neighbor_badges[i]--;
+                }
+            }
+
+            window_position = (window_position + 1) % RECEIVE_WINDOW;
+            if (!window_position) {
+                skip_window = rand() % RECEIVE_WINDOW;
+            }
+            // If we're rolling over the window and have no neighbors,
+            // try a radio reboot, in case that can gin up some neighbors
+            // for some reason.
+            if (!window_position && neighbor_count == 0) {
+                init_radio();
+            }
+        }
+
     }
 }
 
@@ -476,9 +514,9 @@ int main(void)
 
     GrClearDisplay(&g_sContext);
 
-    if (!my_conf.handle[0] || f_default_conf_loaded) { // Name is not set:
+    if (!my_conf.handle[0] || s_default_conf_loaded) { // Name is not set:
         op_mode = OP_MODE_NAME;
-        f_default_conf_loaded = 0;
+        s_default_conf_loaded = 0;
     }
 
     while (1) {
