@@ -338,7 +338,7 @@ void handle_mode_name() {
 
     // String to display under the name; it's just the selection character,
     // configured in qc12.h
-    char undername[2] = {NAME_SEL_CHAR, 0};
+    const char undername[2] = {NAME_SEL_CHAR, 0};
 
     // For figuring out where to put the underline & selection character:
     uint8_t underchar_x = 0;
@@ -455,7 +455,7 @@ void handle_mode_idle() {
 
     oled_draw_pane();
     // Pick our current appearance...
-    oled_play_animation(standing, 0);
+    oled_play_animation(&standing, 0);
 
     oled_anim_next_frame();
     tlc_start_anim(rainbow2, 5, 20, 0, 1);

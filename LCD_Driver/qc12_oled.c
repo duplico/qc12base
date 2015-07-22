@@ -87,6 +87,9 @@
 // Global Variables
 //
 //*****************************************************************************
+
+#pragma DATA_SECTION (oled_memory, ".ramdata");
+
 /* Global buffer for the display. This is especially useful on 1BPP, 2BPP, and 4BPP
   displays. This allows you to update pixels while reading the neighboring pixels
   from the buffer instead of a read from the LCD controller. A buffer is not required
@@ -123,7 +126,7 @@ WriteCommand(uint8_t ucCommand)
 	EUSCI_A_SPI_transmitData(EUSCI_A1_BASE, ucCommand);
 }
 
-uint8_t zero_address_cmds[] = {
+const uint8_t zero_address_cmds[] = {
         0x20,
         0x00, // horizontal addressing mode
 
@@ -181,7 +184,7 @@ qc12_oledInit(void)
 {
     InitLCDDisplayBuffer(0, 0);
 
-    char SSD1306_init[] = {
+    const char SSD1306_init[] = {
             0xAE, 		// Display off
             0xD5, 0x80, // Clock divide / oscillator
             0xA8, 0x3F, // Multiplex ratio
