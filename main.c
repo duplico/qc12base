@@ -3,6 +3,7 @@
 #include <grlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 // Grace includes:
 #include <ti/mcu/msp430/Grace.h>
@@ -25,7 +26,9 @@ volatile uint8_t f_new_second = 0;
 volatile uint8_t f_rfm_rx_done = 0;
 volatile uint8_t f_rfm_tx_done = 0;
 
-volatile uint8_t f_default_conf_loaded = 0;
+// Non-interrupt signal flags (no need to avoid optimization):
+uint8_t s_default_conf_loaded = 0;
+uint8_t s_need_rf_beacon = 0;
 
 uint8_t suppress_softkey = 0;
 
@@ -45,10 +48,19 @@ const qc12conf default_conf = {
         0,     // id
         50,    // mood
         0,     // title
+        0,     // flag
+        0,     // flag_cooldown
         0,     // exp
-        "", // handle: this is required to be empty (i.e. first element is \0)
-        0x0000 // crc16
+        {0},   // achievements
+        0,
 };
+
+// Gaydar:
+uint8_t window_position = 0; // Currently only used for restarting radio & skipping windows.
+uint8_t skip_window = 1;
+uint8_t neighbor_count = 0;
+uint8_t window_seconds = RECEIVE_WINDOW_LENGTH_SECONDS;
+uint8_t neighbor_badges[BADGES_IN_SYSTEM] = {0};
 
 const char titles[][10] = {
         "n00b",
@@ -71,7 +83,7 @@ const char sk_labels[][10] = {
        "Set name"
 };
 
-// The code:
+uint16_t badges_seen[BADGES_IN_SYSTEM];
 
 void check_conf() {
     CRC_setSeed(CRC_BASE, 0x0C12);
@@ -87,7 +99,32 @@ void check_conf() {
             CRC_set8BitData(CRC_BASE, ((uint8_t *) &default_conf)[i]);
         }
         my_conf.crc16 = CRC_getResult(CRC_BASE);
-        f_default_conf_loaded = 1;
+        memset(badges_seen, 0, sizeof(uint16_t) * BADGES_IN_SYSTEM);
+        s_default_conf_loaded = 1;
+    }
+}
+
+void set_badge_seen(uint8_t id) {
+    if (!(id < BADGES_IN_SYSTEM)) {
+        return;
+    }
+    badges_seen[id] |= BADGE_SEEN_BIT;
+}
+
+void set_badge_friend(uint8_t id) {
+    if (!(id < BADGES_IN_SYSTEM)) {
+        return;
+    }
+    badges_seen[id] |= BADGE_FRIEND_BIT;
+}
+
+void tick_badge_seen(uint8_t id) {
+    if (!(id < BADGES_IN_SYSTEM)) {
+        return;
+    }
+    if (badges_seen[id] & BADGE_TICKS_MASK < BADGE_TICKS_MASK) {
+        badges_seen[id]++;
+        // do top 3:
     }
 }
 
@@ -185,6 +222,34 @@ void handle_infrastructure_services() {
         // RX->SB->RX on receive.
         write_single_register(0x3b, RFM_AUTOMODE_RX);
         write_single_register(RFM_OPMODE, RFM_MODE_RX);
+    }
+    if (f_new_second) {
+        window_seconds--;
+        if (!window_seconds) {
+            window_seconds = RECEIVE_WINDOW_LENGTH_SECONDS;
+            if (skip_window != window_position) {
+                s_need_rf_beacon = 1;
+            }
+            neighbor_count = 0;
+            for (uint8_t i=0; i<BADGES_IN_SYSTEM; i++) {
+                if (neighbor_badges[i]) {
+                    neighbor_count++;
+                    neighbor_badges[i]--;
+                }
+            }
+
+            window_position = (window_position + 1) % RECEIVE_WINDOW;
+            if (!window_position) {
+                skip_window = rand() % RECEIVE_WINDOW;
+            }
+            // If we're rolling over the window and have no neighbors,
+            // try a radio reboot, in case that can gin up some neighbors
+            // for some reason.
+            if (!window_position && neighbor_count == 0) {
+                init_radio();
+            }
+        }
+
     }
 }
 
@@ -466,9 +531,9 @@ int main(void)
 
     GrClearDisplay(&g_sContext);
 
-    if (!my_conf.handle[0] || f_default_conf_loaded) { // Name is not set:
+    if (!my_conf.handle[0] || s_default_conf_loaded) { // Name is not set:
         op_mode = OP_MODE_NAME;
-        f_default_conf_loaded = 0;
+        s_default_conf_loaded = 0;
     }
 
     while (1) {
