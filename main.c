@@ -43,9 +43,11 @@ const qc12conf default_conf = {
         0,     // id
         50,    // mood
         0,     // title
+        0,     // flag
+        0,     // flag_cooldown
         0,     // exp
-        "", // handle: this is required to be empty (i.e. first element is \0)
-        0x0000 // crc16
+        {0},   // achievements
+        0,
 };
 
 const char titles[][10] = {
@@ -69,7 +71,7 @@ const char sk_labels[][10] = {
        "Set name"
 };
 
-// The code:
+uint16_t badges_seen[BADGES_IN_SYSTEM];
 
 void check_conf() {
     CRC_setSeed(CRC_BASE, 0x0C12);
@@ -85,7 +87,32 @@ void check_conf() {
             CRC_set8BitData(CRC_BASE, ((uint8_t *) &default_conf)[i]);
         }
         my_conf.crc16 = CRC_getResult(CRC_BASE);
+        memset(badges_seen, 0, sizeof(uint16_t) * BADGES_IN_SYSTEM);
         f_default_conf_loaded = 1;
+    }
+}
+
+void set_badge_seen(uint8_t id) {
+    if (!(id < BADGES_IN_SYSTEM)) {
+        return;
+    }
+    badges_seen[id] |= BADGE_SEEN_BIT;
+}
+
+void set_badge_friend(uint8_t id) {
+    if (!(id < BADGES_IN_SYSTEM)) {
+        return;
+    }
+    badges_seen[id] |= BADGE_FRIEND_BIT;
+}
+
+void tick_badge_seen(uint8_t id) {
+    if (!(id < BADGES_IN_SYSTEM)) {
+        return;
+    }
+    if (badges_seen[id] & BADGE_TICKS_MASK < BADGE_TICKS_MASK) {
+        badges_seen[id]++;
+        // do top 3:
     }
 }
 
