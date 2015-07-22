@@ -223,6 +223,19 @@ void handle_infrastructure_services() {
         write_single_register(0x3b, RFM_AUTOMODE_RX);
         write_single_register(RFM_OPMODE, RFM_MODE_RX);
     }
+
+    if (f_rfm_rx_done) {
+        f_rfm_rx_done = 0;
+
+        if (in_payload.beacon && in_payload.from_addr < BADGES_IN_SYSTEM) {
+            // It's a beacon (one per cycle).
+            // Increment our beacon count in the current position in our
+            // sliding window.
+            neighbor_badges[in_payload.from_addr] = RECEIVE_WINDOW;
+            set_badge_seen(in_payload.from_addr);
+        }
+    }
+
     if (f_new_second) {
         window_seconds--;
         if (!window_seconds) {
