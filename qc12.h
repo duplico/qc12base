@@ -20,6 +20,9 @@
 #define SLEEP_BITS LPM1_bits // because we need SMCLK for the TLC.
 #define NUM_ACHIEVEMENTS 32
 
+#define RECEIVE_WINDOW 8
+#define RECEIVE_WINDOW_LENGTH_SECONDS 10
+
 // Name entry configuration parameters:
 #define NAME_SEL_CHAR '*'
 #define NAME_MAX_LEN 14
