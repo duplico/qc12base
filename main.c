@@ -29,6 +29,7 @@ volatile uint8_t f_rfm_tx_done = 0;
 // Non-interrupt signal flags (no need to avoid optimization):
 uint8_t s_default_conf_loaded = 0;
 uint8_t s_need_rf_beacon = 0;
+uint8_t s_newly_met = 0;
 
 uint8_t suppress_softkey = 0;
 
@@ -107,6 +108,9 @@ void check_conf() {
 void set_badge_seen(uint8_t id) {
     if (!(id < BADGES_IN_SYSTEM)) {
         return;
+    }
+    if (!(BADGE_SEEN_BIT & badges_seen[id])) {
+        s_newly_met = 1;
     }
     badges_seen[id] |= BADGE_SEEN_BIT;
 }
