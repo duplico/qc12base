@@ -106,13 +106,14 @@ void check_conf() {
 }
 
 void set_badge_seen(uint8_t id) {
-    if (!(id < BADGES_IN_SYSTEM)) {
+    if (id >= BADGES_IN_SYSTEM) {
         return;
     }
+
     if (!(BADGE_SEEN_BIT & badges_seen[id])) {
         s_newly_met = 1;
+        badges_seen[id] |= BADGE_SEEN_BIT;
     }
-    badges_seen[id] |= BADGE_SEEN_BIT;
 }
 
 void set_badge_friend(uint8_t id) {
@@ -228,9 +229,19 @@ void handle_infrastructure_services() {
         write_single_register(RFM_OPMODE, RFM_MODE_RX);
     }
 
+    // Radio RX tasks:
+    //    Badge count incrementing
+    //    Friendship requests
+    //    Base check-ins
+    //    Handle sharing (only for our top-3)
+    //    Flag scheduling
+    //    Animation (OLED play) scheduling
+    //    Clock sync???
+
     if (f_rfm_rx_done) {
         f_rfm_rx_done = 0;
 
+        // Increment the badge count if needed:
         if (in_payload.beacon && in_payload.from_addr < BADGES_IN_SYSTEM) {
             // It's a beacon (one per cycle).
             // Increment our beacon count in the current position in our
@@ -238,6 +249,16 @@ void handle_infrastructure_services() {
             neighbor_badges[in_payload.from_addr] = RECEIVE_WINDOW;
             set_badge_seen(in_payload.from_addr);
         }
+
+        // Resolve inbound or completed friendship requests:
+
+        // Do base check-ins and related tasks:
+
+        // Schedule and pass on flags:
+
+        // Schedule OLED play animations:
+
+        // Clock stuff???
     }
 
     if (f_new_second) {
