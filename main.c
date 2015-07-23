@@ -75,7 +75,7 @@ const char titles[][10] = {
 uint8_t op_mode = OP_MODE_IDLE;
 
 const char sk_labels[][10] = {
-       "PLAY",
+       "Play",
        "ASL?",
        "Befriend",
        "Wave flag",
@@ -271,6 +271,7 @@ void handle_infrastructure_services() {
 
     if (f_rfm_rx_done) {
         f_rfm_rx_done = 0;
+        in_payload.handle[NAME_MAX_LEN-1] = 0; // Make sure it's definitely null-terminated.
 
         // Increment the badge count if needed:
         if (in_payload.beacon && in_payload.from_addr < BADGES_IN_SYSTEM) {
