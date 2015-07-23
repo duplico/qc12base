@@ -324,9 +324,11 @@ void tlc_timestep() {
         // unless we're looping.
         if (tlc_light_offset == tlc_curr_anim_len) {
             if (tlc_anim_looping) {
+                tlc_anim_looping--;
                 tlc_light_offset = 0;
             } else {
                 led_anim_mode = TLC_ANIM_MODE_IDLE;
+                return;
             }
         }
         // load the next color sets.
