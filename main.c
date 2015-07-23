@@ -225,8 +225,8 @@ void handle_infrastructure_services() {
         f_rfm_tx_done = 0;
         // And return to our normal receive automode:
         // RX->SB->RX on receive.
+        mode_sync(RFM_MODE_RX);
         write_single_register(0x3b, RFM_AUTOMODE_RX);
-        write_single_register(RFM_OPMODE, RFM_MODE_RX);
     }
 
     // Radio RX tasks:
