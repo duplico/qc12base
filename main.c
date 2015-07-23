@@ -25,6 +25,7 @@ volatile uint8_t f_time_loop = 0;
 volatile uint8_t f_new_second = 0;
 volatile uint8_t f_rfm_rx_done = 0;
 volatile uint8_t f_rfm_tx_done = 0;
+volatile uint8_t f_new_minute = 0;
 
 // Non-interrupt signal flags (no need to avoid optimization):
 uint8_t s_default_conf_loaded = 0;
@@ -84,6 +85,17 @@ const char sk_labels[][10] = {
 };
 
 uint16_t badges_seen[BADGES_IN_SYSTEM];
+uint8_t fav_badges_ids[FAVORITE_COUNT] = {0};
+char fav_badges_handles[FAVORITE_COUNT][NAME_MAX_LEN];
+uint8_t fav_badge_minute_countdown = FAVORITE_COUNTDOWN_MINUTES;
+
+void my_conf_write_crc() {
+    CRC_setSeed(CRC_BASE, 0x0C12);
+    for (uint8_t i = 0; i < sizeof(qc12conf) - 2; i++) {
+        CRC_set8BitData(CRC_BASE, ((uint8_t *) &default_conf)[i]);
+    }
+    my_conf.crc16 = CRC_getResult(CRC_BASE);
+}
 
 void check_conf() {
     CRC_setSeed(CRC_BASE, 0x0C12);
@@ -93,12 +105,7 @@ void check_conf() {
 
     if (my_conf.crc16 != CRC_getResult(CRC_BASE)) {
         memcpy(&my_conf, &default_conf, sizeof(qc12conf));
-
-        CRC_setSeed(CRC_BASE, 0x0C12);
-        for (uint8_t i = 0; i < sizeof(qc12conf) - 2; i++) {
-            CRC_set8BitData(CRC_BASE, ((uint8_t *) &default_conf)[i]);
-        }
-        my_conf.crc16 = CRC_getResult(CRC_BASE);
+        my_conf_write_crc();
         memset(badges_seen, 0, sizeof(uint16_t) * BADGES_IN_SYSTEM);
         s_default_conf_loaded = 1;
     }
@@ -122,20 +129,40 @@ void set_badge_friend(uint8_t id) {
     badges_seen[id] |= BADGE_FRIEND_BIT;
 }
 
-void tick_badge_seen(uint8_t id) {
+void tick_badge_seen(uint8_t id, char* handle) {
     if (!(id < BADGES_IN_SYSTEM)) {
         return;
     }
     if (badges_seen[id] & BADGE_TICKS_MASK < BADGE_TICKS_MASK) {
         badges_seen[id]++;
-        // do top 3:
+        // do top badges:
+        for (uint8_t top_index=0; top_index<FAVORITE_COUNT; top_index++) {
+            if (badges_seen[id] & BADGE_TICKS_MASK > badges_seen[fav_badges_ids[top_index]] & BADGE_TICKS_MASK) {
+                // This is where it goes, and all the rest need to be demoted.
+
+                // So we can start at the lowest ranked favorite, which is fav_badges_ids[FAVORITE_COUNT-1]
+                //  and clobber it with its superior until one IS CLOBBERED BY top_index.
+                //  Then we replace top_id's original spot with id.
+
+                for (uint8_t index_to_clobber = FAVORITE_COUNT-1; index_to_clobber>top_index; index_to_clobber--) {
+                    // index_to_clobber starts at the max value for fav_badges_ids
+                    // and goes through top_index+1. (index_to_clobber will never be 0).
+                    fav_badges_ids[index_to_clobber] = fav_badges_ids[index_to_clobber-1];
+                    strcpy(fav_badges_handles[index_to_clobber], fav_badges_handles[index_to_clobber-1]);
+                }
+
+                // now clobber top_index with out new one.
+                fav_badges_ids[top_index] = id;
+                strcpy("???", handle);
+            }
+        }
     }
 }
 
 void init_rtc() {
     RTC_B_definePrescaleEvent(RTC_B_BASE, RTC_B_PRESCALE_1, RTC_B_PSEVENTDIVIDER_2); // 64 Hz
-    RTC_B_clearInterrupt(RTC_B_BASE, RTC_B_CLOCK_READ_READY_INTERRUPT + RTC_B_TIME_EVENT_INTERRUPT + RTC_B_CLOCK_ALARM_INTERRUPT + RTC_B_PRESCALE_TIMER1_INTERRUPT);
-    RTC_B_enableInterrupt(RTC_B_BASE, RTC_B_CLOCK_READ_READY_INTERRUPT + RTC_B_TIME_EVENT_INTERRUPT + RTC_B_CLOCK_ALARM_INTERRUPT + RTC_B_PRESCALE_TIMER1_INTERRUPT);
+    RTC_B_clearInterrupt(RTC_B_BASE, RTC_B_CLOCK_READ_READY_INTERRUPT + RTC_B_TIME_EVENT_INTERRUPT + RTC_B_CLOCK_ALARM_INTERRUPT + RTC_B_PRESCALE_TIMER1_INTERRUPT + RTC_B_TIME_EVENT_INTERRUPT);
+    RTC_B_enableInterrupt(RTC_B_BASE, RTC_B_CLOCK_READ_READY_INTERRUPT + RTC_B_TIME_EVENT_INTERRUPT + RTC_B_CLOCK_ALARM_INTERRUPT + RTC_B_PRESCALE_TIMER1_INTERRUPT + RTC_B_TIME_EVENT_INTERRUPT);
 }
 
 void init() {
@@ -216,6 +243,10 @@ void intro() {
 //   Character actions
 
 void handle_infrastructure_services() {
+
+    uint8_t s_tick_next_window = 0;
+    uint8_t ticking_this_window = 0;
+
     // Handle inbound and outbound background radio functionality, and buttons.
     if (f_time_loop) {
         poll_buttons();
@@ -247,6 +278,10 @@ void handle_infrastructure_services() {
             // sliding window.
             neighbor_badges[in_payload.from_addr] = RECEIVE_WINDOW;
             set_badge_seen(in_payload.from_addr);
+            // Every 10 minutes:
+            if (ticking_this_window) {
+                tick_badge_seen(in_payload.from_addr, in_payload.handle);
+            }
         }
 
         // Resolve inbound or completed friendship requests:
@@ -268,6 +303,14 @@ void handle_infrastructure_services() {
             if (skip_window != window_position) {
                 s_need_rf_beacon = 1;
             }
+
+            if (s_tick_next_window) {
+                s_tick_next_window = 0;
+                ticking_this_window = 1;
+            } else if (ticking_this_window) {
+                ticking_this_window = 0;
+            }
+
             neighbor_count = 0;
             for (uint8_t i=0; i<BADGES_IN_SYSTEM; i++) {
                 if (neighbor_badges[i]) {
@@ -287,7 +330,19 @@ void handle_infrastructure_services() {
                 init_radio();
             }
         }
+    }
 
+    if (f_new_minute) {
+        if (my_conf.flag_cooldown) {
+            my_conf.flag_cooldown--;
+            my_conf_write_crc();
+        }
+
+        fav_badge_minute_countdown--;
+        if (!fav_badge_minute_countdown) {
+            fav_badge_minute_countdown = FAVORITE_COUNTDOWN_MINUTES;
+            s_tick_next_window = 1;
+        }
     }
 }
 
@@ -656,7 +711,8 @@ void RTC_A_ISR(void) {
         __bic_SR_register_on_exit(SLEEP_BITS);
         break;
     case 4:         //RTCEVIFG
-        //Interrupts every minute // We don't use this.
+        //Interrupts every minute
+        f_new_minute = 1;
         __bic_SR_register_on_exit(SLEEP_BITS);
         break;
     case 6:         //RTCAIFG

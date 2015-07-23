@@ -19,6 +19,8 @@
 #define BADGES_IN_SYSTEM 200
 #define SLEEP_BITS LPM1_bits // because we need SMCLK for the TLC.
 #define NUM_ACHIEVEMENTS 32
+#define FAVORITE_COUNT 3
+#define FAVORITE_COUNTDOWN_MINUTES 10
 
 #define RECEIVE_WINDOW 8
 #define RECEIVE_WINDOW_LENGTH_SECONDS 10
@@ -115,6 +117,7 @@ extern volatile uint8_t f_rfm_tx_done;
 typedef struct {
 	uint8_t to_addr, from_addr, base_id;
 	uint8_t beacon;
+	char handle[NAME_MAX_LEN];
 } qc12payload;
 
 extern qc12payload in_payload, out_payload;
