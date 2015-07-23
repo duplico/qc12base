@@ -300,7 +300,7 @@ void tlc_stop_anim(uint8_t blank) {
     led_anim_mode = TLC_ANIM_MODE_IDLE;
 }
 
-void tlc_timestep() {
+inline void tlc_timestep() {
     if (led_anim_mode == TLC_ANIM_MODE_IDLE) {
         return;
     }
