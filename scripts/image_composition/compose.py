@@ -159,22 +159,22 @@ def main(inifile, head_dir, body_dir, legs_dir, show):
         if not anim['persistent'] and index > longest_anim_buffer:
             longest_anim_buffer = index
     
-    print "uint8_t persistent_sprite_bank_pixels[%d][%d] = {\n   " % (len(p_sprite_pixel_bank), uniform_sprite_size),
+    print "const uint8_t persistent_sprite_bank_pixels[%d][%d] = {\n   " % (len(p_sprite_pixel_bank), uniform_sprite_size),
     print "\n\n    ".join(p_sprite_pixel_bank)
     print "};"
     print
     
-    print "flash_sprite_bank_pixels[%d][%d] = {\n   " % (len(f_sprite_pixel_bank), uniform_sprite_size),
+    print "const uint8_t flash_sprite_bank_pixels[%d][%d] = {\n   " % (len(f_sprite_pixel_bank), uniform_sprite_size),
     print "\n\n    ".join(f_sprite_pixel_bank)
     print "};"
     print
     
-    print "tImage persistent_sprite_bank[%d] = {\n   " % (len(p_sprite_bank)),
+    print "const tImage persistent_sprite_bank[%d] = {\n   " % (len(p_sprite_bank)),
     print "\n    ".join(p_sprite_bank)
     print "};"
     print
     
-    print "tImage flash_sprite_bank[%d] = {\n   " % (len(f_sprite_bank)),
+    print "const tImage flash_sprite_bank[%d] = {\n   " % (len(f_sprite_bank)),
     print "\n    ".join(f_sprite_bank)
     print "};"
     print
