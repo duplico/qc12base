@@ -4,6 +4,7 @@ from ConfigParser import ConfigParser
 
 from PIL import Image
 import PIL.ImageOps
+import PIL.ImageChops
 
 uniform_sprite_size = 0
 
@@ -16,7 +17,7 @@ FEET_HEIGHT = 18
 
 is_a_number = re.compile("[0-9]+")
 
-def make_sprite(head_path, body_path, legs_path, heights=(HEAD_HEIGHT, BODY_HEIGHT, FEET_HEIGHT)):
+def make_sprite(head_path, body_path, legs_path, heights=(HEAD_HEIGHT, BODY_HEIGHT, FEET_HEIGHT), show=False):
     global uniform_sprite_size
 
     sprite = Image.new('RGBA', (SPRITE_WIDTH, SPRITE_HEIGHT), (0,0,0,0))
@@ -47,19 +48,20 @@ def make_sprite(head_path, body_path, legs_path, heights=(HEAD_HEIGHT, BODY_HEIG
         head_mask
     )
     sprite.paste(
-        body, 
-        ((SPRITE_WIDTH-body.size[0])/2, 
-         body_y), 
-        body_mask
-    )
-    sprite.paste(
         legs, 
         ((SPRITE_WIDTH-legs.size[0])/2, 
          legs_y), 
         legs_mask
     )
+    sprite.paste(
+        body, 
+        ((SPRITE_WIDTH-body.size[0])/2, 
+         body_y), 
+        body_mask
+    )
     
-    sprite.show()
+    if show:
+        sprite.show()
             
     out_str = "{0b"
     
@@ -98,12 +100,12 @@ f_sprite_bank_indices = dict()
 
 animations = []
 
-def main(inifile, head_dir, body_dir, legs_dir):
+def main(inifile, head_dir, body_dir, legs_dir, show):
     parser = ConfigParser()
     parser.read(inifile)
-    head_files = glob(os.path.join(head_dir, 'head', '*.png'))
-    body_files = glob(os.path.join(body_dir, 'body', '*.png'))
-    legs_files = glob(os.path.join(legs_dir, 'legs', '*.png'))
+    head_files = sorted(glob(os.path.join(head_dir, 'head', '*.png')), key=lambda a: int(is_a_number.findall(a)[0]))
+    body_files = sorted(glob(os.path.join(body_dir, 'body', '*.png')), key=lambda a: int(is_a_number.findall(a)[0]))
+    legs_files = sorted(glob(os.path.join(legs_dir, 'legs', '*.png')), key=lambda a: int(is_a_number.findall(a)[0]))
     index_offset = 0
     index = 0
     longest_anim_buffer = 0
@@ -142,7 +144,7 @@ def main(inifile, head_dir, body_dir, legs_dir):
                 else:
                     frame_bank_index = len(sprite_pixel_bank)
                     sprite_bank_indices[(head_index, body_index, legs_index)] = frame_bank_index
-                    pixels = make_sprite(head_files[head_index-1], body_files[body_index-1], legs_files[legs_index-1])
+                    pixels = make_sprite(head_files[head_index-1], body_files[body_index-1], legs_files[legs_index-1], show=show)
                     metadata = "{ IMAGE_FMT_1BPP_UNCOMP, %d, %d, 2, palette_bw, %s_sprite_bank_pixels[%d] }," % (SPRITE_WIDTH, SPRITE_HEIGHT, "persistent" if anim['persistent'] else "flash", frame_bank_index)
                     metadata += " // %d:%d:%d" % (head_index, body_index, legs_index)
                     sprite_pixel_bank.append(pixels)
@@ -200,15 +202,18 @@ def main(inifile, head_dir, body_dir, legs_dir):
         print
         
     print "anim_buffer_alloc = %d" % longest_anim_buffer
-        
 
 def adjust_image(image):
     assert image.mode == 'RGBA'
-    a = image.split()[-1]
-    return Image.merge('RGBA', (a,a,a,a)), a
+    a = image.split()[-1] # Alpha channel
+    r = image.split()[0] # Red channel
+    r_i = PIL.ImageOps.invert(r)
+    return Image.merge('RGBA', (r_i,r_i,r_i,a)), a
 
 if (__name__ == '__main__'):
-    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser = argparse.ArgumentParser(description='Generate a QC12 badge character sprite set.')
+    parser.add_argument('-s', '--show', action='store_true', help="Display the"
+                        " images as they are generated")
     parser.add_argument('config', help='Path to config file specifying the'
                                        'animations to make')
     parser.add_argument('head', metavar='head_dir', type=str, 
@@ -221,5 +226,4 @@ if (__name__ == '__main__'):
                         help="Character directory to look in for the sprite's "
                              "legs (must have a `legs' subdirectory)")
     args = parser.parse_args()
-
-    main(args.config, args.head, args.body, args.legs)
+    main(args.config, args.head, args.body, args.legs, args.show)
