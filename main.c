@@ -160,7 +160,7 @@ void tick_badge_seen(uint8_t id, char* handle) {
 }
 
 void init_rtc() {
-    RTC_B_definePrescaleEvent(RTC_B_BASE, RTC_B_PRESCALE_1, RTC_B_PSEVENTDIVIDER_2); // 64 Hz
+    RTC_B_definePrescaleEvent(RTC_B_BASE, RTC_B_PRESCALE_1, RTC_B_PSEVENTDIVIDER_4); // 32 Hz
     RTC_B_clearInterrupt(RTC_B_BASE, RTC_B_CLOCK_READ_READY_INTERRUPT + RTC_B_TIME_EVENT_INTERRUPT + RTC_B_CLOCK_ALARM_INTERRUPT + RTC_B_PRESCALE_TIMER1_INTERRUPT);
     RTC_B_enableInterrupt(RTC_B_BASE, RTC_B_CLOCK_READ_READY_INTERRUPT + RTC_B_TIME_EVENT_INTERRUPT + RTC_B_CLOCK_ALARM_INTERRUPT + RTC_B_PRESCALE_TIMER1_INTERRUPT);
 }
@@ -357,7 +357,7 @@ void handle_infrastructure_services() {
 
 void handle_led_actions() {
     if (f_time_loop) {
-        tlc_timestep();
+//        tlc_timestep();
     }
 }
 
@@ -531,14 +531,14 @@ void handle_mode_idle() {
 
         if (f_time_loop) {
             f_time_loop = 0;
-            if (f_br == BUTTON_RELEASE) {
+            if (f_br == BUTTON_PRESS) {
                 f_br = 0;
                 // Left button
                 do {
                     softkey_sel = (softkey_sel+1) % (SK_SEL_MAX+1);
                 } while (!softkey_enabled(softkey_sel));
                 s_new_pane = 1;
-            } else if (f_bl == BUTTON_RELEASE) {
+            } else if (f_bl == BUTTON_PRESS) {
                 f_bl = 0;
                 do {
                     softkey_sel = (softkey_sel+SK_SEL_MAX) % (SK_SEL_MAX+1);
@@ -730,6 +730,7 @@ void RTC_A_ISR(void) {
         f_time_loop = 1; // We know what it does! It's a TIME LOOP MACHINE.
         // ...who would build a device that loops time every 32 milliseconds?
         // WHO KNOWS. But that's what it does.
+        tlc_timestep();
         __bic_SR_register_on_exit(SLEEP_BITS);
         break; //RT1PSIFG
     case 12: break; //Reserved
