@@ -20,3 +20,4 @@ src/grace/System_init.c
 src/grace/Timer1_A3_init.c
 src/grace/WDT_A_init.c
 src/grace/makefile
+scripts/tester_flash/Log/log.txt
