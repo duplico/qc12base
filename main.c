@@ -522,9 +522,8 @@ void handle_mode_idle() {
     oled_draw_pane(softkey_sel);
     // Pick our current appearance...
     oled_play_animation(&standing, 0);
-
     oled_anim_next_frame();
-    tlc_start_anim(rainbow2, 5, 20, 0, 1);
+
     while (1) {
         handle_infrastructure_services();
         handle_led_actions();
@@ -557,6 +556,7 @@ void handle_mode_idle() {
                     op_mode = OP_MODE_NAME;
                     break;
                 case SK_SEL_PLAY:
+                    tlc_start_anim(rainbow2, 5, 5, 0, 3);
                     break;
                 case SK_SEL_FLAG:
                     break;
@@ -631,7 +631,7 @@ int main(void)
     intro(); // Play a cute animation when we first turn the badge on.
     delay(1000);
     post();
-    delay(6000);
+    delay(4000);
 
     GrClearDisplay(&g_sContext);
 
