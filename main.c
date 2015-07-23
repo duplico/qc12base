@@ -25,7 +25,7 @@ volatile uint8_t f_time_loop = 0;
 volatile uint8_t f_new_second = 0;
 volatile uint8_t f_rfm_rx_done = 0;
 volatile uint8_t f_rfm_tx_done = 0;
-volatile uint8_t f_new_minute = 0;
+volatile uint8_t s_new_minute = 0;
 
 // Non-interrupt signal flags (no need to avoid optimization):
 uint8_t s_default_conf_loaded = 0;
@@ -161,8 +161,8 @@ void tick_badge_seen(uint8_t id, char* handle) {
 
 void init_rtc() {
     RTC_B_definePrescaleEvent(RTC_B_BASE, RTC_B_PRESCALE_1, RTC_B_PSEVENTDIVIDER_2); // 64 Hz
-    RTC_B_clearInterrupt(RTC_B_BASE, RTC_B_CLOCK_READ_READY_INTERRUPT + RTC_B_TIME_EVENT_INTERRUPT + RTC_B_CLOCK_ALARM_INTERRUPT + RTC_B_PRESCALE_TIMER1_INTERRUPT + RTC_B_TIME_EVENT_INTERRUPT);
-    RTC_B_enableInterrupt(RTC_B_BASE, RTC_B_CLOCK_READ_READY_INTERRUPT + RTC_B_TIME_EVENT_INTERRUPT + RTC_B_CLOCK_ALARM_INTERRUPT + RTC_B_PRESCALE_TIMER1_INTERRUPT + RTC_B_TIME_EVENT_INTERRUPT);
+    RTC_B_clearInterrupt(RTC_B_BASE, RTC_B_CLOCK_READ_READY_INTERRUPT + RTC_B_TIME_EVENT_INTERRUPT + RTC_B_CLOCK_ALARM_INTERRUPT + RTC_B_PRESCALE_TIMER1_INTERRUPT);
+    RTC_B_enableInterrupt(RTC_B_BASE, RTC_B_CLOCK_READ_READY_INTERRUPT + RTC_B_TIME_EVENT_INTERRUPT + RTC_B_CLOCK_ALARM_INTERRUPT + RTC_B_PRESCALE_TIMER1_INTERRUPT);
 }
 
 void init() {
@@ -246,6 +246,7 @@ void handle_infrastructure_services() {
 
     uint8_t s_tick_next_window = 0;
     uint8_t ticking_this_window = 0;
+    static uint8_t minute_secs = 60;
 
     // Handle inbound and outbound background radio functionality, and buttons.
     if (f_time_loop) {
@@ -297,6 +298,13 @@ void handle_infrastructure_services() {
 
     if (f_new_second) {
         f_new_second = 0;
+
+        minute_secs--;
+        if (!minute_secs) {
+            minute_secs = 60;
+            s_new_minute = 1;
+        }
+
         window_seconds--;
         if (!window_seconds) {
             window_seconds = RECEIVE_WINDOW_LENGTH_SECONDS;
@@ -332,7 +340,8 @@ void handle_infrastructure_services() {
         }
     }
 
-    if (f_new_minute) {
+    if (s_new_minute) {
+        s_new_minute = 0;
         if (my_conf.flag_cooldown) {
             my_conf.flag_cooldown--;
             my_conf_write_crc();
@@ -711,9 +720,7 @@ void RTC_A_ISR(void) {
         __bic_SR_register_on_exit(SLEEP_BITS);
         break;
     case 4:         //RTCEVIFG
-        //Interrupts every minute
-        f_new_minute = 1;
-        __bic_SR_register_on_exit(SLEEP_BITS);
+        //Interrupts every minute - ignored.
         break;
     case 6:         //RTCAIFG
         // Alarm!
