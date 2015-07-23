@@ -35,7 +35,7 @@ void init_oled() {
     GrFlush(&g_sContext);
 }
 
-void oled_draw_pane() {
+void oled_draw_pane(uint8_t softkey_sel) {
     GrContextFontSet(&g_sContext, &NAME_FONT);
     GrStringDraw(&g_sContext, my_conf.handle, -1, 0, 0, 1);
     uint8_t title_width = GrStringWidthGet(&g_sContext, titles[my_conf.title_index], -1);

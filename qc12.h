@@ -91,7 +91,6 @@
 #define SK_SEL_MAX SK_SEL_NAME
 
 extern const char sk_labels[][10];
-extern uint8_t softkey_sel;
 extern uint8_t softkey_en;
 
 // Badge count tracking:

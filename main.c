@@ -33,7 +33,6 @@ uint8_t s_newly_met = 0;
 
 uint8_t suppress_softkey = 0;
 
-uint8_t softkey_sel = 0;
 uint8_t softkey_en = BIT0 | BIT1 | BIT6;
 
 // Function declarations:
@@ -262,6 +261,7 @@ void handle_infrastructure_services() {
     }
 
     if (f_new_second) {
+        f_new_second = 0;
         window_seconds--;
         if (!window_seconds) {
             window_seconds = RECEIVE_WINDOW_LENGTH_SECONDS;
@@ -409,7 +409,6 @@ void handle_mode_name() {
             if (bs_down_loops && bs_down_loops < NAME_COMMIT_LOOPS) {
                 bs_down_loops++;
             } else if (bs_down_loops) {
-                suppress_softkey = 1; // And don't register the button release
                 break;
             }
 
@@ -438,6 +437,7 @@ void handle_mode_name() {
     name[name_len] = 0; // null terminate.
     strcpy(my_conf.handle, name);
     op_mode = OP_MODE_IDLE;
+    suppress_softkey = 1; // And don't register the button release
 
     GrClearDisplay(&g_sContext);
     GrFlush(&g_sContext);
@@ -450,10 +450,11 @@ uint8_t softkey_enabled(uint8_t index) {
 void handle_mode_idle() {
     // Clear any outstanding stray flags asking the character to do stuff
     //    so we know we're in a consistent state when we enter this mode.
-
+    static uint8_t softkey_sel;
+    softkey_sel = 0;
     uint8_t s_new_pane = 0;
 
-    oled_draw_pane();
+    oled_draw_pane(softkey_sel);
     // Pick our current appearance...
     oled_play_animation(&standing, 0);
 
@@ -507,7 +508,7 @@ void handle_mode_idle() {
         if (s_new_pane) {
             // Title or softkey or something changed:
             s_new_pane = 0;
-            oled_draw_pane();
+            oled_draw_pane(softkey_sel);
         }
 
         if (op_mode != OP_MODE_IDLE) {
