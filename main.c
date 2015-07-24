@@ -620,7 +620,7 @@ void handle_mode_sleep() {
 void handle_mode_setflag() {
     static uint8_t softkey_sel;
     softkey_sel = 0;
-    uint8_t s_new_pane = 0;
+    uint8_t s_new_pane = 1;
 
     char buf[5] = "";
 

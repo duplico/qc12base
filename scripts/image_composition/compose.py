@@ -77,7 +77,7 @@ def make_sprite(head_path, body_path, legs_path, heights=(HEAD_HEIGHT, BODY_HEIG
             index = 0
         if index and index % 8 == 0:
             out_str += ", 0b"
-        out_str += "1" if sum(pixel) else "0"
+        out_str += "1" if sum(pixel[:-1]) else "0" # Everything but alpha...
         index += 1
         sprite_size += 1
     out_str += "},"
