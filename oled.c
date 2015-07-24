@@ -82,7 +82,6 @@ void oled_play_animation(const qc12_anim_t *anim, uint8_t loops) {
 }
 
 void oled_timestep() {
-    // TODO: if we're animating...
     if (anim_state)
         oled_anim_next_frame();
 }

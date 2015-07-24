@@ -162,7 +162,7 @@ uint8_t fun_base[] = {
 
 void tlc_set_gs() {
     if (tlc_send_type != TLC_SEND_IDLE)
-        return; // TODO: let's try to make sure this never happens.
+        return;
     tlc_send_type = TLC_SEND_TYPE_GS;
     tlc_tx_index = 0;
     EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, TLC_THISISGS);
@@ -252,9 +252,6 @@ void tlc_load_colors() {
 }
 
 void tlc_fade_colors() {
-    // TODO: there's a bit of resiliency we could add here to avoid the
-    // potential for odd behavior caused by roundoff errors.
-
     if (ring_fade_steps && ring_fade_index == ring_fade_steps-1) {
         // hit the destination: memcpy(&tlc_curr_colors[0], &tlc_curr_anim[tlc_light_offset], sizeof(rgbcolor_t));
         memcpy(&tlc_curr_colors[0], rainbow_ring_dest, sizeof(rgbcolor_t));
@@ -428,7 +425,7 @@ __interrupt void EUSCI_A0_ISR(void)
             EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, fun_base[tlc_tx_index]);
             tlc_tx_index++;
         } else if (tlc_send_type == TLC_SEND_TYPE_LB) { // Loopback for POST
-            if (tlc_tx_index == 33) { // TODO: make sure this is the right #.
+            if (tlc_tx_index == 33) {
                 tlc_send_type = TLC_SEND_IDLE;
                 break;
             }
