@@ -74,7 +74,7 @@ void oled_anim_next_frame() {
         anim_state = OLED_ANIM_DONE;
 }
 
-void oled_play_animation(qc12_anim_t *anim, uint8_t loops) {
+void oled_play_animation(const qc12_anim_t *anim, uint8_t loops) {
     anim_index = 0;
     anim_loops = loops;
     anim_data = *anim;
