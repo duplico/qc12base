@@ -255,17 +255,28 @@ void tlc_fade_colors() {
     // TODO: there's a bit of resiliency we could add here to avoid the
     // potential for odd behavior caused by roundoff errors.
 
-    // Load index 0 no matter what.
-    tlc_curr_colors[0].red += rainbow_ring_step[0].red;
-    tlc_curr_colors[0].green += rainbow_ring_step[0].green;
-    tlc_curr_colors[0].blue += rainbow_ring_step[0].blue;
+    if (ring_fade_steps && ring_fade_index == ring_fade_steps-1) {
+        // hit the destination: memcpy(&tlc_curr_colors[0], &tlc_curr_anim[tlc_light_offset], sizeof(rgbcolor_t));
+        memcpy(&tlc_curr_colors[0], rainbow_ring_dest, sizeof(rgbcolor_t));
 
-    // If we're shifting (i.e. using the rest of the buffer), then do the rest
-    if (led_anim_mode == TLC_ANIM_MODE_SHIFT) {
-        for (uint8_t i=1; i<5; i++) {
-            tlc_curr_colors[i].red += rainbow_ring_step[i].red;
-            tlc_curr_colors[i].green += rainbow_ring_step[i].green;
-            tlc_curr_colors[i].blue += rainbow_ring_step[i].blue;
+        if (led_anim_mode == TLC_ANIM_MODE_SHIFT) {
+            for (uint8_t i=1; i<5; i++) {
+                memcpy(&tlc_curr_colors[0], rainbow_ring_dest, sizeof(rgbcolor_t));
+            }
+        }
+    } else {
+        // Load index 0 no matter what.
+        tlc_curr_colors[0].red += rainbow_ring_step[0].red;
+        tlc_curr_colors[0].green += rainbow_ring_step[0].green;
+        tlc_curr_colors[0].blue += rainbow_ring_step[0].blue;
+
+        // If we're shifting (i.e. using the rest of the buffer), then do the rest
+        if (led_anim_mode == TLC_ANIM_MODE_SHIFT) {
+            for (uint8_t i=1; i<5; i++) {
+                tlc_curr_colors[i].red += rainbow_ring_step[i].red;
+                tlc_curr_colors[i].green += rainbow_ring_step[i].green;
+                tlc_curr_colors[i].blue += rainbow_ring_step[i].blue;
+            }
         }
     }
 }
@@ -305,9 +316,6 @@ inline void tlc_timestep() {
         return;
     }
 
-    // Display currently loaded frame:
-    tlc_set_gs();
-
     // Now compute the next frame:
     // If we're shifting, we use all of tlc_curr_colors;
     //  if they're all the same, we only care about index 0.
@@ -328,6 +336,8 @@ inline void tlc_timestep() {
                 tlc_light_offset = 0;
             } else {
                 led_anim_mode = TLC_ANIM_MODE_IDLE;
+                tlc_stage_blank(1);
+                tlc_set_fun();
                 return;
             }
         }
@@ -337,6 +347,8 @@ inline void tlc_timestep() {
         // Compute the next step fade.
         tlc_fade_colors();
     }
+    // Display currently loaded frame:
+    tlc_set_gs();
 }
 
 #pragma vector=USCI_A0_VECTOR
