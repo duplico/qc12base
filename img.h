@@ -15,7 +15,7 @@ typedef struct {
     uint8_t loop_start;
     uint8_t loop_end;
     uint8_t len;
-    const tImage* images[17];
+    const tImage* images[10];
 } qc12_anim_t;
 
 extern const tImage  fingerprint_badge_thinned1BPP_UNCOMP;

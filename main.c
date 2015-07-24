@@ -159,7 +159,7 @@ void tick_badge_seen(uint8_t id, char* handle) {
 }
 
 void init_rtc() {
-    RTC_B_definePrescaleEvent(RTC_B_BASE, RTC_B_PRESCALE_1, RTC_B_PSEVENTDIVIDER_4); // 32 Hz
+    RTC_B_definePrescaleEvent(RTC_B_BASE, RTC_B_PRESCALE_1, RTC_B_PSEVENTDIVIDER_4); // 4 => 32 Hz
     RTC_B_clearInterrupt(RTC_B_BASE, RTC_B_CLOCK_READ_READY_INTERRUPT + RTC_B_TIME_EVENT_INTERRUPT + RTC_B_CLOCK_ALARM_INTERRUPT + RTC_B_PRESCALE_TIMER1_INTERRUPT);
     RTC_B_enableInterrupt(RTC_B_BASE, RTC_B_CLOCK_READ_READY_INTERRUPT + RTC_B_TIME_EVENT_INTERRUPT + RTC_B_CLOCK_ALARM_INTERRUPT + RTC_B_PRESCALE_TIMER1_INTERRUPT);
 }
@@ -362,9 +362,14 @@ void handle_led_actions() {
 }
 
 void handle_character_actions() {
+    static uint8_t skip_frame = 20;
     if (f_time_loop) {
-        oled_timestep();
-        oled_anim_next_frame();
+        skip_frame--;
+
+        if (!skip_frame) {
+            skip_frame = 20;
+            oled_timestep();
+        }
     }
 }
 
