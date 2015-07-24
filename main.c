@@ -107,6 +107,7 @@ void check_conf() {
         my_conf_write_crc();
         memset(badges_seen, 0, sizeof(uint16_t) * BADGES_IN_SYSTEM);
         s_default_conf_loaded = 1;
+        out_payload.handle[0] = 0;
     }
 }
 
@@ -164,11 +165,20 @@ void init_rtc() {
     RTC_B_enableInterrupt(RTC_B_BASE, RTC_B_CLOCK_READ_READY_INTERRUPT + RTC_B_TIME_EVENT_INTERRUPT + RTC_B_CLOCK_ALARM_INTERRUPT + RTC_B_PRESCALE_TIMER1_INTERRUPT);
 }
 
+void init_payload() {
+    out_payload.base_id = NOT_A_BASE;
+    out_payload.beacon = 0;
+    out_payload.from_addr = my_conf.badge_id;
+    out_payload.to_addr = RFM_BROADCAST;
+    strcpy(out_payload.handle, my_conf.handle);
+}
+
 void init() {
     Grace_init(); // Activate Grace-generated configuration
 
     check_conf();
 
+    init_payload();
     init_tlc();
     init_radio();
     init_oled();
@@ -334,9 +344,9 @@ void handle_infrastructure_services() {
             // If we're rolling over the window and have no neighbors,
             // try a radio reboot, in case that can gin up some neighbors
             // for some reason.
-//            if (!window_position && neighbor_count == 0) {
-//                init_radio();
-//            }
+            if (!window_position && neighbor_count == 0) {
+                init_radio();
+            }
         }
     }
 
@@ -353,6 +363,20 @@ void handle_infrastructure_services() {
             s_tick_next_window = 1;
         }
     }
+
+    if (s_need_rf_beacon && rfm_reg_state == RFM_REG_IDLE) {
+        // If we need to beacon, and we're not talking to the RFM module.
+        // Note: Last year we also had a check for
+        //  "!(read_single_register_sync(0x27) & (BIT1+BIT0))".
+        // That is SyncAddressMatch and AutoMode (i.e. check whether we're
+        // receiving something or are in our receive intermediate state.)
+        // I'm not sure it added any robustness.
+        s_need_rf_beacon = 0;
+
+        out_payload.beacon = 1;
+        radio_send_sync();
+    }
+
 }
 
 void handle_led_actions() {
@@ -505,6 +529,7 @@ void handle_mode_name() {
         name_len++;
     name[name_len] = 0; // null terminate.
     strcpy(my_conf.handle, name);
+    strcpy(out_payload.handle, name);
     op_mode = OP_MODE_IDLE;
     suppress_softkey = 1; // And don't register the button release
 
