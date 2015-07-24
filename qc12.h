@@ -90,10 +90,11 @@
 #define SK_SEL_SETFLAG 4
 #define SK_SEL_RPS 5
 #define SK_SEL_NAME 6
-#define SK_SEL_MAX SK_SEL_NAME
+#define SK_SEL_SLEEP 7
+#define SK_SEL_MAX 7
 
 extern const char sk_labels[][10];
-extern uint8_t softkey_en;
+extern uint16_t softkey_en;
 
 // Badge count tracking:
 #define BADGE_SEEN_BIT BITF

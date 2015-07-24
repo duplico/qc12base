@@ -70,9 +70,9 @@ const char titles[][10] = {
 uint8_t op_mode = OP_MODE_IDLE;
 
 uint8_t suppress_softkey = 0;
-uint8_t softkey_en = BIT0 | BIT1 | BIT4 | BIT6;
+uint16_t softkey_en = BIT0 | BIT1 | BIT4 | BIT6 | BIT7;
 
-const char sk_labels[][10] = {
+const char sk_labels[SK_SEL_MAX+1][10] = {
        "Play",
        "ASL?",
        "Befriend",
@@ -80,7 +80,8 @@ const char sk_labels[][10] = {
        "Demo anim",
 //       "Pick flag",
        "RPS",
-       "Set name"
+       "Set name",
+       "Sleep"
 };
 
 uint16_t badges_seen[BADGES_IN_SYSTEM];
@@ -597,6 +598,9 @@ void handle_mode_idle() {
                     break;
                 case SK_SEL_FRIEND:
                     break;
+                case SK_SEL_SLEEP:
+                    op_mode = OP_MODE_SLEEP;
+                    break;
                 default:
                     __never_executed();
                 }
@@ -636,15 +640,47 @@ void handle_mode_asl() {
 }
 
 void handle_mode_sleep() {
-    // Sleep the radio and TLC.
+    // Sleep the radio.
+    mode_sync(RFM_MODE_SL); // Going to sleep... mode...
+    write_single_register(0x3b, RFM_AUTOMODE_OFF);
+    f_rfm_rx_done = f_rfm_tx_done = 0;
+
+
+    // Kill the LEDs.
+    tlc_stage_blank(1);
+    tlc_set_fun();
+
     // Clear the screen.
+    GrClearDisplay(&g_sContext);
+    GrFlush(&g_sContext);
+
+    // Set up our Zzz animation.
+    static uint8_t zzz_index = 0;
+
     while (1) {
         if (f_time_loop) {
-            // make some Zs
             f_time_loop = 0;
+            poll_buttons();
+
+            if (f_bs == BUTTON_RELEASE) {
+                f_bs = 0;
+                break;
+            }
+            f_bs = f_br = f_bl = 0;
+
+        }
+        if (f_new_second) {
+            f_new_second = 0;
+            GrClearDisplay(&g_sContext);
+            GrStringDraw(&g_sContext, "Zzz...", zzz_index, 10, 100, 1);
+            GrFlush(&g_sContext);
+            zzz_index = (zzz_index+1) % 7;
         }
         try_to_sleep(); // This one needs to be different...
     }
+
+    init_radio();
+    op_mode = OP_MODE_IDLE;
 }
 
 void handle_mode_setflag() {
@@ -755,7 +791,10 @@ int main(void)
             handle_mode_setflag();
             break;
         case OP_MODE_BEFRIEND:
-            break; // TODO... Is this even a mode?
+            break;
+        case OP_MODE_SLEEP:
+            handle_mode_sleep();
+            break;
         }
 
         // Reset user-interactive flags after switching modes:
