@@ -16,6 +16,7 @@
 #define RFM_MODE_RX 0b00010000
 #define RFM_MODE_SB 0b00000100
 #define RFM_MODE_TX 0b00001100
+#define RFM_MODE_SL 0b00000000
 
 #define RFM_IRQ1 0x27
 #define RFM_IRQ2 0x28
@@ -37,6 +38,7 @@ extern volatile uint8_t rfm_reg_state;
 
 #define RFM_AUTOMODE_RX 0b01100101
 #define RFM_AUTOMODE_TX 0b01011011
+#define RFM_AUTOMODE_OFF 0b00000000
 
 void init_radio();
 
