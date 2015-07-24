@@ -100,6 +100,9 @@ extern uint8_t softkey_en;
 #define BADGE_FRIEND_BIT BITE
 #define BADGE_TICKS_MASK 0xffff & ~(BADGE_SEEN_BIT | BADGE_FRIEND_BIT)
 
+// Radio bidness:
+#define NOT_A_BASE 0xFF
+
 //////////////////////////////////////////////////////////////////////
 // Functions etc. ////////////////////////////////////////////////////
 
