@@ -2467,7 +2467,7 @@ const tImage flash_sprite_bank[34] = {
     { IMAGE_FMT_1BPP_UNCOMP, 64, 64, 2, palette_bw, flash_sprite_bank_pixels[33] }, // 2:1:1
 };
 
-qc12_anim_t standing = {
+const qc12_anim_t standing = {
     0, // Looped?
     0, // Loop start index
     1, // Loop end index
@@ -2475,7 +2475,7 @@ qc12_anim_t standing = {
     {&flash_sprite_bank[0]} // Pointers to frames
 };
 
-qc12_anim_t walking = {
+const qc12_anim_t walking = {
     1, // Looped?
     1, // Loop start index
     5, // Loop end index
@@ -2488,7 +2488,7 @@ qc12_anim_t walking = {
      &flash_sprite_bank[1]} // Pointers to frames
 };
 
-qc12_anim_t walking_left = {
+const qc12_anim_t walking_left = {
     1, // Looped?
     1, // Loop start index
     5, // Loop end index
@@ -2501,7 +2501,7 @@ qc12_anim_t walking_left = {
      &flash_sprite_bank[4]} // Pointers to frames
 };
 
-qc12_anim_t running = {
+const qc12_anim_t running = {
     1, // Looped?
     1, // Loop start index
     7, // Loop end index
@@ -2516,7 +2516,7 @@ qc12_anim_t running = {
      &flash_sprite_bank[1]} // Pointers to frames
 };
 
-qc12_anim_t zombie = {
+const qc12_anim_t zombie = {
     1, // Looped?
     3, // Loop start index
     7, // Loop end index
@@ -2533,7 +2533,7 @@ qc12_anim_t zombie = {
      &flash_sprite_bank[9]} // Pointers to frames
 };
 
-qc12_anim_t zombie_left = {
+const qc12_anim_t zombie_left = {
     1, // Looped?
     3, // Loop start index
     7, // Loop end index
@@ -2550,7 +2550,7 @@ qc12_anim_t zombie_left = {
      &flash_sprite_bank[9]} // Pointers to frames
 };
 
-qc12_anim_t jump = {
+const qc12_anim_t jump = {
     0, // Looped?
     0, // Loop start index
     5, // Loop end index
@@ -2562,7 +2562,7 @@ qc12_anim_t jump = {
      &flash_sprite_bank[20]} // Pointers to frames
 };
 
-qc12_anim_t march = {
+const qc12_anim_t march = {
     1, // Looped?
     1, // Loop start index
     4, // Loop end index
@@ -2573,7 +2573,7 @@ qc12_anim_t march = {
      &flash_sprite_bank[9]} // Pointers to frames
 };
 
-qc12_anim_t exercise_1 = {
+const qc12_anim_t exercise_1 = {
     1, // Looped?
     1, // Loop start index
     2, // Loop end index
@@ -2583,7 +2583,7 @@ qc12_anim_t exercise_1 = {
      &flash_sprite_bank[9]} // Pointers to frames
 };
 
-qc12_anim_t flap_arms = {
+const qc12_anim_t flap_arms = {
     1, // Looped?
     1, // Loop start index
     3, // Loop end index
@@ -2594,7 +2594,7 @@ qc12_anim_t flap_arms = {
      &flash_sprite_bank[24]} // Pointers to frames
 };
 
-qc12_anim_t silly = {
+const qc12_anim_t silly = {
     0, // Looped?
     0, // Loop start index
     1, // Loop end index
@@ -2602,7 +2602,7 @@ qc12_anim_t silly = {
     {&flash_sprite_bank[26]} // Pointers to frames
 };
 
-qc12_anim_t bored_standing = {
+const qc12_anim_t bored_standing = {
     0, // Looped?
     16, // Loop start index
     17, // Loop end index
@@ -2625,3 +2625,13 @@ qc12_anim_t bored_standing = {
      &flash_sprite_bank[9],
      &flash_sprite_bank[33]} // Pointers to frames
 };
+
+// anim_buffer_alloc = 17
+
+// For the animation demo:
+
+const qc12_anim_t *demo_anims[] = {
+    &standing, &walking, &walking_left, &running, &zombie, &zombie_left, &jump, &march, &exercise_1, &flap_arms, &silly, &bored_standing
+};
+
+const uint8_t demo_anim_count = 12;

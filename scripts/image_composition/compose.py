@@ -192,7 +192,7 @@ def main(inifile, head_dir, body_dir, legs_dir, show):
     for anim in animations:
         bank_buffer = "persistent_sprite_bank" if anim['persistent'] else "flash_sprite_bank"
         anim['image_pointers'] = map(lambda a: "&%s[%d]" % (bank_buffer, a), anim['images'])
-        print "qc12_anim_t %s = {" % anim['name']
+        print "const qc12_anim_t %s = {" % anim['name']
         print "\t%d, // Looped?" % (int(anim['looped']) if 'looped' in anim else 0)
         print "\t%d, // Loop start index" % (anim['loop_start_index'] if 'loop_start_index' in anim else 0)
         print "\t%d, // Loop end index" % (anim['loop_end_index'] if 'loop_end_index' in anim else len(anim['image_pointers']))
@@ -201,7 +201,15 @@ def main(inifile, head_dir, body_dir, legs_dir, show):
         print "};"
         print
         
-    print "anim_buffer_alloc = %d" % longest_anim_buffer
+    print "// anim_buffer_alloc = %d" % longest_anim_buffer
+    print
+    print "// For the animation demo:"
+    print
+    print "const qc12_anim_t *demo_anims[] = {"
+    print "   ",
+    print ", ".join(("&"+anim['name']) for anim in animations)
+    print "};"
+    print "const uint8_t demo_anim_count = " + str(len(animations)) + ";"
 
 def adjust_image(image):
     assert image.mode == 'RGBA'

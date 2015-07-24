@@ -32,11 +32,6 @@ uint8_t s_default_conf_loaded = 0;
 uint8_t s_need_rf_beacon = 0;
 uint8_t s_newly_met = 0;
 
-uint8_t suppress_softkey = 0;
-
-uint8_t softkey_en = BIT0 | BIT1 | BIT6;
-
-// Function declarations:
 void poll_buttons();
 
 #pragma DATA_SECTION (my_conf, ".infoA");
@@ -74,12 +69,16 @@ const char titles[][10] = {
 // In the "modal" sense:
 uint8_t op_mode = OP_MODE_IDLE;
 
+uint8_t suppress_softkey = 0;
+uint8_t softkey_en = BIT0 | BIT1 | BIT4 | BIT6;
+
 const char sk_labels[][10] = {
        "Play",
        "ASL?",
        "Befriend",
        "Wave flag",
-       "Pick flag",
+       "Demo anim",
+//       "Pick flag",
        "RPS",
        "Set name"
 };
@@ -335,9 +334,9 @@ void handle_infrastructure_services() {
             // If we're rolling over the window and have no neighbors,
             // try a radio reboot, in case that can gin up some neighbors
             // for some reason.
-            if (!window_position && neighbor_count == 0) {
-                init_radio();
-            }
+//            if (!window_position && neighbor_count == 0) {
+//                init_radio();
+//            }
         }
     }
 
@@ -532,25 +531,29 @@ void handle_mode_idle() {
         if (f_time_loop) {
             f_time_loop = 0;
             if (f_br == BUTTON_PRESS) {
-                f_br = 0;
                 // Left button
                 do {
                     softkey_sel = (softkey_sel+1) % (SK_SEL_MAX+1);
                 } while (!softkey_enabled(softkey_sel));
                 s_new_pane = 1;
-            } else if (f_bl == BUTTON_PRESS) {
-                f_bl = 0;
+            }
+            f_br = 0;
+
+            if (f_bl == BUTTON_PRESS) {
                 do {
                     softkey_sel = (softkey_sel+SK_SEL_MAX) % (SK_SEL_MAX+1);
                 } while (!softkey_enabled(softkey_sel));
                 s_new_pane = 1;
-            } else if (f_bs == BUTTON_RELEASE) {
-                f_bs = 0;
+            }
+            f_bl = 0;
+
+            if (f_bs == BUTTON_RELEASE) {
                 // Select button
                 switch (softkey_sel) {
                 case SK_SEL_ASL:
                     break;
-                case SK_SEL_SETFLAG:
+                case SK_SEL_SETFLAG: // TEMPORARILY: anim demo:
+                    op_mode = OP_MODE_SETFLAG;
                     break;
                 case SK_SEL_NAME:
                     op_mode = OP_MODE_NAME;
@@ -568,6 +571,7 @@ void handle_mode_idle() {
                     __never_executed();
                 }
             }
+            f_bs = 0;
         }
 
         if (s_new_pane) {
@@ -583,6 +587,8 @@ void handle_mode_idle() {
         try_to_sleep();
 
     }
+
+    f_bs = 0;
 
     // Cleanup:
 
@@ -612,10 +618,74 @@ void handle_mode_sleep() {
 }
 
 void handle_mode_setflag() {
+    static uint8_t softkey_sel;
+    softkey_sel = 0;
+    uint8_t s_new_pane = 0;
+
+    char buf[5] = "";
+
+    oled_draw_pane(softkey_sel);
+    // Pick our current appearance...
+    oled_play_animation(&standing, 0);
+    oled_anim_next_frame();
+
     while (1) {
         handle_infrastructure_services();
+        handle_led_actions();
+        handle_character_actions();
+
+        if (f_time_loop) {
+            f_time_loop = 0;
+            if (f_br == BUTTON_PRESS) {
+                softkey_sel = (softkey_sel+1) % (demo_anim_count+1);
+                s_new_pane = 1;
+            }
+            f_br = 0;
+
+            if (f_bl == BUTTON_PRESS) {
+                softkey_sel = (softkey_sel+demo_anim_count) % (demo_anim_count+1);
+                s_new_pane = 1;
+            }
+            f_bl = 0;
+
+            if (f_bs == BUTTON_RELEASE) {
+                f_bs = 0;
+                // Select button
+                if (softkey_sel == demo_anim_count) {
+                    op_mode = OP_MODE_IDLE;
+                    break;
+                } else {
+                    oled_play_animation(demo_anims[softkey_sel], 3);
+                }
+            }
+            f_bs = 0;
+        }
+
+        if (s_new_pane) {
+            // softkey or something changed:
+            s_new_pane = 0;
+            GrContextFontSet(&g_sContext, &SOFTKEY_LABEL_FONT);
+            GrStringDrawCentered(&g_sContext, "                ", -1, 31, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
+
+            if (softkey_sel == demo_anim_count) {
+                GrStringDrawCentered(&g_sContext, "Done", -1, 32, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
+            } else {
+                sprintf(buf, "%d", softkey_sel);
+                GrStringDrawCentered(&g_sContext, buf, -1, 32, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
+            }
+
+            GrLineDrawH(&g_sContext, 0, 64, 116);
+            GrFlush(&g_sContext);
+        }
+
         try_to_sleep();
+
     }
+    f_bs = 0;
+
+    // Cleanup:
+
+    tlc_stop_anim(1);
 }
 
 void handle_mode_rps() {
