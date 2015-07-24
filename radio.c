@@ -127,10 +127,6 @@ void init_radio() {
 
     write_single_register(0x3c, 0x80 | (sizeof(qc12payload) - 1)); // TxStartCondition - FifoNotEmpty
 
-    // Make a big, brief radio spike when we first turn on.
-    mode_sync(RFM_MODE_TX);
-    delay(2000);
-
     // Now that we're done with this setup business, we can enable the
     // DIO interrupts. We have to wait until now because otherwise if
     // the is radio activity during setup it will enter our protocol
