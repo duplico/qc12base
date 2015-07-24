@@ -204,7 +204,7 @@ void radio_send_sync() {
     // Exit condition is PacketSent.
     // Then we'll go back to SB. Once the transmission completes, we'll go
     // to the normal automode.
-    write_single_register(0x3b, RFM_AUTOMODE_TX); // TODO: 0b00111011 ???
+    write_single_register(0x3b, RFM_AUTOMODE_TX);
 
     expected_dio_interrupt = 1; // will be xmit finished.
 
@@ -392,7 +392,7 @@ __interrupt void EUSCI_B0_ISR(void) {
         case RFM_REG_RX_FIFO_DAT:
             rfm_reg_state = RFM_REG_IDLE;
             memcpy(&in_payload, in_bytes, sizeof(qc12payload));
-            f_rfm_rx_done = 1; // TODO
+            f_rfm_rx_done = 1;
             break;
         case RFM_REG_TX_FIFO_DAT:
             // After we send the FIFO, we need to set the mode to RX so the
