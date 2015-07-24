@@ -21,10 +21,6 @@ typedef struct {
 extern const tImage  fingerprint_badge_thinned1BPP_UNCOMP;
 extern const tImage  fingerprint_1BPP_UNCOMP;
 
-extern const tImage  mage4_2;
-extern const tImage  mage4_3;
-extern const tImage  mage4_4;
-
 extern const uint8_t persistent_sprite_bank_pixels[][];
 extern const uint8_t flash_sprite_bank_pixels[][];
 
