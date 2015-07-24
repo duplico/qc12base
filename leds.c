@@ -46,13 +46,18 @@ uint8_t tlc_anim_looping;
 
 // Flags:
 
-rgbcolor_t flag_rainbow[] = {
+rgbcolor_t flag_rainbow_colors[] = {
         {228, 3, 3}, // Red
         {255, 140, 0}, // Orange
         {255, 237, 0}, // Yellow
         {0, 128, 38}, // Green
         {0, 77, 255}, // Blue
         {117, 7, 135}, // Purple
+};
+
+tlc_animation_t flag_rainbow = {
+        &flag_rainbow_colors,
+        6
 };
 
 rgbcolor_t flag_bi[] = {
@@ -113,8 +118,6 @@ rgbcolor_t flag_leather[] = {
         //231,0,57
         //0,0,0
         //0,0,0
-        //0,0,0
-        //0,0,0
 };
 
 rgbcolor_t flag_bear[] = {
@@ -130,50 +133,26 @@ rgbcolor_t flag_bear[] = {
 
 rgbcolor_t flag_blue[] = {
         //22, 13, 203
-        //0,0,0
-        //0,0,0
-        //0,0,0
-        //0,0,0
 };
 
 rgbcolor_t flag_lblue[] = {
         //153,235,255
-        //0,0,0
-        //0,0,0
-        //0,0,0
-        //0,0,0
 };
 
 rgbcolor_t flag_green[] = {
         //76,187,23
-        //0,0,0
-        //0,0,0
-        //0,0,0
-        //0,0,0
 };
 
 rgbcolor_t flag_red[] = {
         //255,0,0
-        //0,0,0
-        //0,0,0
-        //0,0,0
-        //0,0,0
 };
 
 rgbcolor_t flag_yellow[] = {
         //255,255,0
-        //0,0,0
-        //0,0,0
-        //0,0,0
-        //0,0,0
 };
 
 rgbcolor_t flag_pink[] = {
         //249,162,241
-        //0,0,0
-        //0,0,0
-        //0,0,0
-        //0,0,0
 };
 /// end of flags //////
 
