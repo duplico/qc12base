@@ -106,6 +106,7 @@ def main(inifile, head_dir, body_dir, legs_dir, show):
     head_files = sorted(glob(os.path.join(head_dir, 'head', '*.png')), key=lambda a: int(is_a_number.findall(a)[0]))
     body_files = sorted(glob(os.path.join(body_dir, 'torso', '*.png')), key=lambda a: int(is_a_number.findall(a)[0]))
     legs_files = sorted(glob(os.path.join(legs_dir, 'legs', '*.png')), key=lambda a: int(is_a_number.findall(a)[0]))
+    
     index_offset = 0
     index = 0
     longest_anim_buffer = 0
