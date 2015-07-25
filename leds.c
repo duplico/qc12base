@@ -58,7 +58,8 @@ const rgbcolor_t flag_rainbow_colors[] = {
 
 const tlc_animation_t flag_rainbow = {
         &flag_rainbow_colors[0],
-        6
+        6,
+        "Rainbow"
 };
 
 const rgbcolor_t flag_bi_colors[] = {
@@ -69,7 +70,8 @@ const rgbcolor_t flag_bi_colors[] = {
 
 const tlc_animation_t flag_bi = {
         &flag_bi_colors[0],
-        3
+        3,
+        "Bisexual"
 };
 
 const rgbcolor_t flag_pan_colors[] = {
@@ -81,7 +83,8 @@ const rgbcolor_t flag_pan_colors[] = {
 
 const tlc_animation_t flag_pan = {
         &flag_pan_colors[0],
-        4
+        4,
+        "Pansexual"
 };
 
 const rgbcolor_t flag_trans_colors[] = {
@@ -97,7 +100,8 @@ const rgbcolor_t flag_trans_colors[] = {
 
 const tlc_animation_t flag_trans = {
         &flag_trans_colors[0],
-        8
+        8,
+        "Trans"
 };
 
 const rgbcolor_t flag_ace_colors[] = {
@@ -113,7 +117,8 @@ const rgbcolor_t flag_ace_colors[] = {
 
 const tlc_animation_t flag_ace = {
         &flag_ace_colors[0],
-        8
+        8,
+        "Asexual"
 };
 
 const rgbcolor_t flag_ally_colors[] = {
@@ -130,7 +135,8 @@ const rgbcolor_t flag_ally_colors[] = {
 
 const tlc_animation_t flag_ally = {
         &flag_ally_colors[0],
-        9
+        9,
+        "Ally"
 };
 
 //////////// unlockable: //////////
@@ -154,7 +160,8 @@ const rgbcolor_t flag_leather_colors[] = {
 
 const tlc_animation_t flag_leather = {
         &flag_leather_colors[0],
-        14
+        14,
+        "Leather"
 };
 
 
@@ -169,7 +176,8 @@ const rgbcolor_t flag_bear_colors[] = {
 
 const tlc_animation_t flag_bear = {
         &flag_bear_colors[0],
-        6
+        6,
+        "Bear"
 };
 
 const rgbcolor_t flag_blue_colors[] = {
@@ -179,7 +187,8 @@ const rgbcolor_t flag_blue_colors[] = {
 
 const tlc_animation_t flag_blue = {
         &flag_blue_colors[0],
-        1
+        1,
+        "Blue"
 };
 
 const rgbcolor_t flag_lblue_colors[] = {
@@ -189,7 +198,8 @@ const rgbcolor_t flag_lblue_colors[] = {
 
 const tlc_animation_t flag_lblue = {
         &flag_lblue_colors[0],
-        1
+        1,
+        "Light blue"
 };
 
 const rgbcolor_t flag_green_colors[] = {
@@ -199,7 +209,8 @@ const rgbcolor_t flag_green_colors[] = {
 
 const tlc_animation_t flag_green = {
         &flag_green_colors[0],
-        1
+        1,
+        "Green"
 };
 
 const rgbcolor_t flag_red_colors[] = {
@@ -209,7 +220,8 @@ const rgbcolor_t flag_red_colors[] = {
 
 const tlc_animation_t flag_red = {
         &flag_red_colors[0],
-        1
+        1,
+        "Red"
 };
 
 const rgbcolor_t flag_yellow_colors[] = {
@@ -219,7 +231,8 @@ const rgbcolor_t flag_yellow_colors[] = {
 
 const tlc_animation_t flag_yellow = {
         &flag_yellow_colors[0],
-        1
+        1,
+        "Yellow"
 };
 
 const rgbcolor_t flag_pink_colors[] = {
@@ -229,7 +242,8 @@ const rgbcolor_t flag_pink_colors[] = {
 
 const tlc_animation_t flag_pink = {
         &flag_pink_colors[0],
-        1
+        1,
+        "Pink"
 };
 
 /// end of flags //////

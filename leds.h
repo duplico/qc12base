@@ -22,6 +22,7 @@ typedef struct {
 typedef struct {
     const rgbcolor_t * colors;
     uint8_t len;
+    char anim_name[12];
 } tlc_animation_t;
 
 extern rgbcolor_t rainbow2[];
