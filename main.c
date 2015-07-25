@@ -688,7 +688,7 @@ void handle_mode_setflag() {
     softkey_sel = 0;
     uint8_t s_new_pane = 1;
 
-    char buf[5] = "";
+    char buf[2] = "";
 
     oled_draw_pane(softkey_sel);
     // Pick our current appearance...
@@ -736,8 +736,9 @@ void handle_mode_setflag() {
             if (softkey_sel == demo_anim_count) {
                 GrStringDrawCentered(&g_sContext, "Done", -1, 32, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
             } else {
-                sprintf(buf, "%d", softkey_sel);
-                GrStringDrawCentered(&g_sContext, buf, -1, 32, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
+                buf[0] = 'A' + softkey_sel;
+                buf[1] = 0;
+                GrStringDrawCentered(&g_sContext, buf, 1, 32, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
             }
 
             GrLineDrawH(&g_sContext, 0, 64, 116);
