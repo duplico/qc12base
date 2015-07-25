@@ -47,7 +47,7 @@ uint8_t tlc_anim_looping;
 
 // Flags:
 
-rgbcolor_t flag_rainbow_colors[] = {
+const rgbcolor_t flag_rainbow_colors[] = {
         {0xe400, 0x0300, 0x0300}, // Red
         {0xff00, 0x8c00, 0x0000}, // Orange
         {0xff00, 0xed00, 0x0000}, // Yellow
@@ -56,35 +56,35 @@ rgbcolor_t flag_rainbow_colors[] = {
         {0x7500, 0x0700, 0x8700}, // Purple
 };
 
-tlc_animation_t flag_rainbow = {
+const tlc_animation_t flag_rainbow = {
         &flag_rainbow_colors[0],
         6
 };
 
-rgbcolor_t flag_bi_colors[] = {
+const rgbcolor_t flag_bi_colors[] = {
         {0x9700, 0x0200, 0x7000}, // 215, 2, 112
         {0x8300, 0x4f00, 0x9600}, // 115, 79, 150
         {0x5000, 0x3800, 0x8800}, // 0, 56, 168
 };
 
-tlc_animation_t flag_bi = {
+const tlc_animation_t flag_bi = {
         &flag_bi_colors[0],
         3
 };
 
-rgbcolor_t flag_pan_colors[] = {
+const rgbcolor_t flag_pan_colors[] = {
         {0xff00, 0x2100, 0x8c00}, // 255,33,140
         {0xff00, 0xd800, 0x0000}, //255,216,0
         {0xff00, 0xd800, 0x0000}, //255,216,0
         {0x2100, 0xb100, 0xff00}, //33,177,255
 };
 
-tlc_animation_t flag_pan = {
+const tlc_animation_t flag_pan = {
         &flag_pan_colors[0],
         4
 };
 
-rgbcolor_t flag_trans_colors[] = {
+const rgbcolor_t flag_trans_colors[] = {
         {0x1B00, 0xCE00, 0xFA00}, //91,206,250
         {0x1B00, 0xCE00, 0xFA00}, //91,206,250
         {0xFF00, 0x8900, 0x9800}, //245,169,184
@@ -95,12 +95,12 @@ rgbcolor_t flag_trans_colors[] = {
         {0x1B00, 0xCE00, 0xFA00}, //91,206,250
 };
 
-tlc_animation_t flag_trans = {
+const tlc_animation_t flag_trans = {
         &flag_trans_colors[0],
         8
 };
 
-rgbcolor_t flag_ace_colors[] = {
+const rgbcolor_t flag_ace_colors[] = {
         {0x5000, 0x000, 0x8000}, //128,0,128
         {0x5000, 0x000, 0x8000}, //128,0,128
         {0x5000, 0x000, 0x8000}, //128,0,128
@@ -111,12 +111,12 @@ rgbcolor_t flag_ace_colors[] = {
         {0x0300, 0x0300, 0x0300}, //163,163,163,
 };
 
-tlc_animation_t flag_ace = {
+const tlc_animation_t flag_ace = {
         &flag_ace_colors[0],
         8
 };
 
-rgbcolor_t flag_ally_colors[] = {
+const rgbcolor_t flag_ally_colors[] = {
         {0x000, 0x000, 0x000}, //0,0,0
         {0xFF00, 0xFF00, 0xFF00}, //255,255,255
         {0x000, 0x000, 0x000}, //0,0,0
@@ -128,14 +128,14 @@ rgbcolor_t flag_ally_colors[] = {
         {0x000, 0x000, 0x000}, //0,0,0
 };
 
-tlc_animation_t flag_ally = {
+const tlc_animation_t flag_ally = {
         &flag_ally_colors[0],
         9
 };
 
 //////////// unlockable: //////////
 
-rgbcolor_t flag_leather_colors[] = {
+const rgbcolor_t flag_leather_colors[] = {
         {0x0800, 0x0800, 0x6B00}, //24,24,107
         {0x000, 0x000, 0x000}, //0,0,0
         {0x000, 0x000, 0x000}, //0,0,0
@@ -152,13 +152,13 @@ rgbcolor_t flag_leather_colors[] = {
         {0x000, 0x000, 0x000}, //0,0,0
 };
 
-tlc_animation_t flag_leather = {
+const tlc_animation_t flag_leather = {
         &flag_leather_colors[0],
         14
 };
 
 
-rgbcolor_t flag_bear_colors[] = {
+const rgbcolor_t flag_bear_colors[] = {
         {0xA500, 0x3800, 0x0400},
         {0xD500, 0x6300, 0x0000},
         {0xFE00, 0xDD00, 0x6300},
@@ -167,67 +167,67 @@ rgbcolor_t flag_bear_colors[] = {
         {0x0000, 0x0000, 0x0000},
 };
 
-tlc_animation_t flag_bear = {
+const tlc_animation_t flag_bear = {
         &flag_bear_colors[0],
         6
 };
 
-rgbcolor_t flag_blue_colors[] = {
+const rgbcolor_t flag_blue_colors[] = {
         //22, 13, 203
         {0x0000, 0x0000, 0xFFFF},
 };
 
-tlc_animation_t flag_blue = {
+const tlc_animation_t flag_blue = {
         &flag_blue_colors[0],
         1
 };
 
-rgbcolor_t flag_lblue_colors[] = {
+const rgbcolor_t flag_lblue_colors[] = {
         //153,235,255
         {0x3000, 0x4000, 0xFF00},
 };
 
-tlc_animation_t flag_lblue = {
+const tlc_animation_t flag_lblue = {
         &flag_lblue_colors[0],
         1
 };
 
-rgbcolor_t flag_green_colors[] = {
+const rgbcolor_t flag_green_colors[] = {
         //76,187,23
         {0x0F00, 0xFF00, 0x0700},
 };
 
-tlc_animation_t flag_green = {
+const tlc_animation_t flag_green = {
         &flag_green_colors[0],
         1
 };
 
-rgbcolor_t flag_red_colors[] = {
+const rgbcolor_t flag_red_colors[] = {
         //255,0,0
         {0xFF00, 0x000, 0x000},
 };
 
-tlc_animation_t flag_red = {
+const tlc_animation_t flag_red = {
         &flag_red_colors[0],
         1
 };
 
-rgbcolor_t flag_yellow_colors[] = {
+const rgbcolor_t flag_yellow_colors[] = {
         //255,255,0
         {0xE000, 0xA000, 0x0000},
 };
 
-tlc_animation_t flag_yellow = {
+const tlc_animation_t flag_yellow = {
         &flag_yellow_colors[0],
         1
 };
 
-rgbcolor_t flag_pink_colors[] = {
+const rgbcolor_t flag_pink_colors[] = {
         //249,162,241
         {0xd500, 0x0000, 0x6900},
 };
 
-tlc_animation_t flag_pink = {
+const tlc_animation_t flag_pink = {
         &flag_pink_colors[0],
         1
 };
@@ -483,7 +483,7 @@ void tlc_fade_colors() {
     }
 }
 
-void tlc_start_anim(tlc_animation_t *anim, uint8_t anim_len, uint8_t fade_steps, uint8_t all_lights_same, uint8_t loop) {
+void tlc_start_anim(const tlc_animation_t *anim, uint8_t anim_len, uint8_t fade_steps, uint8_t all_lights_same, uint8_t loop) {
     tlc_stage_blank(0);
     tlc_set_fun();
 
@@ -503,7 +503,7 @@ void tlc_start_anim(tlc_animation_t *anim, uint8_t anim_len, uint8_t fade_steps,
     }
 
     tlc_curr_anim_len = anim_len + 2*tlc_anim_pad_len;
-    tlc_curr_anim = anim->colors; // TODO
+    tlc_curr_anim = (rgbcolor_t *) anim->colors; // TODO
 
     ring_fade_steps = fade_steps;
     ring_fade_index = 0;
