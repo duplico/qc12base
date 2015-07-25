@@ -248,6 +248,25 @@ const tlc_animation_t flag_pink = {
 
 /// end of flags //////
 
+const tlc_animation_t *flags[FLAG_COUNT] = {
+        &flag_rainbow,
+        &flag_bi,
+        &flag_pan,
+        &flag_trans,
+        &flag_ace,
+        &flag_ally,
+        &flag_leather,
+        &flag_bear,
+        &flag_blue,
+        &flag_lblue,
+        &flag_green,
+        &flag_red,
+        &flag_yellow,
+        &flag_pink,
+};
+
+///////////////////////
+
 rgbcolor_t rainbow1[10] = {
         // rainbow colors
         { 0x0f00, 0x00, 0x00},
