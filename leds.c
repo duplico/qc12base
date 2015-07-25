@@ -63,14 +63,16 @@ const tlc_animation_t flag_rainbow = {
 };
 
 const rgbcolor_t flag_bi_colors[] = {
-        {0x9700, 0x0200, 0x7000}, // 215, 2, 112
-        {0x8300, 0x4f00, 0x9600}, // 115, 79, 150
-        {0x5000, 0x3800, 0x8800}, // 0, 56, 168
+        {0xff00, 0x0000, 0xb000},
+        {0,0,0},
+//        {0x5300, 0x1f00, 0x6600}, // 115, 79, 150
+        {0,0,0},
+        {0x5000, 0x0000, 0xffff}, // 0, 56, 168
 };
 
 const tlc_animation_t flag_bi = {
         &flag_bi_colors[0],
-        3,
+        4,
         "Bisexual"
 };
 
@@ -90,10 +92,12 @@ const tlc_animation_t flag_pan = {
 const rgbcolor_t flag_trans_colors[] = {
         {0x1B00, 0xCE00, 0xFA00}, //91,206,250
         {0x1B00, 0xCE00, 0xFA00}, //91,206,250
-        {0xFF00, 0x8900, 0x9800}, //245,169,184
+//        {0xFF00, 0x8900, 0x9800}, //245,169,184
+        {0xff00, 0x0000, 0xb000},
         {0xFF00, 0xFF00, 0xFF00}, //255,255,255
         {0xFF00, 0xFF00, 0xFF00}, //255,255,255
-        {0xFF00, 0xA900, 0xB800}, //245,169,184
+//        {0xFF00, 0xA900, 0xB800}, //245,169,184
+        {0xff00, 0x0000, 0xb000},
         {0x1B00, 0xCE00, 0xFA00}, //91,206,250
         {0x1B00, 0xCE00, 0xFA00}, //91,206,250
 };
@@ -105,31 +109,32 @@ const tlc_animation_t flag_trans = {
 };
 
 const rgbcolor_t flag_ace_colors[] = {
-        {0x5000, 0x000, 0x8000}, //128,0,128
-        {0x5000, 0x000, 0x8000}, //128,0,128
-        {0x5000, 0x000, 0x8000}, //128,0,128
+        {0x7000, 0x000, 0xFFFF}, //128,0,128
+        {0x7000, 0x000, 0xFFFF}, //128,0,128
+        {0x0000, 0x000, 0x0000}, //128,0,128
+        {0x0000, 0x000, 0x0000}, //128,0,128
         {0xFF00, 0xFF00, 0xFF00}, //255,255,255
         {0x0300, 0x0300, 0x0300}, //163,163,163,
         {0x0300, 0x0300, 0x0300}, //163,163,163,
-        {0x0300, 0x0300, 0x0300}, //163,163,163,
+        {0x0000, 0x0000, 0x0000}, //163,163,163,
         {0x0300, 0x0300, 0x0300}, //163,163,163,
 };
 
 const tlc_animation_t flag_ace = {
         &flag_ace_colors[0],
-        8,
+        9,
         "Asexual"
 };
 
 const rgbcolor_t flag_ally_colors[] = {
         {0x000, 0x000, 0x000}, //0,0,0
-        {0xFF00, 0xFF00, 0xFF00}, //255,255,255
+        {0x5F00, 0x5F00, 0x5F00}, //255,255,255
         {0x000, 0x000, 0x000}, //0,0,0
         {0x000, 0x000, 0x000}, //0,0,0
-        {0xFF00, 0xFF00, 0xFF00}, //255,255,255
+        {0x5F00, 0x5F00, 0x5F00}, //255,255,255
         {0x000, 0x000, 0x000}, //0,0,0
         {0x000, 0x000, 0x000}, //0,0,0
-        {0xFF00, 0xFF00, 0xFF00}, //255,255,255
+        {0x5F00, 0x5F00, 0x5F00}, //255,255,255
         {0x000, 0x000, 0x000}, //0,0,0
 };
 
@@ -168,15 +173,17 @@ const tlc_animation_t flag_leather = {
 const rgbcolor_t flag_bear_colors[] = {
         {0xA500, 0x3800, 0x0400},
         {0xD500, 0x6300, 0x0000},
+        {0xD500, 0x6300, 0x0000},
+        {0xD500, 0x6300, 0x0000},
         {0xFE00, 0xDD00, 0x6300},
-        {0xFE00, 0xE600, 0x7800},
-        {0x5500, 0x5500, 0x5500},
+        {0xFE00, 0xDD00, 0x6300},
+        {0xbE00, 0xa600, 0x3800},
         {0x0000, 0x0000, 0x0000},
 };
 
 const tlc_animation_t flag_bear = {
         &flag_bear_colors[0],
-        6,
+        8,
         "Bear"
 };
 
@@ -193,7 +200,7 @@ const tlc_animation_t flag_blue = {
 
 const rgbcolor_t flag_lblue_colors[] = {
         //153,235,255
-        {0x3000, 0x4000, 0xFF00},
+        {0x0000, 0xC000, 0xFFFF},
 };
 
 const tlc_animation_t flag_lblue = {
