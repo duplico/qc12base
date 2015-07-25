@@ -41,6 +41,8 @@ extern const tlc_animation_t flag_green;
 extern const tlc_animation_t flag_red;
 extern const tlc_animation_t flag_yellow;
 extern const tlc_animation_t flag_pink;
+#define FLAG_COUNT 14
+extern const tlc_animation_t *flags[FLAG_COUNT];
 
 void init_tlc();
 

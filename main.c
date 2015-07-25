@@ -13,7 +13,7 @@
 #include "img.h"
 #include "qc12.h"
 #include "radio.h"
-#include "leds.h"
+#include <leds.h>
 #include "oled.h"
 #include "flash.h"
 
@@ -683,12 +683,82 @@ void handle_mode_sleep() {
     op_mode = OP_MODE_IDLE;
 }
 
+//void handle_mode_setflag() { // The testing character animations version.
+//    static uint8_t softkey_sel;
+//    softkey_sel = 0;
+//    uint8_t s_new_pane = 1;
+//
+//    char buf[2] = "";
+//
+//    oled_draw_pane(softkey_sel);
+//    // Pick our current appearance...
+//    oled_play_animation(&standing, 0);
+//    oled_anim_next_frame();
+//
+//    while (1) {
+//        handle_infrastructure_services();
+//        handle_led_actions();
+//        handle_character_actions();
+//
+//        if (f_time_loop) {
+//            f_time_loop = 0;
+//            if (f_br == BUTTON_PRESS) {
+//                softkey_sel = (softkey_sel+1) % (demo_anim_count+1);
+//                s_new_pane = 1;
+//            }
+//            f_br = 0;
+//
+//            if (f_bl == BUTTON_PRESS) {
+//                softkey_sel = (softkey_sel+demo_anim_count) % (demo_anim_count+1);
+//                s_new_pane = 1;
+//            }
+//            f_bl = 0;
+//
+//            if (f_bs == BUTTON_RELEASE) {
+//                f_bs = 0;
+//                // Select button
+//                if (softkey_sel == demo_anim_count) {
+//                    op_mode = OP_MODE_IDLE;
+//                    break;
+//                } else {
+//                    oled_play_animation(demo_anims[softkey_sel], 3);
+//                }
+//            }
+//            f_bs = 0;
+//        }
+//
+//        if (s_new_pane) {
+//            // softkey or something changed:
+//            s_new_pane = 0;
+//            GrContextFontSet(&g_sContext, &SOFTKEY_LABEL_FONT);
+//            GrStringDrawCentered(&g_sContext, "                ", -1, 31, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
+//
+//            if (softkey_sel == demo_anim_count) {
+//                GrStringDrawCentered(&g_sContext, "Done", -1, 32, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
+//            } else {
+//                buf[0] = 'A' + softkey_sel;
+//                buf[1] = 0;
+//                GrStringDrawCentered(&g_sContext, buf, 1, 32, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
+//            }
+//
+//            GrLineDrawH(&g_sContext, 0, 64, 116);
+//            GrFlush(&g_sContext);
+//        }
+//
+//        try_to_sleep();
+//
+//    }
+//    f_bs = 0;
+//
+//    // Cleanup:
+//
+//    tlc_stop_anim(1);
+//}
+
 void handle_mode_setflag() {
     static uint8_t softkey_sel;
     softkey_sel = 0;
     uint8_t s_new_pane = 1;
-
-    char buf[2] = "";
 
     oled_draw_pane(softkey_sel);
     // Pick our current appearance...
@@ -703,13 +773,13 @@ void handle_mode_setflag() {
         if (f_time_loop) {
             f_time_loop = 0;
             if (f_br == BUTTON_PRESS) {
-                softkey_sel = (softkey_sel+1) % (demo_anim_count+1);
+                softkey_sel = (softkey_sel+1) % (FLAG_COUNT + 1);
                 s_new_pane = 1;
             }
             f_br = 0;
 
             if (f_bl == BUTTON_PRESS) {
-                softkey_sel = (softkey_sel+demo_anim_count) % (demo_anim_count+1);
+                softkey_sel = (softkey_sel+FLAG_COUNT) % (FLAG_COUNT+1);
                 s_new_pane = 1;
             }
             f_bl = 0;
@@ -717,11 +787,11 @@ void handle_mode_setflag() {
             if (f_bs == BUTTON_RELEASE) {
                 f_bs = 0;
                 // Select button
-                if (softkey_sel == demo_anim_count) {
+                if (softkey_sel == FLAG_COUNT) {
                     op_mode = OP_MODE_IDLE;
                     break;
                 } else {
-                    oled_play_animation(demo_anims[softkey_sel], 3);
+                    tlc_start_anim(flags[softkey_sel], 0, 3, 0, 3);
                 }
             }
             f_bs = 0;
@@ -736,9 +806,7 @@ void handle_mode_setflag() {
             if (softkey_sel == demo_anim_count) {
                 GrStringDrawCentered(&g_sContext, "Done", -1, 32, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
             } else {
-                buf[0] = 'A' + softkey_sel;
-                buf[1] = 0;
-                GrStringDrawCentered(&g_sContext, buf, 1, 32, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
+                GrStringDrawCentered(&g_sContext, flags[softkey_sel]->anim_name, -1, 32, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
             }
 
             GrLineDrawH(&g_sContext, 0, 64, 116);
