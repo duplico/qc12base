@@ -590,7 +590,7 @@ void handle_mode_idle() {
                     op_mode = OP_MODE_NAME;
                     break;
                 case SK_SEL_PLAY:
-                    tlc_start_anim(rainbow2, 5, 5, 0, 3);
+                    tlc_start_anim(&flag_pink, 0, 3, 0, 3);
                     break;
                 case SK_SEL_FLAG:
                     break;
@@ -767,7 +767,6 @@ int main(void)
     intro(); // Play a cute animation when we first turn the badge on.
     delay(1000);
     post();
-    delay(4000);
 
     GrClearDisplay(&g_sContext);
 

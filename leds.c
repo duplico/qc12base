@@ -36,6 +36,7 @@ volatile uint8_t tlc_color_index = 0;
 
 uint8_t tlc_anim_mode = TLC_ANIM_MODE_IDLE;
 uint8_t tlc_anim_index = 0;   // Number of channels to shift gs_data by
+uint8_t tlc_anim_pad_len = 0;
 
 // Utility light:
 uint16_t tlc_tx_light = 0xffff;
@@ -47,113 +48,190 @@ uint8_t tlc_anim_looping;
 // Flags:
 
 rgbcolor_t flag_rainbow_colors[] = {
-        {228, 3, 3}, // Red
-        {255, 140, 0}, // Orange
-        {255, 237, 0}, // Yellow
-        {0, 128, 38}, // Green
-        {0, 77, 255}, // Blue
-        {117, 7, 135}, // Purple
+        {0xe400, 0x0300, 0x0300}, // Red
+        {0xff00, 0x8c00, 0x0000}, // Orange
+        {0xff00, 0xed00, 0x0000}, // Yellow
+        {0x0000, 0x8000, 0x2600}, // Green
+        {0x0000, 0x4d00, 0xff00}, // Blue
+        {0x7500, 0x0700, 0x8700}, // Purple
 };
 
 tlc_animation_t flag_rainbow = {
-        &flag_rainbow_colors,
+        &flag_rainbow_colors[0],
         6
 };
 
-rgbcolor_t flag_bi[] = {
-        {}, // 215, 2, 112
-        {}, // 115, 79, 150
-        {}, // 0, 56, 168
+rgbcolor_t flag_bi_colors[] = {
+        {0x9700, 0x0200, 0x7000}, // 215, 2, 112
+        {0x8300, 0x4f00, 0x9600}, // 115, 79, 150
+        {0x5000, 0x3800, 0x8800}, // 0, 56, 168
 };
 
-rgbcolor_t flag_pan[] = {
-        // 255,33,140
-        //255,216,0
-        //33,177,255
+tlc_animation_t flag_bi = {
+        &flag_bi_colors[0],
+        3
 };
 
-rgbcolor_t trans_flag[] = {
-        //91,206,250
-        //245,169,184
-        //255,255,255
-        //245,169,184
-        //91,206,250
+rgbcolor_t flag_pan_colors[] = {
+        {0xff00, 0x2100, 0x8c00}, // 255,33,140
+        {0xff00, 0xd800, 0x0000}, //255,216,0
+        {0xff00, 0xd800, 0x0000}, //255,216,0
+        {0x2100, 0xb100, 0xff00}, //33,177,255
 };
 
-rgbcolor_t ace_flag[] = {
-        //128,0,128
-        //255,255,255
-        //163,163,163,
-        //0,0,0
-        //0,0,0
+tlc_animation_t flag_pan = {
+        &flag_pan_colors[0],
+        4
 };
 
-rgbcolor_t ally_flag[] = {
-        //0,0,0
-        //255,255,255
-        //0,0,0
-        //0,0,0
-        //255,255,255
-        //0,0,0
-        //0,0,0
-        //255,255,255
-        //0,0,0
+rgbcolor_t flag_trans_colors[] = {
+        {0x1B00, 0xCE00, 0xFA00}, //91,206,250
+        {0x1B00, 0xCE00, 0xFA00}, //91,206,250
+        {0xFF00, 0x8900, 0x9800}, //245,169,184
+        {0xFF00, 0xFF00, 0xFF00}, //255,255,255
+        {0xFF00, 0xFF00, 0xFF00}, //255,255,255
+        {0xFF00, 0xA900, 0xB800}, //245,169,184
+        {0x1B00, 0xCE00, 0xFA00}, //91,206,250
+        {0x1B00, 0xCE00, 0xFA00}, //91,206,250
+};
+
+tlc_animation_t flag_trans = {
+        &flag_trans_colors[0],
+        8
+};
+
+rgbcolor_t flag_ace_colors[] = {
+        {0x5000, 0x000, 0x8000}, //128,0,128
+        {0x5000, 0x000, 0x8000}, //128,0,128
+        {0x5000, 0x000, 0x8000}, //128,0,128
+        {0xFF00, 0xFF00, 0xFF00}, //255,255,255
+        {0x0300, 0x0300, 0x0300}, //163,163,163,
+        {0x0300, 0x0300, 0x0300}, //163,163,163,
+        {0x0300, 0x0300, 0x0300}, //163,163,163,
+        {0x0300, 0x0300, 0x0300}, //163,163,163,
+};
+
+tlc_animation_t flag_ace = {
+        &flag_ace_colors[0],
+        8
+};
+
+rgbcolor_t flag_ally_colors[] = {
+        {0x000, 0x000, 0x000}, //0,0,0
+        {0xFF00, 0xFF00, 0xFF00}, //255,255,255
+        {0x000, 0x000, 0x000}, //0,0,0
+        {0x000, 0x000, 0x000}, //0,0,0
+        {0xFF00, 0xFF00, 0xFF00}, //255,255,255
+        {0x000, 0x000, 0x000}, //0,0,0
+        {0x000, 0x000, 0x000}, //0,0,0
+        {0xFF00, 0xFF00, 0xFF00}, //255,255,255
+        {0x000, 0x000, 0x000}, //0,0,0
+};
+
+tlc_animation_t flag_ally = {
+        &flag_ally_colors[0],
+        9
 };
 
 //////////// unlockable: //////////
 
-rgbcolor_t flag_leather[] = {
-        //24,24,107
-        //0,0,0
-        //0,0,0
-        //24,24,107
-        //24,24,107
-        //255,255,255
-        //24,24,107
-        //24,24,107
-        //0,0,0
-        //0,0,0
-        //0,0,0
-        //0,0,0
-        //231,0,57
-        //0,0,0
-        //0,0,0
+rgbcolor_t flag_leather_colors[] = {
+        {0x0800, 0x0800, 0x6B00}, //24,24,107
+        {0x000, 0x000, 0x000}, //0,0,0
+        {0x000, 0x000, 0x000}, //0,0,0
+        {0x0800, 0x0800, 0x6B00}, //24,24,107
+        {0x0800, 0x0800, 0x6B00}, //24,24,107
+        {0xFF00, 0xFF00, 0xFF00}, //255,255,255
+        {0x0800, 0x0800, 0x6B00}, //24,24,107
+        {0x0800, 0x0800, 0x6B00}, //24,24,107
+        {0x000, 0x000, 0x000}, //0,0,0
+        {0x000, 0x000, 0x000}, //0,0,0
+        {0x000, 0x000, 0x000}, //0,0,0
+        {0xFF00, 0x000, 0x0000}, //231,0,57
+        {0x000, 0x000, 0x000}, //0,0,0
+        {0x000, 0x000, 0x000}, //0,0,0
 };
 
-rgbcolor_t flag_bear[] = {
-        //98,56,4
-        //213,99,0
-        //254,221,99
-        //254,230,184
-        //255,255,255
-        //85,85,85
-        //0,0,0
-        //0,0,0
+tlc_animation_t flag_leather = {
+        &flag_leather_colors[0],
+        14
 };
 
-rgbcolor_t flag_blue[] = {
+
+rgbcolor_t flag_bear_colors[] = {
+        {0xA500, 0x3800, 0x0400},
+        {0xD500, 0x6300, 0x0000},
+        {0xFE00, 0xDD00, 0x6300},
+        {0xFE00, 0xE600, 0x7800},
+        {0x5500, 0x5500, 0x5500},
+        {0x0000, 0x0000, 0x0000},
+};
+
+tlc_animation_t flag_bear = {
+        &flag_bear_colors[0],
+        6
+};
+
+rgbcolor_t flag_blue_colors[] = {
         //22, 13, 203
+        {0x0000, 0x0000, 0xFFFF},
 };
 
-rgbcolor_t flag_lblue[] = {
+tlc_animation_t flag_blue = {
+        &flag_blue_colors[0],
+        1
+};
+
+rgbcolor_t flag_lblue_colors[] = {
         //153,235,255
+        {0x3000, 0x4000, 0xFF00},
 };
 
-rgbcolor_t flag_green[] = {
+tlc_animation_t flag_lblue = {
+        &flag_lblue_colors[0],
+        1
+};
+
+rgbcolor_t flag_green_colors[] = {
         //76,187,23
+        {0x0F00, 0xFF00, 0x0700},
 };
 
-rgbcolor_t flag_red[] = {
+tlc_animation_t flag_green = {
+        &flag_green_colors[0],
+        1
+};
+
+rgbcolor_t flag_red_colors[] = {
         //255,0,0
+        {0xFF00, 0x000, 0x000},
 };
 
-rgbcolor_t flag_yellow[] = {
+tlc_animation_t flag_red = {
+        &flag_red_colors[0],
+        1
+};
+
+rgbcolor_t flag_yellow_colors[] = {
         //255,255,0
+        {0xE000, 0xA000, 0x0000},
 };
 
-rgbcolor_t flag_pink[] = {
-        //249,162,241
+tlc_animation_t flag_yellow = {
+        &flag_yellow_colors[0],
+        1
 };
+
+rgbcolor_t flag_pink_colors[] = {
+        //249,162,241
+        {0xd500, 0x0000, 0x6900},
+};
+
+tlc_animation_t flag_pink = {
+        &flag_pink_colors[0],
+        1
+};
+
 /// end of flags //////
 
 rgbcolor_t rainbow1[10] = {
@@ -344,22 +422,22 @@ void init_tlc() {
 
 rgbcolor_t color_off = {0, 0, 0};
 
-void stage_color(rgbcolor_t *dest_color_frame, uint8_t anim_index, uint8_t black_pad_len) {
-    if (anim_index < black_pad_len || anim_index >= tlc_curr_anim_len - black_pad_len) {
+void stage_color(rgbcolor_t *dest_color_frame, uint8_t anim_index) {
+    if (anim_index < tlc_anim_pad_len || anim_index >= tlc_curr_anim_len - tlc_anim_pad_len) {
         // If the current index is in the pad, i.e. before or after the anim:
         memcpy(dest_color_frame, &color_off, sizeof(rgbcolor_t));
     } else {
         // Current index is in the animation, not the pad:
-        memcpy(dest_color_frame, &tlc_curr_anim[anim_index-black_pad_len], sizeof(rgbcolor_t));
+        memcpy(dest_color_frame, &tlc_curr_anim[anim_index-tlc_anim_pad_len], sizeof(rgbcolor_t));
     }
 }
 
 void tlc_load_colors() {
     if (tlc_anim_mode == TLC_ANIM_MODE_SAME) {
         // Stage in current color:
-        stage_color(&tlc_colors_curr[0], tlc_anim_index, 1);
+        stage_color(&tlc_colors_curr[0], tlc_anim_index);
         // Stage in next color:
-        stage_color(&tlc_colors_next[0], (tlc_anim_index+1) % tlc_curr_anim_len, 1);
+        stage_color(&tlc_colors_next[0], (tlc_anim_index+1) % tlc_curr_anim_len);
 
         tlc_colors_step[0].red = ((int_fast32_t) tlc_colors_next[0].red - tlc_colors_curr[0].red) / ring_fade_steps;
         tlc_colors_step[0].green = ((int_fast32_t) tlc_colors_next[0].green - tlc_colors_curr[0].green) / ring_fade_steps;
@@ -367,9 +445,9 @@ void tlc_load_colors() {
     } else if (tlc_anim_mode == TLC_ANIM_MODE_SHIFT) {
         for (uint8_t i=0; i<5; i++) {
             // Stage in current color:
-            stage_color(&tlc_colors_curr[i], (tlc_anim_index+i) % tlc_curr_anim_len, 5);
+            stage_color(&tlc_colors_curr[i], (tlc_anim_index+i) % tlc_curr_anim_len);
             // Stage in next color:
-            stage_color(&tlc_colors_next[i], (tlc_anim_index+i+1) % tlc_curr_anim_len, 5);
+            stage_color(&tlc_colors_next[i], (tlc_anim_index+i+1) % tlc_curr_anim_len);
 
             tlc_colors_step[i].red = ((int_fast32_t) tlc_colors_next[i].red - tlc_colors_curr[i].red) / ring_fade_steps;
             tlc_colors_step[i].green = ((int_fast32_t) tlc_colors_next[i].green - tlc_colors_curr[i].green) / ring_fade_steps;
@@ -405,20 +483,27 @@ void tlc_fade_colors() {
     }
 }
 
-void tlc_start_anim(rgbcolor_t *anim, uint8_t anim_len, uint8_t fade_steps, uint8_t all_lights_same, uint8_t loop) {
+void tlc_start_anim(tlc_animation_t *anim, uint8_t anim_len, uint8_t fade_steps, uint8_t all_lights_same, uint8_t loop) {
     tlc_stage_blank(0);
     tlc_set_fun();
 
     tlc_anim_index = 0; // This is our index in the animation.
+
     if (all_lights_same) {
         tlc_anim_mode = TLC_ANIM_MODE_SAME;
-        tlc_curr_anim_len = anim_len+2;
+        tlc_anim_pad_len = 1;
     }
     else {
         tlc_anim_mode = TLC_ANIM_MODE_SHIFT;
-        tlc_curr_anim_len = anim_len+10;
+        tlc_anim_pad_len = 5;
     }
-    tlc_curr_anim = anim;
+
+    if (!anim_len) {
+        anim_len = anim->len;
+    }
+
+    tlc_curr_anim_len = anim_len + 2*tlc_anim_pad_len;
+    tlc_curr_anim = anim->colors; // TODO
 
     ring_fade_steps = fade_steps;
     ring_fade_index = 0;
@@ -458,7 +543,7 @@ inline void tlc_timestep() {
 
         // If the shift will overflow, we're finished.
         // unless we're looping.
-        if (tlc_anim_index == tlc_curr_anim_len) {
+        if (tlc_anim_index == tlc_curr_anim_len - tlc_anim_pad_len) {
             if (tlc_anim_looping) {
                 tlc_anim_looping--;
                 tlc_anim_index = 0;
