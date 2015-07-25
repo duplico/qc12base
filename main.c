@@ -387,12 +387,12 @@ void handle_led_actions() {
 }
 
 void handle_character_actions() {
-    static uint8_t skip_frame = 20;
+    static uint8_t skip_frame = 10;
     if (f_time_loop) {
         skip_frame--;
 
         if (!skip_frame) {
-            skip_frame = 20;
+            skip_frame = 10;
             oled_timestep();
         }
     }
