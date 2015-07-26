@@ -101,16 +101,16 @@ void init_radio() {
     // init radio to recommended "defaults" (seriously, wtf are they
     //  calling them defaults for if they're not set BY DEFAULT?????
     //  Sheesh.), per datasheet:
-    write_single_register(0x18, 0b00001000); // Low-noise amplifier
+    write_single_register(0x18, 0b00001000); // Low-noise amplifier (Def:0x08, rec:0x88)
     write_single_register(0x19, 0b01010101); // Bandwidth control "default"
     write_single_register(0x1a, 0x8b); // Auto Frequency Correction BW "default"
     write_single_register(0x26, 0x07); // Disable ClkOut
-    write_single_register(0x29, 210); // RSSI Threshold
+    write_single_register(0x29, 190); // RSSI Threshold (228 recommended; 210 from qcxi)
 
     // Other configuration:
 
     /// Output configuration:
-    write_single_register(0x11, 0b10011111); // Output power
+    write_single_register(0x11, 0b10000000 | RFM_TX_POWER); // PA0On and Output power
 //	write_single_register(0x12, 0b00001111); // PA0 ramp time
 
     write_single_register(0x25, 0b00000000); // GPIO map to default

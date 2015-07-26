@@ -21,6 +21,7 @@
 #define NUM_ACHIEVEMENTS 32
 #define FAVORITE_COUNT 3
 #define FAVORITE_COUNTDOWN_MINUTES 10
+#define RADIO_TX_POWER_DB 4 // [-18 .. 13]
 
 #define RECEIVE_WINDOW 8
 #define RECEIVE_WINDOW_LENGTH_SECONDS 10
@@ -48,6 +49,7 @@
 
 #define NAME_Y_OFFSET 10+SYS_FONT_HEIGHT*7 // Top of the name entry field.
 #define SPRITE_Y 128 - 64 - SOFTKEY_FONT_HEIGHT // Top of the char sprite.
+#define RFM_TX_POWER (((uint8_t)(18 + RADIO_TX_POWER_DB)) & 0b00011111)
 
 /////////////////////////////////////////////////////////////////////
 // Hardware related defines /////////////////////////////////////////

@@ -294,6 +294,9 @@ void handle_infrastructure_services() {
             if (ticking_this_window) {
                 tick_badge_seen(in_payload.from_addr, in_payload.handle);
             }
+
+            tlc_start_anim(&flag_lblue, 0, 2, 0, 0);
+
         }
 
         // Resolve inbound or completed friendship requests:
@@ -373,8 +376,8 @@ void handle_infrastructure_services() {
         // receiving something or are in our receive intermediate state.)
         // I'm not sure it added any robustness.
         s_need_rf_beacon = 0;
-
         out_payload.beacon = 1;
+        tlc_start_anim(&flag_pink, 0, 2, 0, 0);
         radio_send_sync();
     }
 
