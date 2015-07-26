@@ -16,14 +16,14 @@
 // CONFIGURATION SETTINGS ///////////////////////////////////////////
 
 // System configuration
-#define BADGES_IN_SYSTEM 200
+#define BADGES_IN_SYSTEM 175
+#define UBERS_IN_SYSTEM 12
 #define SLEEP_BITS LPM1_bits // because we need SMCLK for the TLC.
 #define NUM_ACHIEVEMENTS 32
 #define FAVORITE_COUNT 3
-#define FAVORITE_COUNTDOWN_MINUTES 10
 #define RADIO_TX_POWER_DB 4 // [-18 .. 13]
-#define FLAG_OUT_COOLDOWN 0
-#define FLAG_IN_COOLDOWN 10
+#define FLAG_OUT_COOLDOWN_MINUTES 1
+#define FLAG_IN_COOLDOWN_SECONDS 10
 #define FLAG_SEND_TRIES 3
 
 #define RECEIVE_WINDOW 8
@@ -102,9 +102,8 @@ extern const char sk_labels[][10];
 extern uint16_t softkey_en;
 
 // Badge count tracking:
-#define BADGE_SEEN_BIT BITF
-#define BADGE_FRIEND_BIT BITE
-#define BADGE_TICKS_MASK 0xffff & ~(BADGE_SEEN_BIT | BADGE_FRIEND_BIT)
+#define BADGE_SEEN_BIT BIT0
+#define BADGE_FRIEND_BIT BIT1
 
 // Radio bidness:
 #define NOT_A_BASE 0xFF
@@ -143,6 +142,10 @@ typedef struct {
     uint8_t flag_id;
     uint8_t flag_cooldown;
     uint16_t exp;
+    uint8_t seen_count;
+    uint8_t uber_seen_count;
+    uint8_t friend_count;
+    uint8_t uber_friend_count;
     uint8_t achievements[CEILING_DIV(NUM_ACHIEVEMENTS, 8)];
     uint8_t top_seen[3];
     char top_seen_handles[3][NAME_MAX_LEN];

@@ -44,7 +44,7 @@ qc12conf my_conf;
 const qc12conf backup_conf;
 
 const qc12conf default_conf = {
-        0,     // id
+        2,     // id
         50,    // mood
         0,     // title
         0,     // flag
@@ -56,7 +56,8 @@ const qc12conf default_conf = {
 
 
 #pragma DATA_SECTION (badges_seen, ".qcpersist");
-uint16_t badges_seen[BADGES_IN_SYSTEM];
+uint16_t badge_seen_ticks[BADGES_IN_SYSTEM];
+uint8_t badges_seen[BADGES_IN_SYSTEM];
 #pragma DATA_SECTION (fav_badges_ids, ".qcpersist");
 uint8_t fav_badges_ids[FAVORITE_COUNT];
 #pragma DATA_SECTION (fav_badges_handles, ".qcpersist");
@@ -110,13 +111,12 @@ void check_conf() {
         CRC_set8BitData(CRC_BASE, ((uint8_t *) &default_conf)[i]);
     }
 
-    if (my_conf.crc16 != CRC_getResult(CRC_BASE)) {
+    if (1 || my_conf.crc16 != CRC_getResult(CRC_BASE)) { // TODO
         memcpy(&my_conf, &default_conf, sizeof(qc12conf));
         my_conf_write_crc();
         memset(badges_seen, 0, sizeof(uint16_t) * BADGES_IN_SYSTEM);
-        memset(fav_badges_ids, 0, sizeof(uint8_t) * FAVORITE_COUNT);
+        memset(fav_badges_ids, 0xff, sizeof(uint8_t) * FAVORITE_COUNT);
         memset(fav_badges_handles, 0, sizeof(char) * FAVORITE_COUNT * NAME_MAX_LEN);
-        fav_badge_minute_countdown = FAVORITE_COUNTDOWN_MINUTES;
         s_default_conf_loaded = 1;
         out_payload.handle[0] = 0;
     }
@@ -130,6 +130,14 @@ void set_badge_seen(uint8_t id) {
     if (!(BADGE_SEEN_BIT & badges_seen[id])) {
         s_newly_met = 1;
         badges_seen[id] |= BADGE_SEEN_BIT;
+        my_conf.seen_count++;
+        if (id < UBERS_IN_SYSTEM) {
+            my_conf.uber_seen_count++;
+            // flag an animation
+        } else {
+            // flag a lamer animation
+        }
+        my_conf_write_crc();
     }
 }
 
@@ -137,18 +145,40 @@ void set_badge_friend(uint8_t id) {
     if (!(id < BADGES_IN_SYSTEM)) {
         return;
     }
-    badges_seen[id] |= BADGE_FRIEND_BIT;
+
+    if (!(BADGE_FRIEND_BIT & badges_seen[id])) {
+        s_newly_met = 1;
+        badges_seen[id] |= BADGE_FRIEND_BIT;
+        my_conf.friend_count++;
+        if (id < UBERS_IN_SYSTEM) {
+            my_conf.uber_friend_count++;
+            // flag an animation
+        } else {
+            // flag a lamer animation
+        }
+        my_conf_write_crc();
+    }
 }
 
 void tick_badge_seen(uint8_t id, char* handle) {
     if (!(id < BADGES_IN_SYSTEM)) {
         return;
     }
-    if (badges_seen[id] & BADGE_TICKS_MASK < BADGE_TICKS_MASK) {
-        badges_seen[id]++;
+    if (badge_seen_ticks[id] < UINT16_MAX) {
+        badge_seen_ticks[id]++;
         // do top badges:
         for (uint8_t top_index=0; top_index<FAVORITE_COUNT; top_index++) {
-            if (badges_seen[id] & BADGE_TICKS_MASK > badges_seen[fav_badges_ids[top_index]] & BADGE_TICKS_MASK) {
+            if (fav_badges_ids[top_index] == id) {
+                // If we run into the ID we're currently handling before
+                // we run into one that needs to be demoted in its favor,
+                // then its rank is OK (because we start at index 0, which
+                // is the #1 spot). Let's go ahead and make sure we've still
+                // got the most up-to-date handle for them though.
+                strcpy(fav_badges_handles[top_index], handle); // handle has already been sanitized.
+
+                break;
+            }
+            if (fav_badges_ids[top_index] == 0xff || (badge_seen_ticks[id] > badge_seen_ticks[fav_badges_ids[top_index]])) {
                 // This is where it goes, and all the rest need to be demoted.
 
                 // So we can start at the lowest ranked favorite, which is fav_badges_ids[FAVORITE_COUNT-1]
@@ -158,13 +188,20 @@ void tick_badge_seen(uint8_t id, char* handle) {
                 for (uint8_t index_to_clobber = FAVORITE_COUNT-1; index_to_clobber>top_index; index_to_clobber--) {
                     // index_to_clobber starts at the max value for fav_badges_ids
                     // and goes through top_index+1. (index_to_clobber will never be 0).
-                    fav_badges_ids[index_to_clobber] = fav_badges_ids[index_to_clobber-1];
-                    strcpy(fav_badges_handles[index_to_clobber], fav_badges_handles[index_to_clobber-1]);
+                    if (fav_badges_ids[index_to_clobber-1] == id) {
+                        // If we would be clobbering something by DEMOTING the old, stale entry for the
+                        // badge we're logging into this list now, just skip it.
+                    } else {
+                        fav_badges_ids[index_to_clobber] = fav_badges_ids[index_to_clobber-1];
+                        strcpy(fav_badges_handles[index_to_clobber], fav_badges_handles[index_to_clobber-1]);
+                    }
                 }
 
                 // now clobber top_index with out new one.
                 fav_badges_ids[top_index] = id;
-                strcpy("???", handle);
+                strcpy(fav_badges_handles[top_index], handle); // handle has already been sanitized.
+
+                break; // We only care about the highest ranking that we qualify for.
             }
         }
     }
@@ -263,9 +300,6 @@ void intro() {
 //   Character actions
 
 void handle_infrastructure_services() {
-
-    uint8_t s_tick_next_window = 0;
-    uint8_t ticking_this_window = 0;
     static uint8_t minute_secs = 60;
 
     // Handle inbound and outbound background radio functionality, and buttons.
@@ -309,10 +343,7 @@ void handle_infrastructure_services() {
             // sliding window.
             neighbor_badges[in_payload.from_addr] = RECEIVE_WINDOW;
             set_badge_seen(in_payload.from_addr);
-            // Every 10 minutes:
-            if (ticking_this_window) {
-                tick_badge_seen(in_payload.from_addr, in_payload.handle);
-            }
+            tick_badge_seen(in_payload.from_addr, in_payload.handle);
         }
 
         if (in_payload.flag_id && in_payload.from_addr < BADGES_IN_SYSTEM && in_payload.flag_from < BADGES_IN_SYSTEM && (in_payload.flag_id & 0b01111111) < FLAG_COUNT) {
@@ -358,13 +389,6 @@ void handle_infrastructure_services() {
                 s_need_rf_beacon = 1;
             }
 
-            if (s_tick_next_window) {
-                s_tick_next_window = 0;
-                ticking_this_window = 1;
-            } else if (ticking_this_window) {
-                ticking_this_window = 0;
-            }
-
             neighbor_count = 0;
             for (uint8_t i=0; i<BADGES_IN_SYSTEM; i++) {
                 if (neighbor_badges[i]) {
@@ -377,12 +401,6 @@ void handle_infrastructure_services() {
             if (!window_position) {
                 skip_window = rand() % RECEIVE_WINDOW;
             }
-            // If we're rolling over the window and have no neighbors,
-            // try a radio reboot, in case that can gin up some neighbors
-            // for some reason.
-            if (!window_position && neighbor_count == 0) {
-                init_radio();
-            }
         }
     }
 
@@ -392,18 +410,12 @@ void handle_infrastructure_services() {
             my_conf.flag_cooldown--;
             my_conf_write_crc();
         }
-
-        fav_badge_minute_countdown--;
-        if (!fav_badge_minute_countdown) {
-            fav_badge_minute_countdown = FAVORITE_COUNTDOWN_MINUTES;
-            s_tick_next_window = 1;
-        }
     }
 
     if (s_flag_send && rfm_reg_state == RFM_REG_IDLE) {
         s_flag_send--;
         out_payload.beacon = 0;
-        flag_in_cooldown = FLAG_IN_COOLDOWN;
+        flag_in_cooldown = FLAG_IN_COOLDOWN_SECONDS;
         radio_send_sync();
     }
 
@@ -599,8 +611,9 @@ uint8_t softkey_enabled(uint8_t index) {
 void handle_mode_idle() {
     // Clear any outstanding stray flags asking the character to do stuff
     //    so we know we're in a consistent state when we enter this mode.
-    static uint8_t softkey_sel;
-    softkey_sel = 0;
+    static uint8_t softkey_sel = 0;
+    if (!softkey_enabled(softkey_sel))
+        softkey_sel = 0;
     uint8_t s_new_pane = 0;
 
     GrClearDisplay(&g_sContext);
@@ -649,11 +662,13 @@ void handle_mode_idle() {
                     break;
                 case SK_SEL_FLAG:
                     tlc_start_anim(flags[my_conf.flag_id], 0, 3, 0, 5);
-                    my_conf.flag_cooldown = FLAG_OUT_COOLDOWN;
+                    my_conf.flag_cooldown = FLAG_OUT_COOLDOWN_MINUTES;
                     my_conf_write_crc();
                     out_payload.flag_from = my_conf.badge_id;
                     out_payload.flag_id = BIT7 | my_conf.flag_id;
                     s_flag_send = FLAG_SEND_TRIES;
+                    softkey_sel = 0;
+                    s_new_pane = 1;
                     break;
                 case SK_SEL_RPS:
                     break;
@@ -690,6 +705,88 @@ void handle_mode_idle() {
     tlc_stop_anim(1);
 }
 
+void asl_draw_page(uint8_t page) {
+    char buf[16] = "";
+    tRectangle friends_rect = {5, 50, 59, 60};
+    tRectangle uber_rect = {5, 93, 59, 103};
+    switch (page) {
+    case 0:
+        // Title and level
+        GrContextFontSet(&g_sContext, &SYS_FONT);
+        GrStringDrawCentered(&g_sContext, "I've seen:", -1, 32, 8, 0);
+
+        GrStringDraw(&g_sContext, "overall", -1, 10, 23, 0);
+
+        // Badges seen:
+        sprintf(buf, "%d / %d", my_conf.seen_count, BADGES_IN_SYSTEM);
+        GrRectDraw(&g_sContext, &friends_rect);
+        GrStringDraw(&g_sContext, buf, -1, 10, 35, 0);
+        friends_rect.sXMax = 5 + 54 * my_conf.seen_count / BADGES_IN_SYSTEM;
+
+        // Ubers seen:
+        GrStringDraw(&g_sContext, "uber", -1, 10, 65, 0);
+        sprintf(buf, "%d / %d", my_conf.uber_seen_count, UBERS_IN_SYSTEM);
+        GrRectDraw(&g_sContext, &uber_rect);
+        GrStringDraw(&g_sContext, buf, -1, 10, 77, 0);
+        uber_rect.sXMax = 5 + 54 * my_conf.uber_seen_count / UBERS_IN_SYSTEM;
+
+        // Fill both meters:
+        friends_rect.sYMax--;
+        GrRectFill(&g_sContext, &uber_rect);
+        GrRectFill(&g_sContext, &friends_rect);
+        friends_rect.sYMax++;
+
+        break;
+    case 1:
+        GrContextFontSet(&g_sContext, &SYS_FONT);
+        GrStringDrawCentered(&g_sContext, "Friends w/:", -1, 32, 8, 0);
+
+        GrStringDraw(&g_sContext, "overall", -1, 10, 23, 0);
+
+        // Badges friended:
+        sprintf(buf, "%d / %d", my_conf.friend_count, BADGES_IN_SYSTEM);
+        GrRectDraw(&g_sContext, &friends_rect);
+        GrStringDraw(&g_sContext, buf, -1, 10, 35, 0);
+        friends_rect.sXMax = 5 + 54 * my_conf.friend_count / BADGES_IN_SYSTEM;
+
+
+        // Ubers seen:
+        GrStringDraw(&g_sContext, "uber", -1, 10, 65, 0);
+        sprintf(buf, "%d / %d", my_conf.uber_friend_count, UBERS_IN_SYSTEM);
+        GrRectDraw(&g_sContext, &uber_rect);
+        GrStringDraw(&g_sContext, buf, -1, 10, 77, 0);
+        uber_rect.sXMax = 5 + 54 * my_conf.uber_friend_count / UBERS_IN_SYSTEM;
+
+        // Fill both meters:
+        friends_rect.sYMax--;
+        GrRectFill(&g_sContext, &uber_rect);
+        GrRectFill(&g_sContext, &friends_rect);
+        friends_rect.sYMax++;
+        break;
+    case 2:
+        // I see
+        // Top friends
+        GrContextFontSet(&g_sContext, &SYS_FONT);
+        GrStringDrawCentered(&g_sContext, "Top friends", -1, 32, 8, 0);
+
+        GrStringDraw(&g_sContext, "#1", -1, 3, 20, 0);
+        GrStringDraw(&g_sContext, fav_badges_handles[0], -1, 3, 34, 0);
+
+        GrStringDraw(&g_sContext, "#2", -1, 3, 44, 0);
+        GrStringDraw(&g_sContext, fav_badges_handles[1], -1, 3, 58, 0);
+
+        GrStringDraw(&g_sContext, "#3", -1, 3, 68, 0);
+        GrStringDraw(&g_sContext, fav_badges_handles[2], -1, 3, 82, 0);
+
+        break;
+    default:
+        // Achievement listing.
+        break;
+
+    }
+
+}
+
 void handle_mode_asl() {
     // Radio does background stuff but character actions ignored.
     // TLC continues to animate.
@@ -700,10 +797,6 @@ void handle_mode_asl() {
     uint8_t asl_pages = 3;
 
     GrClearDisplay(&g_sContext);
-    GrContextFontSet(&g_sContext, &SOFTKEY_LABEL_FONT);
-    GrStringDrawCentered(&g_sContext, "                ", -1, 31, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
-    GrStringDrawCentered(&g_sContext, "Done", -1, 32, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
-    GrLineDrawH(&g_sContext, 0, 64, 116);
     GrFlush(&g_sContext);
 
     while (1) {
@@ -739,9 +832,15 @@ void handle_mode_asl() {
 
             GrClearDisplay(&g_sContext);
             GrContextFontSet(&g_sContext, &SOFTKEY_LABEL_FONT);
-            GrStringDrawCentered(&g_sContext, "<              >", -1, 31, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
-            GrStringDrawCentered(&g_sContext, "Done", -1, 32, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
+            GrStringDrawCentered(&g_sContext, "OK", -1, 32, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
+            GrLineDraw(&g_sContext, 10, 118, 0, 123);
+            GrLineDraw(&g_sContext, 10, 127, 0, 123);
+            GrLineDraw(&g_sContext, 53, 118, 63, 123);
+            GrLineDraw(&g_sContext, 53, 127, 63, 123);
             GrLineDrawH(&g_sContext, 0, 64, 116);
+
+            asl_draw_page(page_num);
+
             GrFlush(&g_sContext);
         }
 
@@ -752,12 +851,6 @@ void handle_mode_asl() {
 
     // Cleanup:
     // (clear all the character stuff)
-
-
-
-
-
-
 
 }
 
