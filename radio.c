@@ -119,6 +119,9 @@ void init_radio() {
         write_single_register(sync_addr, "QuCo12XII"[(uint8_t) (sync_addr%9)]);
     }
 
+    // Preamble size:
+    write_single_register(0x2d, 0x0F);
+
     // Setup addresses and length:
     write_single_register(0x37, 0b00110100); // Packet configuration (see DS)
     write_single_register(0x38, sizeof(qc12payload)); // PayloadLength
