@@ -54,6 +54,16 @@ const qc12conf default_conf = {
         0,
 };
 
+
+#pragma DATA_SECTION (badges_seen, ".qcpersist");
+uint16_t badges_seen[BADGES_IN_SYSTEM];
+#pragma DATA_SECTION (fav_badges_ids, ".qcpersist");
+uint8_t fav_badges_ids[FAVORITE_COUNT];
+#pragma DATA_SECTION (fav_badges_handles, ".qcpersist");
+char fav_badges_handles[FAVORITE_COUNT][NAME_MAX_LEN];
+#pragma DATA_SECTION (fav_badge_minute_countdown, ".qcpersist");
+uint8_t fav_badge_minute_countdown;
+
 // Gaydar:
 uint8_t window_position = 0; // Currently only used for restarting radio & skipping windows.
 uint8_t skip_window = 1;
@@ -80,17 +90,11 @@ const char sk_labels[SK_SEL_MAX+1][10] = {
        "ASL?",
        "Befriend",
        "Wave flag",
-       "Demo anim",
-//       "Pick flag",
+       "Pick flag",
        "RPS",
        "Set name",
        "Sleep"
 };
-
-uint16_t badges_seen[BADGES_IN_SYSTEM];
-uint8_t fav_badges_ids[FAVORITE_COUNT] = {0};
-char fav_badges_handles[FAVORITE_COUNT][NAME_MAX_LEN];
-uint8_t fav_badge_minute_countdown = FAVORITE_COUNTDOWN_MINUTES;
 
 void my_conf_write_crc() {
     CRC_setSeed(CRC_BASE, 0x0C12);
@@ -110,6 +114,9 @@ void check_conf() {
         memcpy(&my_conf, &default_conf, sizeof(qc12conf));
         my_conf_write_crc();
         memset(badges_seen, 0, sizeof(uint16_t) * BADGES_IN_SYSTEM);
+        memset(fav_badges_ids, 0, sizeof(uint8_t) * FAVORITE_COUNT);
+        memset(fav_badges_handles, 0, sizeof(char) * FAVORITE_COUNT * NAME_MAX_LEN);
+        fav_badge_minute_countdown = FAVORITE_COUNTDOWN_MINUTES;
         s_default_conf_loaded = 1;
         out_payload.handle[0] = 0;
     }
@@ -630,6 +637,7 @@ void handle_mode_idle() {
                 // Select button
                 switch (softkey_sel) {
                 case SK_SEL_ASL:
+                    op_mode = OP_MODE_ASL;
                     break;
                 case SK_SEL_SETFLAG: // TEMPORARILY: anim demo:
                     op_mode = OP_MODE_SETFLAG;
@@ -685,11 +693,72 @@ void handle_mode_idle() {
 void handle_mode_asl() {
     // Radio does background stuff but character actions ignored.
     // TLC continues to animate.
+
+    static uint8_t page_num;
+    page_num = 0;
+    uint8_t s_redraw = 1;
+    uint8_t asl_pages = 3;
+
+    GrClearDisplay(&g_sContext);
+    GrContextFontSet(&g_sContext, &SOFTKEY_LABEL_FONT);
+    GrStringDrawCentered(&g_sContext, "                ", -1, 31, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
+    GrStringDrawCentered(&g_sContext, "Done", -1, 32, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
+    GrLineDrawH(&g_sContext, 0, 64, 116);
+    GrFlush(&g_sContext);
+
     while (1) {
         handle_infrastructure_services();
         handle_led_actions();
+
+        if (f_time_loop) {
+            f_time_loop = 0;
+            if (f_br == BUTTON_PRESS) {
+                page_num = (page_num+1) % (asl_pages);
+                s_redraw = 1;
+            }
+            f_br = 0;
+
+            if (f_bl == BUTTON_PRESS) {
+                page_num = (page_num+(asl_pages-1)) % (asl_pages);
+                s_redraw = 1;
+            }
+            f_bl = 0;
+
+            if (f_bs == BUTTON_RELEASE) {
+                f_bs = 0;
+                // Select button
+                op_mode = OP_MODE_IDLE;
+                break;
+            }
+            f_bs = 0;
+        }
+
+        if (s_redraw) {
+            // softkey or something changed:
+            s_redraw = 0;
+
+            GrClearDisplay(&g_sContext);
+            GrContextFontSet(&g_sContext, &SOFTKEY_LABEL_FONT);
+            GrStringDrawCentered(&g_sContext, "<              >", -1, 31, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
+            GrStringDrawCentered(&g_sContext, "Done", -1, 32, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
+            GrLineDrawH(&g_sContext, 0, 64, 116);
+            GrFlush(&g_sContext);
+        }
+
         try_to_sleep();
+
     }
+    f_bs = 0;
+
+    // Cleanup:
+    // (clear all the character stuff)
+
+
+
+
+
+
+
 }
 
 void handle_mode_sleep() {
@@ -810,7 +879,7 @@ void handle_mode_sleep() {
 
 void handle_mode_setflag() {
     static uint8_t softkey_sel;
-    softkey_sel = 0;
+    softkey_sel = my_conf.flag_id;
     uint8_t s_redraw = 1;
 
     GrClearDisplay(&g_sContext);
