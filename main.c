@@ -34,6 +34,10 @@ uint8_t s_need_rf_beacon = 0;
 uint8_t s_newly_met = 0;
 uint8_t s_flag_wave = 0;
 uint8_t s_flag_send = 0;
+uint8_t s_new_uber_seen = 0;
+uint8_t s_new_badge_seen = 0;
+uint8_t s_new_uber_friend = 0;
+uint8_t s_new_friend = 0;
 
 void poll_buttons();
 
@@ -105,23 +109,6 @@ void my_conf_write_crc() {
     my_conf.crc16 = CRC_getResult(CRC_BASE);
 }
 
-void check_conf() {
-    CRC_setSeed(CRC_BASE, 0x0C12);
-    for (uint8_t i = 0; i < sizeof(qc12conf) - 2; i++) {
-        CRC_set8BitData(CRC_BASE, ((uint8_t *) &default_conf)[i]);
-    }
-
-    if (1 || my_conf.crc16 != CRC_getResult(CRC_BASE)) { // TODO
-        memcpy(&my_conf, &default_conf, sizeof(qc12conf));
-        my_conf_write_crc();
-        memset(badges_seen, 0, sizeof(uint16_t) * BADGES_IN_SYSTEM);
-        memset(fav_badges_ids, 0xff, sizeof(uint8_t) * FAVORITE_COUNT);
-        memset(fav_badges_handles, 0, sizeof(char) * FAVORITE_COUNT * NAME_MAX_LEN);
-        s_default_conf_loaded = 1;
-        out_payload.handle[0] = 0;
-    }
-}
-
 void set_badge_seen(uint8_t id) {
     if (id >= BADGES_IN_SYSTEM) {
         return;
@@ -134,8 +121,10 @@ void set_badge_seen(uint8_t id) {
         if (id < UBERS_IN_SYSTEM) {
             my_conf.uber_seen_count++;
             // flag an animation
+            s_new_uber_seen = 1;
         } else {
             // flag a lamer animation
+            s_new_badge_seen = 1;
         }
         my_conf_write_crc();
     }
@@ -153,10 +142,34 @@ void set_badge_friend(uint8_t id) {
         if (id < UBERS_IN_SYSTEM) {
             my_conf.uber_friend_count++;
             // flag an animation
+            s_new_uber_friend = 1;
         } else {
             // flag a lamer animation
+            s_new_friend = 1;
         }
         my_conf_write_crc();
+    }
+}
+
+void check_conf() {
+    CRC_setSeed(CRC_BASE, 0x0C12);
+    for (uint8_t i = 0; i < sizeof(qc12conf) - 2; i++) {
+        CRC_set8BitData(CRC_BASE, ((uint8_t *) &default_conf)[i]);
+    }
+
+    // Load default config:
+    if (1 || my_conf.crc16 != CRC_getResult(CRC_BASE)) { // TODO!
+        memcpy(&my_conf, &default_conf, sizeof(qc12conf));
+        my_conf_write_crc();
+        memset(badges_seen, 0, sizeof(uint16_t) * BADGES_IN_SYSTEM);
+        memset(fav_badges_ids, 0xff, sizeof(uint8_t) * FAVORITE_COUNT);
+        memset(fav_badges_handles, 0, sizeof(char) * FAVORITE_COUNT * NAME_MAX_LEN);
+        s_default_conf_loaded = 1;
+        out_payload.handle[0] = 0;
+        set_badge_seen(my_conf.badge_id);
+        set_badge_friend(my_conf.badge_id);
+        // Suppress any flags set from these so we don't do the animation:
+        s_new_uber_seen = s_new_badge_seen = s_new_uber_friend = s_new_friend = 0;
     }
 }
 
