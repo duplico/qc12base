@@ -18,8 +18,8 @@ typedef struct {
     const tImage* images[10];
 } qc12_anim_t;
 
-extern const tImage  fingerprint_badge_thinned1BPP_UNCOMP;
 extern const tImage  fingerprint_1BPP_UNCOMP;
+extern const tImage flag1;
 
 extern const uint8_t persistent_sprite_bank_pixels[][];
 extern const uint8_t flash_sprite_bank_pixels[][];
