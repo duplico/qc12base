@@ -456,6 +456,8 @@ void init_tlc() {
     EUSCI_A_SPI_clearInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
     EUSCI_A_SPI_enableInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
 
+    tlc_set_gs();
+
     tlc_stage_blank(1);
     tlc_set_fun();
 }
@@ -523,10 +525,11 @@ void tlc_fade_colors() {
     }
 }
 
-void tlc_start_anim(const tlc_animation_t *anim, uint8_t anim_len, uint8_t fade_steps, uint8_t all_lights_same, uint8_t loop) {
-    tlc_stage_blank(0);
-    tlc_set_fun();
+uint8_t tlc_first_frame = 0;
 
+void tlc_start_anim(const tlc_animation_t *anim, uint8_t anim_len, uint8_t fade_steps, uint8_t all_lights_same, uint8_t loop) {
+    f_tlc_anim_done = 0;
+    tlc_first_frame = 1;
     tlc_anim_index = 0; // This is our index in the animation.
 
     if (all_lights_same) {
@@ -554,6 +557,12 @@ void tlc_start_anim(const tlc_animation_t *anim, uint8_t anim_len, uint8_t fade_
     }
     tlc_anim_looping = loop;
     tlc_load_colors();
+
+    if (tlc_first_frame) {
+        tlc_first_frame = 0;
+        tlc_stage_blank(0);
+        tlc_set_fun();
+    }
 }
 
 void tlc_stop_anim(uint8_t blank) {
@@ -589,8 +598,7 @@ inline void tlc_timestep() {
                 tlc_anim_index = 0;
             } else {
                 tlc_anim_mode = TLC_ANIM_MODE_IDLE;
-                tlc_stage_blank(1);
-                tlc_set_fun();
+                f_tlc_anim_done = 1;
                 return;
             }
         }
@@ -602,6 +610,7 @@ inline void tlc_timestep() {
     }
     // Display currently loaded frame:
     tlc_set_gs();
+
 }
 
 #pragma vector=USCI_A0_VECTOR

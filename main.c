@@ -25,12 +25,15 @@ volatile uint8_t f_time_loop = 0;
 volatile uint8_t f_new_second = 0;
 volatile uint8_t f_rfm_rx_done = 0;
 volatile uint8_t f_rfm_tx_done = 0;
+volatile uint8_t f_tlc_anim_done = 0;
 volatile uint8_t s_new_minute = 0;
 
 // Non-interrupt signal flags (no need to avoid optimization):
 uint8_t s_default_conf_loaded = 0;
 uint8_t s_need_rf_beacon = 0;
 uint8_t s_newly_met = 0;
+uint8_t s_flag_wave = 0;
+uint8_t s_flag_send = 0;
 
 void poll_buttons();
 
@@ -70,7 +73,7 @@ const char titles[][10] = {
 uint8_t op_mode = OP_MODE_IDLE;
 
 uint8_t suppress_softkey = 0;
-uint16_t softkey_en = BIT0 | BIT1 | BIT4 | BIT6 | BIT7;
+uint16_t softkey_en = BIT0 | BIT1 | BIT3 | BIT4 | BIT6 | BIT7;
 
 const char sk_labels[SK_SEL_MAX+1][10] = {
        "Play",
@@ -262,12 +265,19 @@ void handle_infrastructure_services() {
     if (f_time_loop) {
         poll_buttons();
     }
+
     if (f_rfm_tx_done) {
         f_rfm_tx_done = 0;
         // And return to our normal receive automode:
         // RX->SB->RX on receive.
         mode_sync(RFM_MODE_RX);
         write_single_register(0x3b, RFM_AUTOMODE_RX);
+
+        if (out_payload.flag_id) {
+            // If we just sent a flag, clear that info.
+            out_payload.flag_id = 0;
+            out_payload.flag_from = BADGES_IN_SYSTEM;
+        }
     }
 
     // Radio RX tasks:
@@ -278,6 +288,8 @@ void handle_infrastructure_services() {
     //    Flag scheduling
     //    Animation (OLED play) scheduling
     //    Clock sync???
+
+    static uint8_t flag_in_cooldown = 0;
 
     if (f_rfm_rx_done) {
         f_rfm_rx_done = 0;
@@ -294,9 +306,17 @@ void handle_infrastructure_services() {
             if (ticking_this_window) {
                 tick_badge_seen(in_payload.from_addr, in_payload.handle);
             }
+        }
 
-            tlc_start_anim(&flag_lblue, 0, 2, 0, 0);
-
+        if (in_payload.flag_id && in_payload.from_addr < BADGES_IN_SYSTEM && in_payload.flag_from < BADGES_IN_SYSTEM && (in_payload.flag_id & 0b01111111) < FLAG_COUNT) {
+            // Wave a flag.
+            if (!flag_in_cooldown) {
+                s_flag_wave = 1;
+                out_payload.flag_id = in_payload.flag_id;
+                out_payload.flag_from = in_payload.flag_from;
+                tlc_start_anim(flags[in_payload.flag_id & 0b01111111], 0, 3, 0, 0);
+                s_flag_send = 1;
+            } // Otherwise, ignore it.
         }
 
         // Resolve inbound or completed friendship requests:
@@ -312,6 +332,11 @@ void handle_infrastructure_services() {
 
     if (f_new_second) {
         f_new_second = 0;
+
+
+        if (flag_in_cooldown) {
+            flag_in_cooldown--;
+        }
 
         minute_secs--;
         if (!minute_secs) {
@@ -368,6 +393,13 @@ void handle_infrastructure_services() {
         }
     }
 
+    if (s_flag_send && rfm_reg_state == RFM_REG_IDLE) {
+        s_flag_send--;
+        out_payload.beacon = 0;
+        flag_in_cooldown = FLAG_IN_COOLDOWN;
+        radio_send_sync();
+    }
+
     if (s_need_rf_beacon && rfm_reg_state == RFM_REG_IDLE) {
         // If we need to beacon, and we're not talking to the RFM module.
         // Note: Last year we also had a check for
@@ -377,7 +409,6 @@ void handle_infrastructure_services() {
         // I'm not sure it added any robustness.
         s_need_rf_beacon = 0;
         out_payload.beacon = 1;
-        tlc_start_anim(&flag_pink, 0, 2, 0, 0);
         radio_send_sync();
     }
 
@@ -385,7 +416,17 @@ void handle_infrastructure_services() {
 
 void handle_led_actions() {
     if (f_time_loop) {
-//        tlc_timestep();
+        if (f_tlc_anim_done) {
+            f_tlc_anim_done = 0;
+            tlc_stage_blank(1);
+            tlc_set_fun();
+
+            if (s_flag_wave) {
+                tlc_start_anim(flags[my_conf.flag_id], 0, 3, 0, 3);
+                s_flag_wave = 0;
+            }
+
+        }
     }
 }
 
@@ -542,6 +583,9 @@ void handle_mode_name() {
 } // handle_mode_name
 
 uint8_t softkey_enabled(uint8_t index) {
+    if (index == SK_SEL_FLAG) {
+        return !my_conf.flag_cooldown;
+    }
     return ((1<<index) & softkey_en)? 1 : 0;
 }
 
@@ -552,6 +596,7 @@ void handle_mode_idle() {
     softkey_sel = 0;
     uint8_t s_new_pane = 0;
 
+    GrClearDisplay(&g_sContext);
     oled_draw_pane(softkey_sel);
     // Pick our current appearance...
     oled_play_animation(&standing, 0);
@@ -593,9 +638,14 @@ void handle_mode_idle() {
                     op_mode = OP_MODE_NAME;
                     break;
                 case SK_SEL_PLAY:
-                    tlc_start_anim(&flag_pink, 0, 3, 0, 3);
                     break;
                 case SK_SEL_FLAG:
+                    tlc_start_anim(flags[my_conf.flag_id], 0, 3, 0, 5);
+                    my_conf.flag_cooldown = FLAG_OUT_COOLDOWN;
+                    my_conf_write_crc();
+                    out_payload.flag_from = my_conf.badge_id;
+                    out_payload.flag_id = BIT7 | my_conf.flag_id;
+                    s_flag_send = FLAG_SEND_TRIES;
                     break;
                 case SK_SEL_RPS:
                     break;
@@ -761,48 +811,45 @@ void handle_mode_sleep() {
 void handle_mode_setflag() {
     static uint8_t softkey_sel;
     softkey_sel = 0;
-    uint8_t s_new_pane = 1;
+    uint8_t s_redraw = 1;
 
-    oled_draw_pane(softkey_sel);
-    // Pick our current appearance...
-    oled_play_animation(&standing, 0);
-    oled_anim_next_frame();
+    GrClearDisplay(&g_sContext);
+    GrImageDraw(&g_sContext, &flag1, 7, 32);
+    // Write some instructions or a picture...
 
     while (1) {
         handle_infrastructure_services();
         handle_led_actions();
-        handle_character_actions();
 
         if (f_time_loop) {
             f_time_loop = 0;
             if (f_br == BUTTON_PRESS) {
-                softkey_sel = (softkey_sel+1) % (FLAG_COUNT + 1);
-                s_new_pane = 1;
+                softkey_sel = (softkey_sel+1) % (FLAG_COUNT);
+                s_redraw = 1;
             }
             f_br = 0;
 
             if (f_bl == BUTTON_PRESS) {
-                softkey_sel = (softkey_sel+FLAG_COUNT) % (FLAG_COUNT+1);
-                s_new_pane = 1;
+                softkey_sel = (softkey_sel+(FLAG_COUNT-1)) % (FLAG_COUNT);
+                s_redraw = 1;
             }
             f_bl = 0;
 
             if (f_bs == BUTTON_RELEASE) {
                 f_bs = 0;
                 // Select button
-                if (softkey_sel == FLAG_COUNT) {
-                    op_mode = OP_MODE_IDLE;
-                    break;
-                } else {
-                    tlc_start_anim(flags[softkey_sel], 0, 3, 0, 3);
-                }
+                my_conf.flag_id = softkey_sel;
+                my_conf_write_crc();
+                op_mode = OP_MODE_IDLE;
+                tlc_start_anim(flags[softkey_sel], 0, 0, 0, 0);
+                break;
             }
             f_bs = 0;
         }
 
-        if (s_new_pane) {
+        if (s_redraw) {
             // softkey or something changed:
-            s_new_pane = 0;
+            s_redraw = 0;
             GrContextFontSet(&g_sContext, &SOFTKEY_LABEL_FONT);
             GrStringDrawCentered(&g_sContext, "                ", -1, 31, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
 
@@ -822,8 +869,7 @@ void handle_mode_setflag() {
     f_bs = 0;
 
     // Cleanup:
-
-    tlc_stop_anim(1);
+    // (clear all the character stuff)
 }
 
 void handle_mode_rps() {

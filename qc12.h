@@ -22,6 +22,9 @@
 #define FAVORITE_COUNT 3
 #define FAVORITE_COUNTDOWN_MINUTES 10
 #define RADIO_TX_POWER_DB 4 // [-18 .. 13]
+#define FLAG_OUT_COOLDOWN 0
+#define FLAG_IN_COOLDOWN 10
+#define FLAG_SEND_TRIES 3
 
 #define RECEIVE_WINDOW 8
 #define RECEIVE_WINDOW_LENGTH_SECONDS 10
@@ -119,10 +122,13 @@ void delay(unsigned int);
 extern volatile uint8_t f_time_loop;
 extern volatile uint8_t f_rfm_rx_done;
 extern volatile uint8_t f_rfm_tx_done;
+extern volatile uint8_t f_tlc_anim_done;
 
 typedef struct {
 	uint8_t to_addr, from_addr, base_id;
 	uint8_t beacon;
+    uint8_t flag_from;
+	uint8_t flag_id;
 	char handle[NAME_MAX_LEN];
 } qc12payload;
 
