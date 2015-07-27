@@ -745,14 +745,16 @@ void asl_draw_page(uint8_t page) {
 
         // Fill both meters:
         friends_rect.sYMax--;
+        uber_rect.sYMax--;
         GrRectFill(&g_sContext, &uber_rect);
         GrRectFill(&g_sContext, &friends_rect);
+        uber_rect.sYMax++;
         friends_rect.sYMax++;
 
         break;
     case 1:
         GrContextFontSet(&g_sContext, &SYS_FONT);
-        GrStringDrawCentered(&g_sContext, "Friends w/:", -1, 32, 8, 0);
+        GrStringDrawCentered(&g_sContext, "Friends:", -1, 32, 8, 0);
 
         GrStringDraw(&g_sContext, "overall", -1, 10, 23, 0);
 
@@ -772,24 +774,26 @@ void asl_draw_page(uint8_t page) {
 
         // Fill both meters:
         friends_rect.sYMax--;
+        uber_rect.sYMax--;
         GrRectFill(&g_sContext, &uber_rect);
         GrRectFill(&g_sContext, &friends_rect);
         friends_rect.sYMax++;
+        uber_rect.sYMax++;
         break;
     case 2:
         // I see
         // Top friends
         GrContextFontSet(&g_sContext, &SYS_FONT);
-        GrStringDrawCentered(&g_sContext, "Top friends", -1, 32, 8, 0);
+        GrStringDrawCentered(&g_sContext, "My faves:", -1, 32, 8, 0);
 
         GrStringDraw(&g_sContext, "#1", -1, 3, 20, 0);
-        GrStringDraw(&g_sContext, fav_badges_handles[0], -1, 3, 34, 0);
+        GrStringDraw(&g_sContext, fav_badges_handles[0], -1, 3, 35, 0);
 
-        GrStringDraw(&g_sContext, "#2", -1, 3, 44, 0);
-        GrStringDraw(&g_sContext, fav_badges_handles[1], -1, 3, 58, 0);
+        GrStringDraw(&g_sContext, "#2", -1, 3, 51, 0);
+        GrStringDraw(&g_sContext, fav_badges_handles[1], -1, 3, 66, 0);
 
-        GrStringDraw(&g_sContext, "#3", -1, 3, 68, 0);
-        GrStringDraw(&g_sContext, fav_badges_handles[2], -1, 3, 82, 0);
+        GrStringDraw(&g_sContext, "#3", -1, 3, 82, 0);
+        GrStringDraw(&g_sContext, fav_badges_handles[2], -1, 3, 97, 0);
 
         break;
     default:
