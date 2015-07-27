@@ -55,6 +55,8 @@ void tlc_set_fun();
 void tlc_stage_blank(uint8_t);
 void tlc_start_anim(const tlc_animation_t *, uint8_t, uint8_t, uint8_t, uint8_t);
 void tlc_stop_anim(uint8_t blank);
+void tlc_set_ambient(uint8_t);
+void tlc_display_ambient();
 
 void tlc_timestep();
 
