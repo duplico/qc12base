@@ -121,10 +121,10 @@ void set_badge_seen(uint8_t id) {
         if (id < UBERS_IN_SYSTEM) {
             my_conf.uber_seen_count++;
             // flag an animation
-            s_new_uber_seen = 1;
+            s_new_uber_seen = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
         } else {
             // flag a lamer animation
-            s_new_badge_seen = 1;
+            s_new_badge_seen = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
         }
         my_conf_write_crc();
     }
@@ -142,10 +142,10 @@ void set_badge_friend(uint8_t id) {
         if (id < UBERS_IN_SYSTEM) {
             my_conf.uber_friend_count++;
             // flag an animation
-            s_new_uber_friend = 1;
+            s_new_uber_friend = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
         } else {
             // flag a lamer animation
-            s_new_friend = 1;
+            s_new_friend = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
         }
         my_conf_write_crc();
     }
@@ -345,7 +345,7 @@ void handle_infrastructure_services() {
 
     static uint8_t flag_in_cooldown = 0;
 
-    if (f_rfm_rx_done) {
+    if (f_rfm_rx_done && in_payload.from_addr != my_conf.badge_id) {
         f_rfm_rx_done = 0;
         in_payload.handle[NAME_MAX_LEN-1] = 0; // Make sure it's definitely null-terminated.
 
@@ -379,6 +379,9 @@ void handle_infrastructure_services() {
         // Schedule OLED play animations:
 
         // Clock stuff???
+    } else if (f_rfm_rx_done) {
+        // Ignore messages from our own ID, because what even is that anyway?
+        f_rfm_rx_done = 0;
     }
 
     if (f_new_second) {
@@ -448,17 +451,25 @@ void handle_infrastructure_services() {
 
 void handle_led_actions() {
     if (f_time_loop) {
-        if (f_tlc_anim_done) {
-            f_tlc_anim_done = 0;
-            tlc_stage_blank(1);
-            tlc_set_fun();
 
-            if (s_flag_wave) {
-                tlc_start_anim(flags[my_conf.flag_id], 0, 3, 0, 3);
-                s_flag_wave = 0;
-            }
+    }
 
+    if (f_tlc_anim_done) {
+        f_tlc_anim_done = 0;
+        tlc_stage_blank(1);
+        tlc_set_fun();
+
+        if (s_flag_wave) {
+            tlc_start_anim(flags[my_conf.flag_id], 0, 3, 0, 3);
+            s_flag_wave = 0;
         }
+    }
+
+    if ((s_new_uber_seen & SIGNAL_BIT_TLC || s_new_badge_seen & SIGNAL_BIT_TLC) && tlc_anim_mode == TLC_ANIM_MODE_IDLE) {
+        // Big rainbow animation.
+        tlc_start_anim(&flag_rainbow, 0, 3, 1, 3);
+        s_new_badge_seen &= ~SIGNAL_BIT_TLC;
+        s_new_uber_seen &= ~SIGNAL_BIT_TLC;
     }
 }
 
@@ -472,6 +483,14 @@ void handle_character_actions() {
             oled_timestep();
         }
     }
+
+    if ((s_new_uber_seen & SIGNAL_BIT_OLED || s_new_badge_seen & SIGNAL_BIT_OLED) && anim_state == OLED_ANIM_DONE) {
+        // Wave!
+        oled_play_animation(wave_right, 4);
+        s_new_badge_seen &= ~SIGNAL_BIT_OLED;
+        s_new_uber_seen &= ~SIGNAL_BIT_OLED;
+    }
+
 }
 
 void try_to_sleep() {
