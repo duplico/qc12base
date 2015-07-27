@@ -20,7 +20,7 @@
 #include <qc12_oled.h>
 #include <qc12.h>
 
-uint8_t anim_state = OLED_ANIM_DONE;
+uint8_t oled_anim_state = OLED_ANIM_DONE;
 uint8_t anim_index = 0;
 uint8_t anim_loops = 0;
 qc12_anim_t anim_data;
@@ -51,7 +51,7 @@ void oled_draw_pane(uint8_t softkey_sel) {
 }
 
 void oled_anim_next_frame() {
-    if (anim_state == OLED_ANIM_DONE)
+    if (oled_anim_state == OLED_ANIM_DONE)
         return;
 
     GrImageDraw(&g_sContext, anim_data.images[anim_index], 0, SPRITE_Y);
@@ -71,17 +71,17 @@ void oled_anim_next_frame() {
     }
 
     if (anim_index == anim_data.len)
-        anim_state = OLED_ANIM_DONE;
+        oled_anim_state = OLED_ANIM_DONE;
 }
 
 void oled_play_animation(const qc12_anim_t *anim, uint8_t loops) {
     anim_index = 0;
     anim_loops = loops;
     anim_data = *anim;
-    anim_state = OLED_ANIM_START;
+    oled_anim_state = OLED_ANIM_START;
 }
 
 void oled_timestep() {
-    if (anim_state)
+    if (oled_anim_state)
         oled_anim_next_frame();
 }

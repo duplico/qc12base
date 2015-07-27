@@ -15,6 +15,8 @@
 #define OLED_ANIM_START 1
 #define OLED_ANIM_DONE  0
 
+extern uint8_t oled_anim_state;
+
 tContext g_sContext;
 
 void init_oled();

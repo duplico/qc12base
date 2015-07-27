@@ -556,10 +556,10 @@ qc12_oledColorTranslate(void *pvDisplayData,
 #define OLED_STATE_ZEROING 1
 #define OLED_STATE_DATA 2
 
-uint8_t oled_state = OLED_STATE_IDLE;
-uint8_t zeroing_index = 0;
+volatile uint8_t oled_state = OLED_STATE_IDLE;
+volatile uint8_t zeroing_index = 0;
 
-uint16_t writing_data = 0;
+volatile uint16_t writing_data = 0;
 
 //*****************************************************************************
 //

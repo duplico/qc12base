@@ -29,7 +29,7 @@ extern const tImage flash_sprite_bank[];
 
 extern const qc12_anim_t standing;
 extern const qc12_anim_t walking;
-extern const qc12_anim_t waving;
+extern const qc12_anim_t wave_right;
 
 extern const qc12_anim_t *demo_anims[];
 extern const uint8_t demo_anim_count;
