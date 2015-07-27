@@ -68,8 +68,6 @@ uint8_t badges_seen[BADGES_IN_SYSTEM];
 uint8_t fav_badges_ids[FAVORITE_COUNT];
 #pragma DATA_SECTION (fav_badges_handles, ".qcpersist");
 char fav_badges_handles[FAVORITE_COUNT][NAME_MAX_LEN];
-#pragma DATA_SECTION (fav_badge_minute_countdown, ".qcpersist");
-uint8_t fav_badge_minute_countdown;
 
 // Gaydar:
 uint8_t window_position = 0; // Currently only used for restarting radio & skipping windows.
@@ -77,6 +75,9 @@ uint8_t skip_window = 1;
 uint8_t neighbor_count = 0;
 uint8_t window_seconds = RECEIVE_WINDOW_LENGTH_SECONDS;
 uint8_t neighbor_badges[BADGES_IN_SYSTEM] = {0};
+
+// Mood:
+uint8_t mood_tick_minutes = MOOD_TICK_MINUTES;
 
 const char titles[][10] = {
         "n00b",
@@ -111,14 +112,14 @@ void my_conf_write_crc() {
     my_conf.crc16 = CRC_getResult(CRC_BASE);
 }
 
-void adjust_mood(int8_t change) {
+void mood_adjust(int8_t change) {
     if (change < 0) {
         if (my_conf.mood < (-change)) {
             my_conf.mood = 0;
         } else {
             my_conf.mood += change;
         }
-    } else {
+    } else if (change > 0) {
         if (my_conf.mood > (100 - change)) {
             my_conf.mood = 100;
         } else {
@@ -126,6 +127,8 @@ void adjust_mood(int8_t change) {
         }
     }
     my_conf_write_crc();
+
+    tlc_set_ambient(my_conf.mood);
 
     // Set our mood light color. TODO
 
@@ -144,11 +147,11 @@ void set_badge_seen(uint8_t id) {
             my_conf.uber_seen_count++;
             // flag an animation
             s_new_uber_seen = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
-            adjust_mood(50);
+            mood_adjust(50);
         } else {
             // flag a lamer animation
             s_new_badge_seen = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
-            adjust_mood(10);
+            mood_adjust(10);
         }
         // No need to write a CRC here because adjust_mood takes care of that for us.
     }
@@ -195,6 +198,9 @@ void check_conf() {
         // Suppress any flags set from these so we don't do the animation:
         s_new_uber_seen = s_new_badge_seen = s_new_uber_friend = s_new_friend = 0;
     }
+
+    // Set our mood lights.
+    mood_adjust(0);
 }
 
 void tick_badge_seen(uint8_t id, char* handle) {
@@ -450,6 +456,12 @@ void handle_infrastructure_services() {
             my_conf.flag_cooldown--;
             my_conf_write_crc();
         }
+
+        mood_tick_minutes--;
+        if (!mood_tick_minutes) {
+            mood_adjust(MOOD_TICK_AMOUNT);
+            mood_tick_minutes = MOOD_TICK_MINUTES;
+        }
     }
 
     if (s_flag_send && rfm_reg_state == RFM_REG_IDLE) {
@@ -478,15 +490,10 @@ void handle_led_actions() {
 
     }
 
-    if (f_tlc_anim_done) {
+    if (f_tlc_anim_done && s_flag_wave) {
+        tlc_start_anim(flags[my_conf.flag_id], 0, 3, 0, 3);
+        s_flag_wave = 0;
         f_tlc_anim_done = 0;
-        tlc_stage_blank(1);
-        tlc_set_fun();
-
-        if (s_flag_wave) {
-            tlc_start_anim(flags[my_conf.flag_id], 0, 3, 0, 3);
-            s_flag_wave = 0;
-        }
     }
 
     if ((s_new_uber_seen & SIGNAL_BIT_TLC || s_new_badge_seen & SIGNAL_BIT_TLC) && tlc_anim_mode == TLC_ANIM_MODE_IDLE) {
@@ -494,6 +501,10 @@ void handle_led_actions() {
         tlc_start_anim(&flag_rainbow, 0, 4, 1, 4);
         s_new_badge_seen &= ~SIGNAL_BIT_TLC;
         s_new_uber_seen &= ~SIGNAL_BIT_TLC;
+    }
+    if (f_tlc_anim_done) {
+        f_tlc_anim_done = 0;
+        tlc_display_ambient();
     }
 }
 

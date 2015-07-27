@@ -34,6 +34,9 @@ uint8_t tlc_anim_mode = TLC_ANIM_MODE_IDLE;
 uint8_t tlc_anim_index = 0;   // Number of channels to shift gs_data by
 uint8_t tlc_anim_pad_len = 0;
 
+uint8_t tlc_loopback_data_out = 0x00;
+volatile uint8_t tlc_loopback_data_in = 0x00;
+
 // Utility light:
 uint16_t tlc_tx_light = 0xffff;
 
@@ -294,6 +297,18 @@ const rgbcolor_t test_colors[3] = {
 uint8_t ring_fade_index = 0;
 uint8_t ring_fade_steps = 0;
 
+const rgbcolor_t color_off = {0, 0, 0};
+const rgbcolor_t mood_green = { 0x0000, 0x00FF, 0x0000};
+const rgbcolor_t mood_yellow   = { 0x0080, 0x0080, 0x0000}; // To account for roundoff error.
+const rgbcolor_t mood_red   = { 0x00FF, 0x0000, 0x0000};
+const rgbdelta_t mood_step = {
+        (-0x00FF) / 100,
+        (0x00FF) / 100,
+        (0x0000) / 100
+};
+
+rgbcolor_t tlc_ambient_colors = { 0x0000, 0x0000, 0x0000};
+
 rgbcolor_t tlc_colors_curr[5] = {
         {0, 0, 0},
         {0, 0, 0},
@@ -403,9 +418,6 @@ void tlc_stage_blank(uint8_t blank) {
     }
 }
 
-uint8_t tlc_loopback_data_out = 0x00;
-uint8_t tlc_loopback_data_in = 0x00;
-
 // Test the TLC chip with a shift-register loopback.
 // Returns 0 for success and 1 for failure.
 uint8_t tlc_test_loopback(uint8_t test_pattern) {
@@ -449,8 +461,6 @@ void init_tlc() {
     tlc_stage_blank(1);
     tlc_set_fun();
 }
-
-rgbcolor_t color_off = {0, 0, 0};
 
 void stage_color(rgbcolor_t *dest_color_frame, uint8_t anim_index) {
     if (anim_index < tlc_anim_pad_len || anim_index >= tlc_curr_anim_len - tlc_anim_pad_len) {
@@ -513,7 +523,39 @@ void tlc_fade_colors() {
     }
 }
 
-uint8_t tlc_first_frame = 0;
+uint8_t tlc_first_frame = 0; // TODO
+
+void tlc_set_ambient(uint8_t mood) {
+    if (mood == 100) {
+        // green
+        memcpy(&tlc_ambient_colors, &mood_green, sizeof(rgbcolor_t));
+    } else if (mood == 50) {
+        // yellow
+        memcpy(&tlc_ambient_colors, &mood_yellow, sizeof(rgbcolor_t));
+    } else if (mood == 0) {
+        // red
+        memcpy(&tlc_ambient_colors, &mood_red, sizeof(rgbcolor_t));
+    } else if (mood > 50) {
+        // go from green
+        tlc_ambient_colors.red = mood_green.red - mood_step.red * (100-mood);
+        tlc_ambient_colors.green = mood_green.green - mood_step.green * (100-mood);
+        tlc_ambient_colors.blue = 0x0000;
+    } else if (mood < 50) {
+        // go from red
+        tlc_ambient_colors.red = mood_red.red + mood_step.red * mood;
+        tlc_ambient_colors.green = mood_red.green + mood_step.green * mood;
+        tlc_ambient_colors.blue = 0x0000;
+    }
+}
+
+void tlc_display_ambient() {
+    if (tlc_anim_mode != TLC_ANIM_MODE_IDLE)
+        return;
+    for (uint8_t i=0; i<5; i++) {
+        memcpy(&tlc_colors_curr[i], &tlc_ambient_colors, sizeof(rgbcolor_t));
+    }
+    tlc_set_gs();
+}
 
 void tlc_start_anim(const tlc_animation_t *anim, uint8_t anim_len, uint8_t fade_steps, uint8_t all_lights_same, uint8_t loop) {
     f_tlc_anim_done = 0;
