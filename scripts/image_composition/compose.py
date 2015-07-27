@@ -39,7 +39,8 @@ def make_sprite(head_path, body_path, legs_path, heights=(HEAD_HEIGHT, BODY_HEIG
 
     # Now we just plop the head on at SPRITE_HEIGHT - the heights of everything
     # plus the squat amount:
-    head_y = squat_amount + (SPRITE_HEIGHT - sum(heights)) # TODO: might be wrong...
+    head_y = squat_amount + (BODY_HEIGHT - heights[1]) + (FEET_HEIGHT - heights[2])
+    #head_y = body_y - head_mask.getbbox()[3] # TODO: might be wrong...
     
     sprite.paste(
         head, 
@@ -109,12 +110,12 @@ def main(inifile, head_dir, body_dir, legs_dir, show):
     
     heights = [HEAD_HEIGHT, BODY_HEIGHT, FEET_HEIGHT]
     
-    if os.path.isfile(os.path.join(body_dir, 'height')):
-        with open(os.path.join(body_dir, 'height')) as height_file:
+    if os.path.isfile(os.path.join(body_dir, 'torso', 'height')):
+        with open(os.path.join(body_dir, 'torso', 'height')) as height_file:
             heights[1] = int(height_file.readline())
     
-    if os.path.isfile(os.path.join(legs_dir, 'height')):
-        with open(os.path.join(legs_dir, 'height')) as height_file:
+    if os.path.isfile(os.path.join(legs_dir, 'legs', 'height')):
+        with open(os.path.join(body_dir, 'torso', 'height')) as height_file:
             heights[2] = int(height_file.readline())
     
     index_offset = 0
