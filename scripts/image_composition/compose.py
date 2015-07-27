@@ -1,4 +1,5 @@
 import os, sys, argparse, re
+
 from glob import glob
 from ConfigParser import ConfigParser
 
@@ -34,7 +35,6 @@ def make_sprite(head_path, body_path, legs_path, heights=(HEAD_HEIGHT, BODY_HEIG
     legs_y = SPRITE_HEIGHT - legs_mask.getbbox()[3]
     
     # The baseline leg height is FEET_HEIGHT. So we need to lower the torso by
-    # FEET_HEIGHT - heights[2] + squat_amount
     body_y = squat_amount + (FEET_HEIGHT - heights[2])
 
     # Now we just plop the head on at SPRITE_HEIGHT - the heights of everything
@@ -107,9 +107,21 @@ def main(inifile, head_dir, body_dir, legs_dir, show):
     body_files = sorted(glob(os.path.join(body_dir, 'torso', '*.png')), key=lambda a: int(is_a_number.findall(a)[0]))
     legs_files = sorted(glob(os.path.join(legs_dir, 'legs', '*.png')), key=lambda a: int(is_a_number.findall(a)[0]))
     
+    heights = [HEAD_HEIGHT, BODY_HEIGHT, FEET_HEIGHT]
+    
+    if os.path.isfile(os.path.join(body_dir, 'height')):
+        with open(os.path.join(body_dir, 'height')) as height_file:
+            heights[1] = int(height_file.readline())
+    
+    if os.path.isfile(os.path.join(legs_dir, 'height')):
+        with open(os.path.join(legs_dir, 'height')) as height_file:
+            heights[2] = int(height_file.readline())
+    
     index_offset = 0
     index = 0
     longest_anim_buffer = 0
+    
+    move = 0
     
     for anim_name in parser.sections():
         # Note: The in animation must be first, followed by loop, then out.
@@ -118,7 +130,7 @@ def main(inifile, head_dir, body_dir, legs_dir, show):
         elif ":out" in anim_name:
             anim['loop_end_index'] = index_offset = index
         else:
-            anim=dict(looped=(":in" in anim_name), name=anim_name.split(':')[0], images=[], persistent=False)
+            anim=dict(looped=(":in" in anim_name), name=anim_name.split(':')[0], images=[], persistent=False, moves=[])
             animations.append(anim)
             index_offset = 0
         # TODO: assert there's no other :s in the name?
@@ -145,7 +157,7 @@ def main(inifile, head_dir, body_dir, legs_dir, show):
                 else:
                     frame_bank_index = len(sprite_pixel_bank)
                     sprite_bank_indices[(head_index, body_index, legs_index)] = frame_bank_index
-                    pixels = make_sprite(head_files[head_index-1], body_files[body_index-1], legs_files[legs_index-1], show=show)
+                    pixels = make_sprite(head_files[head_index-1], body_files[body_index-1], legs_files[legs_index-1], show=show, heights=heights)
                     metadata = "{ IMAGE_FMT_1BPP_UNCOMP, %d, %d, 2, palette_bw, %s_sprite_bank_pixels[%d] }," % (SPRITE_WIDTH, SPRITE_HEIGHT, "persistent" if anim['persistent'] else "flash", frame_bank_index)
                     metadata += " // %d:%d:%d" % (head_index, body_index, legs_index)
                     sprite_pixel_bank.append(pixels)
@@ -154,9 +166,23 @@ def main(inifile, head_dir, body_dir, legs_dir, show):
                 index = int(frame[0]) + index_offset
                 img_name = "%s_%d" % (anim['name'], (index-1))
                 anim['images'].append(frame_bank_index)
+                anim['moves'].append(move)
+                move = 0
             elif frame[0] == "persistent":
                 assert not anim['images'] # Persistent MUST BE FIRST.
                 anim['persistent'] = True
+            elif frame[0] == "up": # 00xxxxxx - up
+                assert int(frame[1]) < 50
+                move = frame[1]
+            elif frame[0] == "down": # 01xxxxxx - down
+                assert int(frame[1]) < 50
+                move = 0x40 + int(frame[1])
+            elif frame[0] == "left": # 10xxxxxx - left
+                move = 0x80 + int(frame[1])
+                assert int(frame[1]) < 50
+            elif frame[0] == "right": # 11xxxxxx - right
+                move = 0xC0 + int(frame[1])
+                assert int(frame[1]) < 50
         if not anim['persistent'] and index > longest_anim_buffer:
             longest_anim_buffer = index
     
@@ -191,6 +217,7 @@ def main(inifile, head_dir, body_dir, legs_dir, show):
     """
     
     for anim in animations:
+        anim['moves'] = map(str, anim['moves'])
         bank_buffer = "persistent_sprite_bank" if anim['persistent'] else "flash_sprite_bank"
         anim['image_pointers'] = map(lambda a: "&%s[%d]" % (bank_buffer, a), anim['images'])
         print "const qc12_anim_t %s = {" % anim['name']
@@ -198,7 +225,8 @@ def main(inifile, head_dir, body_dir, legs_dir, show):
         print "\t%d, // Loop start index" % (anim['loop_start_index'] if 'loop_start_index' in anim else 0)
         print "\t%d, // Loop end index" % (anim['loop_end_index'] if 'loop_end_index' in anim else len(anim['image_pointers']))
         print "\t%d, // Length" % len(anim['images'])
-        print "\t{%s} // Pointers to frames" % ",\n\t ".join(anim['image_pointers'])
+        print "\t{%s}, // Pointers to frames" % ",\n\t ".join(anim['image_pointers'])
+        print "\t{%s} // Movements" % ",\n\t ".join(anim['moves'])
         print "};"
         print
         

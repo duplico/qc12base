@@ -1,0 +1,1 @@
+Out-File -Encoding utf8 -FilePath ..\img.c -Append
