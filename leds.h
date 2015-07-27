@@ -27,6 +27,8 @@ typedef struct {
 
 extern rgbcolor_t rainbow2[];
 
+extern uint8_t tlc_anim_mode;
+
 extern const tlc_animation_t flag_rainbow;
 extern const tlc_animation_t flag_bi;
 extern const tlc_animation_t flag_pan;

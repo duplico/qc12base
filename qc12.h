@@ -77,6 +77,10 @@
 #define TLC_SEND_TYPE_GS  1
 #define TLC_SEND_TYPE_FUN 2
 #define TLC_SEND_TYPE_LB  3
+// LED animation states:
+#define TLC_ANIM_MODE_IDLE  0
+#define TLC_ANIM_MODE_SHIFT 1
+#define TLC_ANIM_MODE_SAME  2
 
 // Overall operating modes:
 #define OP_MODE_IDLE 0
@@ -107,6 +111,11 @@ extern uint16_t softkey_en;
 
 // Radio bidness:
 #define NOT_A_BASE 0xFF
+
+// Masks for managing flags/signals that are consumed by both the
+// OLED and the TLC systems:
+#define SIGNAL_BIT_TLC BIT0
+#define SIGNAL_BIT_OLED BIT1
 
 //////////////////////////////////////////////////////////////////////
 // Functions etc. ////////////////////////////////////////////////////

@@ -30,10 +30,6 @@ uint8_t tlc_tx_index = 0;   // Index of currently sending buffer
 volatile uint8_t rgb_element_index = 14;
 volatile uint8_t tlc_color_index = 0;
 
-#define TLC_ANIM_MODE_IDLE  0
-#define TLC_ANIM_MODE_SHIFT 1
-#define TLC_ANIM_MODE_SAME  2
-
 uint8_t tlc_anim_mode = TLC_ANIM_MODE_IDLE;
 uint8_t tlc_anim_index = 0;   // Number of channels to shift gs_data by
 uint8_t tlc_anim_pad_len = 0;
@@ -285,14 +281,6 @@ rgbcolor_t rainbow1[10] = {
         { 0x100, 0x100, 0x2000 },
         { 0xe00, 0xe00, 0xe00 },
         { 0x100, 0x100, 0x100 },
-        { 0x00, 0x00, 0x000 },
-};
-
-rgbcolor_t rainbow2[5] = {
-        { 0xff00, 0x00, 0x00 },
-        { 0x00, 0xff00, 0x00 },
-        { 0x00, 0x00, 0xff00 },
-        { 0xff00, 0xff00, 0xff00 },
         { 0x00, 0x00, 0x000 },
 };
 

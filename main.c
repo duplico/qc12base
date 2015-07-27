@@ -39,6 +39,8 @@ uint8_t s_new_badge_seen = 0;
 uint8_t s_new_uber_friend = 0;
 uint8_t s_new_friend = 0;
 
+uint8_t disable_beacon_service = 0;
+
 void poll_buttons();
 
 #pragma DATA_SECTION (my_conf, ".infoA");
@@ -109,6 +111,26 @@ void my_conf_write_crc() {
     my_conf.crc16 = CRC_getResult(CRC_BASE);
 }
 
+void adjust_mood(int8_t change) {
+    if (change < 0) {
+        if (my_conf.mood < (-change)) {
+            my_conf.mood = 0;
+        } else {
+            my_conf.mood += change;
+        }
+    } else {
+        if (my_conf.mood > (100 - change)) {
+            my_conf.mood = 100;
+        } else {
+            my_conf.mood += change;
+        }
+    }
+    my_conf_write_crc();
+
+    // Set our mood light color. TODO
+
+}
+
 void set_badge_seen(uint8_t id) {
     if (id >= BADGES_IN_SYSTEM) {
         return;
@@ -122,11 +144,13 @@ void set_badge_seen(uint8_t id) {
             my_conf.uber_seen_count++;
             // flag an animation
             s_new_uber_seen = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
+            adjust_mood(50);
         } else {
             // flag a lamer animation
             s_new_badge_seen = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
+            adjust_mood(10);
         }
-        my_conf_write_crc();
+        // No need to write a CRC here because adjust_mood takes care of that for us.
     }
 }
 
@@ -350,7 +374,7 @@ void handle_infrastructure_services() {
         in_payload.handle[NAME_MAX_LEN-1] = 0; // Make sure it's definitely null-terminated.
 
         // Increment the badge count if needed:
-        if (in_payload.beacon && in_payload.from_addr < BADGES_IN_SYSTEM) {
+        if (!disable_beacon_service && in_payload.beacon && in_payload.from_addr < BADGES_IN_SYSTEM) {
             // It's a beacon (one per cycle).
             // Increment our beacon count in the current position in our
             // sliding window.
@@ -435,7 +459,7 @@ void handle_infrastructure_services() {
         radio_send_sync();
     }
 
-    if (s_need_rf_beacon && rfm_reg_state == RFM_REG_IDLE) {
+    if (!disable_beacon_service && s_need_rf_beacon && rfm_reg_state == RFM_REG_IDLE) {
         // If we need to beacon, and we're not talking to the RFM module.
         // Note: Last year we also had a check for
         //  "!(read_single_register_sync(0x27) & (BIT1+BIT0))".
@@ -467,7 +491,7 @@ void handle_led_actions() {
 
     if ((s_new_uber_seen & SIGNAL_BIT_TLC || s_new_badge_seen & SIGNAL_BIT_TLC) && tlc_anim_mode == TLC_ANIM_MODE_IDLE) {
         // Big rainbow animation.
-        tlc_start_anim(&flag_rainbow, 0, 3, 1, 3);
+        tlc_start_anim(&flag_rainbow, 0, 4, 1, 4);
         s_new_badge_seen &= ~SIGNAL_BIT_TLC;
         s_new_uber_seen &= ~SIGNAL_BIT_TLC;
     }
@@ -484,9 +508,9 @@ void handle_character_actions() {
         }
     }
 
-    if ((s_new_uber_seen & SIGNAL_BIT_OLED || s_new_badge_seen & SIGNAL_BIT_OLED) && anim_state == OLED_ANIM_DONE) {
+    if ((s_new_uber_seen & SIGNAL_BIT_OLED || s_new_badge_seen & SIGNAL_BIT_OLED) && oled_anim_state == OLED_ANIM_DONE) {
         // Wave!
-        oled_play_animation(wave_right, 4);
+        oled_play_animation(&wave_right, 4);
         s_new_badge_seen &= ~SIGNAL_BIT_OLED;
         s_new_uber_seen &= ~SIGNAL_BIT_OLED;
     }
@@ -500,11 +524,12 @@ void try_to_sleep() {
     }
 }
 
-const tRectangle name_erase_rect = {0, NAME_Y_OFFSET, 63, NAME_Y_OFFSET + NAME_FONT_HEIGHT + SYS_FONT_HEIGHT};
-
 // Read the badgeholder's name if appropriate:
 void handle_mode_name() {
     // Clear the screen and display the instructions.
+    static tRectangle name_erase_rect = {0, NAME_Y_OFFSET, 63, NAME_Y_OFFSET + NAME_FONT_HEIGHT + SYS_FONT_HEIGHT};
+    disable_beacon_service = 1;
+
     GrClearDisplay(&g_sContext);
     GrContextFontSet(&g_sContext, &SYS_FONT);
     GrStringDraw(&g_sContext, "Enter a", -1, 0, 5, 1);
@@ -631,6 +656,7 @@ void handle_mode_name() {
 
     GrClearDisplay(&g_sContext);
     GrFlush(&g_sContext);
+    disable_beacon_service = 0;
 } // handle_mode_name
 
 uint8_t softkey_enabled(uint8_t index) {
