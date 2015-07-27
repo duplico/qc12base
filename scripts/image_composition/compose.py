@@ -1,9 +1,9 @@
-import os, sys, argparse, re
+import os, sys, argparse, re, itertools
 
 from glob import glob
 from ConfigParser import ConfigParser
 
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 import PIL.ImageOps
 import PIL.ImageChops
 
@@ -18,7 +18,7 @@ FEET_HEIGHT = 18
 
 is_a_number = re.compile("[0-9]+")
 
-def make_sprite(head_path, body_path, legs_path, heights=(HEAD_HEIGHT, BODY_HEIGHT, FEET_HEIGHT), show=False):
+def make_sprite(head_path, body_path, legs_path, heights=tuple(), show=False, thumb_id=False):
     global uniform_sprite_size
 
     sprite = Image.new('RGBA', (SPRITE_WIDTH, SPRITE_HEIGHT), (0,0,0,0))
@@ -34,13 +34,22 @@ def make_sprite(head_path, body_path, legs_path, heights=(HEAD_HEIGHT, BODY_HEIG
     # with the bottom of our sprite canvas:
     legs_y = SPRITE_HEIGHT - legs_mask.getbbox()[3]
     
-    # The baseline leg height is FEET_HEIGHT. So we need to lower the torso by
-    body_y = squat_amount + (FEET_HEIGHT - heights[2])
-
-    # Now we just plop the head on at SPRITE_HEIGHT - the heights of everything
-    # plus the squat amount:
-    head_y = squat_amount + (BODY_HEIGHT - heights[1]) + (FEET_HEIGHT - heights[2])
-    #head_y = body_y - head_mask.getbbox()[3] # TODO: might be wrong...
+    # Move the torso DOWN by the height of its corresponding legs.
+    #  Then the torso will be against the bottom of the screen.
+    # Then move it UP by the height of the legs we're using.
+    # And DOWN by squat_amount.
+    body_y = heights[3] + squat_amount - heights[2]
+    
+    # The head is designed to fit on something with a body+legs height
+    #  of heights[4] + heights[5].
+    # It's actually on something with body+legs height of heights[1]+heights[2].
+    head_y = squat_amount + (heights[4]+heights[5]-heights[2]-heights[1])
+    
+    sd = ImageDraw.Draw(sprite)
+    
+    # For making lines at the demarcation points:
+    #sd.line((0, 64-heights[2], 64, 64-heights[2]))
+    #sd.line((0, 64-heights[2]-heights[1], 64, 64-heights[2]-heights[1]))
     
     sprite.paste(
         head, 
@@ -63,6 +72,23 @@ def make_sprite(head_path, body_path, legs_path, heights=(HEAD_HEIGHT, BODY_HEIG
     
     if show:
         sprite.show()
+    if thumb_id:
+        text_image = Image.new('RGBA', (SPRITE_HEIGHT+20, SPRITE_WIDTH), (255,255,255,0))
+        f = ImageFont.truetype(font="Consolas.ttf", size=10)
+        td = ImageDraw.Draw(text_image)
+        #td.text((0,0), "queercon", font=f, fill=(0,0,0))
+        #td.text((0,54), " twelve", font=f, fill=(0,0,0))
+        
+        sprite_image, sprite_mask = adjust_image(sprite)
+        sprite_image.save(os.path.join("thumbs", "%03d.png") % thumb_id)
+        thumbnail = Image.new('RGBA', (SPRITE_WIDTH, SPRITE_HEIGHT+20), (0,0,0,0))
+        f = ImageFont.truetype(font="Consolas.ttf", size=20)
+        td = ImageDraw.Draw(thumbnail)
+        width = td.textsize(str(thumb_id), font=f)[0]
+        thumbnail.paste(text_image.rotate(-90), (0,0))
+        thumbnail.paste(adjust_image(sprite)[0], (0,0), sprite_mask)
+        td.text(((64-width)/2,68), str(thumb_id), font=f, fill=(0,0,0))
+        thumbnail.save(os.path.join("thumbs", "label_%03d.png") % thumb_id)
             
     out_str = "{0b"
     
@@ -101,22 +127,34 @@ f_sprite_bank_indices = dict()
 
 animations = []
 
-def main(inifile, head_dir, body_dir, legs_dir, show):
+def main(inifile, head_dir, body_dir, legs_dir, show, thumb_id=False):
     parser = ConfigParser()
     parser.read(inifile)
     head_files = sorted(glob(os.path.join(head_dir, 'head', '*.png')), key=lambda a: int(is_a_number.findall(a)[0]))
     body_files = sorted(glob(os.path.join(body_dir, 'torso', '*.png')), key=lambda a: int(is_a_number.findall(a)[0]))
     legs_files = sorted(glob(os.path.join(legs_dir, 'legs', '*.png')), key=lambda a: int(is_a_number.findall(a)[0]))
     
-    heights = [HEAD_HEIGHT, BODY_HEIGHT, FEET_HEIGHT]
+    heights = [HEAD_HEIGHT, BODY_HEIGHT, FEET_HEIGHT, FEET_HEIGHT, BODY_HEIGHT, FEET_HEIGHT]
     
     if os.path.isfile(os.path.join(body_dir, 'torso', 'height')):
         with open(os.path.join(body_dir, 'torso', 'height')) as height_file:
             heights[1] = int(height_file.readline())
     
     if os.path.isfile(os.path.join(legs_dir, 'legs', 'height')):
-        with open(os.path.join(body_dir, 'torso', 'height')) as height_file:
+        with open(os.path.join(legs_dir, 'legs', 'height')) as height_file:
             heights[2] = int(height_file.readline())
+    
+    if os.path.isfile(os.path.join(body_dir, 'legs', 'height')):
+        with open(os.path.join(body_dir, 'legs', 'height')) as height_file:
+            heights[3] = int(height_file.readline())
+    
+    if os.path.isfile(os.path.join(head_dir, 'torso', 'height')):
+        with open(os.path.join(head_dir, 'torso', 'height')) as height_file:
+            heights[4] = int(height_file.readline())
+    
+    if os.path.isfile(os.path.join(head_dir, 'legs', 'height')):
+        with open(os.path.join(head_dir, 'legs', 'height')) as height_file:
+            heights[5] = int(height_file.readline())
     
     index_offset = 0
     index = 0
@@ -158,7 +196,7 @@ def main(inifile, head_dir, body_dir, legs_dir, show):
                 else:
                     frame_bank_index = len(sprite_pixel_bank)
                     sprite_bank_indices[(head_index, body_index, legs_index)] = frame_bank_index
-                    pixels = make_sprite(head_files[head_index-1], body_files[body_index-1], legs_files[legs_index-1], show=show, heights=heights)
+                    pixels = make_sprite(head_files[head_index-1], body_files[body_index-1], legs_files[legs_index-1], show=show, heights=heights, thumb_id=thumb_id if anim['name']=="standing" else False)
                     metadata = "{ IMAGE_FMT_1BPP_UNCOMP, %d, %d, 2, palette_bw, %s_sprite_bank_pixels[%d] }," % (SPRITE_WIDTH, SPRITE_HEIGHT, "persistent" if anim['persistent'] else "flash", frame_bank_index)
                     metadata += " // %d:%d:%d" % (head_index, body_index, legs_index)
                     sprite_pixel_bank.append(pixels)
@@ -254,14 +292,24 @@ if (__name__ == '__main__'):
                         " images as they are generated")
     parser.add_argument('config', help='Path to config file specifying the'
                                        'animations to make')
-    parser.add_argument('head', metavar='head_dir', type=str, 
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-i', '--id', help="Generate from badge ID", type=int)
+    parts = group.add_argument_group("Body parts")
+    parts.add_argument('-H', '--head', metavar='head_dir', type=str, 
                         help="Character directory to look in for the sprite's "
                              "head (must have a `head' subdirectory)")
-    parser.add_argument('body', metavar='body_dir', type=str, 
+    parts.add_argument('-B', '--body', metavar='body_dir', type=str, 
                         help="Character directory to look in for the sprite's "
                              "body (must have a `body' subdirectory)")
-    parser.add_argument('legs', metavar='legs_dir', type=str, 
+    parts.add_argument('-L', '--legs', metavar='legs_dir', type=str, 
                         help="Character directory to look in for the sprite's "
                              "legs (must have a `legs' subdirectory)")
     args = parser.parse_args()
-    main(args.config, args.head, args.body, args.legs, args.show)
+    
+    if args.id:
+        assert args.id >= 15 # ubers are done manually.
+        c = ["bender", "bear", "human", "lizard", "octopus", "robot"]
+        l = list(itertools.product(c, repeat=3))
+        head, body, legs = l[(args.id-15) % len(l)]
+    
+    main(args.config, args.head or head, args.body or body, args.legs or legs, args.show, thumb_id=args.id)
