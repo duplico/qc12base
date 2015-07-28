@@ -16,7 +16,7 @@ HEAD_HEIGHT = 22
 BODY_HEIGHT = 24
 FEET_HEIGHT = 18
 
-DEFAULT_SPEED = 15
+DEFAULT_SPEED = 5
 
 is_a_number = re.compile("[0-9]+")
 
@@ -213,16 +213,16 @@ def main(inifile, head_dir, body_dir, legs_dir, show, thumb_id=False):
             elif frame[0] == "persistent":
                 assert not anim['images'] # Persistent MUST BE FIRST.
                 anim['persistent'] = True
-            elif frame[0] == "up": # 00xxxxxx - up
+            elif frame[0].startswith("up"): # 00xxxxxx - up
                 assert int(frame[1]) < 50
                 move = frame[1]
-            elif frame[0] == "down": # 01xxxxxx - down
+            elif frame[0].startswith("down"): # 01xxxxxx - down
                 assert int(frame[1]) < 50
                 move = 0x40 + int(frame[1])
-            elif frame[0] == "left": # 10xxxxxx - left
+            elif frame[0].startswith("left"): # 10xxxxxx - left
                 move = 0x80 + int(frame[1])
                 assert int(frame[1]) < 50
-            elif frame[0] == "right": # 11xxxxxx - right
+            elif frame[0].startswith("right"): # 11xxxxxx - right
                 move = 0xC0 + int(frame[1])
                 assert int(frame[1]) < 50
             elif frame[0] == "speed":
@@ -296,6 +296,8 @@ if (__name__ == '__main__'):
     parser = argparse.ArgumentParser(description='Generate a QC12 badge character sprite set.')
     parser.add_argument('-s', '--show', action='store_true', help="Display the"
                         " images as they are generated")
+    parser.add_argument('-f', '--fixini', action='store_true', help="Fix the"
+                        " format of the ini file.")
     parser.add_argument('config', help='Path to config file specifying the'
                                        'animations to make')
     group = parser.add_mutually_exclusive_group()
@@ -312,9 +314,34 @@ if (__name__ == '__main__'):
                              "legs (must have a `legs' subdirectory)")
     args = parser.parse_args()
     
+    if args.fixini:
+        filestring = ""
+        with open(args.config) as configfile:
+            for line in configfile:
+                filestring += line
+        left_num = 0
+        right_num = 0
+        up_num = 0
+        down_num = 0
+        # TODO: should not match animation names.
+        # TODO: this should search for the highest one.
+        while filestring.find("left:") != -1 or \
+              filestring.find("right:") != -1 or \
+              filestring.find("up:") != -1 or \
+              filestring.find("down:") != -1:
+            filestring = filestring.replace("left:", "left%d:" % left_num, 1)
+            filestring = filestring.replace("right:", "right%d:" % right_num, 1)
+            filestring = filestring.replace("up:", "up%d:" % up_num, 1)
+            filestring = filestring.replace("down:", "down%d:" % down_num, 1)
+            left_num = right_num = up_num = down_num = down_num+1
+            
+        with open(args.config, 'w') as configfile:
+            configfile.write(filestring)
+        exit(0)
+    
     if args.id:
         assert args.id >= 15 # ubers are done manually.
-        c = ["bender", "bear", "human", "lizard", "octopus", "robot"]
+        c = ["bear", "human", "lizard", "octopus", "robot"]
         l = list(itertools.product(c, repeat=3))
         head, body, legs = l[(args.id-15) % len(l)]
     

@@ -22,6 +22,7 @@ tContext g_sContext;
 void init_oled();
 void oled_draw_pane(uint8_t);
 void oled_anim_next_frame();
+void oled_anim_disp_frame(const tImage* image);
 void oled_play_animation(const qc12_anim_t*, uint8_t);
 void oled_timestep();
 
