@@ -588,16 +588,6 @@ qc12_oledFlush(void *pvDisplayData)
     writing_data = 0;
     zeroing_index = 1;
     EUSCI_A_SPI_transmitData(EUSCI_A1_BASE, zero_address_cmds[0]);
-
-//	for (uint16_t i=0; i<LCD_X_SIZE*8; i++) { // TODO
-//		WriteData(oled_memory[i]);
-//	}
-
-
-//	int16_t i=0,j=0;
-//	for(i =0; i< LCD_Y_SIZE; i++)
-//	for(j =0; j< (LCD_X_SIZE * BPP + 7) / 8; j++)
-//		qc12_oledPixelDraw(pvDisplayData, j, i, Template_Memory[i * LCD_Y_SIZE + j]);
 }
 
 #pragma vector=USCI_A1_VECTOR
@@ -607,7 +597,6 @@ __interrupt void EUSCI_A1_ISR(void)
     //Vector 2 - RXIFG
     case 2:
         // The OLED display can't talk to us. It has no outputs.
-        // TODO: make sure this never happens please.
         // We received some garbage sent to us while we were sending.
         EUSCI_B_SPI_receiveData(EUSCI_A1_BASE); // Throw it away.
         break; // End of RXIFG ///////////////////////////////////////////////////////
@@ -619,13 +608,12 @@ __interrupt void EUSCI_A1_ISR(void)
                 oled_state = OLED_STATE_IDLE;
                 ok_to_send = 1;
                 // done with the data.
-            }
-            else if (writing_data) { // still more data to send:
+            } else if (writing_data) { // still more data to send:
                 EUSCI_A_SPI_transmitData(EUSCI_A1_BASE, oled_memory[writing_data]);
                 writing_data++;
             }
         } else if (oled_state == OLED_STATE_ZEROING) {
-            if (zeroing_index == 8) { // Done zeroing... // TODO: Demeter
+            if (zeroing_index == 8) { // Done zeroing...
                 oled_state = OLED_STATE_DATA;
                 THISISDATA;
                 EUSCI_A_SPI_transmitData(EUSCI_A1_BASE, oled_memory[0]);
@@ -663,14 +651,9 @@ qc12_oledClearScreen (void *pvDisplayData, uint16_t ulValue)
 {
 	// This fills the entire display to clear it
 	// Some LCD drivers support a simple command to clear the display
-//	while(y0++ <= (LCD_Y_SIZE - 1))
 	uint8_t val = ulValue? 0xff:0;
 	for (uint16_t i=0; i<LCD_X_SIZE*8; i++)
 		oled_memory[i] = val;
-//	for (uint8_t y0=0; y0<LCD_Y_SIZE; y0++)
-//	{
-//		qc12_oledLineDrawH(pvDisplayData, 0, LCD_X_SIZE - 1, y0, ulValue);
-//	}
 }
 
 //*****************************************************************************

@@ -29,6 +29,7 @@ uint8_t tlc_tx_index = 0;   // Index of currently sending buffer
 // GS entry transmission handling indices:
 volatile uint8_t rgb_element_index = 14;
 volatile uint8_t tlc_color_index = 0;
+volatile uint8_t tlc_first_frame = 0;
 
 uint8_t tlc_anim_mode = TLC_ANIM_MODE_IDLE;
 uint8_t tlc_anim_index = 0;   // Number of channels to shift gs_data by
@@ -530,8 +531,6 @@ void tlc_fade_colors() {
     }
 }
 
-volatile uint8_t tlc_first_frame = 0; // TODO
-
 void tlc_set_ambient(uint8_t mood) {
     if (mood == 100) {
         // green
@@ -595,7 +594,7 @@ void tlc_start_anim(const tlc_animation_t *anim, uint8_t anim_len, uint8_t fade_
     }
 
     tlc_curr_anim_len = anim_len + 2*tlc_anim_pad_len;
-    tlc_curr_anim = (rgbcolor_t *) anim->colors; // TODO
+    tlc_curr_anim = (rgbcolor_t *) anim->colors;
 
     ring_fade_steps = fade_steps;
     ring_fade_index = 0;
@@ -747,7 +746,7 @@ __interrupt void EUSCI_A0_ISR(void)
             EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, tlc_loopback_data_out);
             tlc_tx_index++;
         } else {
-            tlc_send_type = TLC_SEND_IDLE; // TODO: probably shouldn't reach.
+            tlc_send_type = TLC_SEND_IDLE; // probably shouldn't reach.
         }
         break; // End of TXIFG /////////////////////////////////////////////////////
 
