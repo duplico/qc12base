@@ -139,12 +139,12 @@ extern volatile uint8_t f_tlc_anim_done;
 extern uint8_t s_oled_anim_finished;
 
 typedef struct {
-	uint8_t to_addr, from_addr, base_id;
-	uint8_t beacon;
+    uint8_t to_addr, from_addr, base_id;
+    uint8_t beacon;
     uint8_t flag_from;
-	uint8_t flag_id;
+    uint8_t flag_id;
     uint8_t play_id;
-	char handle[NAME_MAX_LEN];
+    char handle[NAME_MAX_LEN];
 } qc12payload;
 
 extern qc12payload in_payload, out_payload;
