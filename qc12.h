@@ -143,6 +143,7 @@ typedef struct {
 	uint8_t beacon;
     uint8_t flag_from;
 	uint8_t flag_id;
+    uint8_t play_id;
 	char handle[NAME_MAX_LEN];
 } qc12payload;
 

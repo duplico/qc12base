@@ -41,6 +41,7 @@ void init_oled() {
 
 void oled_draw_pane(uint8_t softkey_sel) {
     GrContextFontSet(&g_sContext, &NAME_FONT);
+    GrLineDrawH(&g_sContext, 0, 64, 0);
     GrStringDraw(&g_sContext, my_conf.handle, -1, 0, 0, 1);
     uint8_t title_width = GrStringWidthGet(&g_sContext, titles[my_conf.title_index], -1);
     uint8_t the_width = GrStringWidthGet(&g_sContext, "the", -1);
@@ -48,8 +49,8 @@ void oled_draw_pane(uint8_t softkey_sel) {
     GrStringDraw(&g_sContext, titles[my_conf.title_index], -1, 63 - title_width, NAME_FONT_HEIGHT, 1);
     GrLineDrawH(&g_sContext, 0, 64, 2*NAME_FONT_HEIGHT+1);
     GrContextFontSet(&g_sContext, &SOFTKEY_LABEL_FONT);
-    GrStringDrawCentered(&g_sContext, "                ", -1, 31, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
-    GrStringDrawCentered(&g_sContext, sk_labels[softkey_sel], -1, 32, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
+//    GrStringDrawCentered(&g_sContext, "                ", -1, 31, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
+//    GrStringDrawCentered(&g_sContext, sk_labels[softkey_sel], -1, 32, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
     GrLineDrawH(&g_sContext, 0, 64, 116);
     GrFlush(&g_sContext);
 }
