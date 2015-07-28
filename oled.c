@@ -83,16 +83,27 @@ void do_move(uint8_t move_signal) {
     }
 }
 
+void oled_anim_disp_frame(const tImage* image) {
+    GrClearDisplay(&g_sContext);
+    GrImageDraw(&g_sContext, image, char_pos_x, SPRITE_Y - char_pos_y);
+    oled_draw_pane(idle_mode_softkey_sel);
+    GrFlush(&g_sContext);
+}
+
+void oled_consider_walking_back() {
+    if (char_pos_x < -16) {
+        oled_play_animation(&walking, (uint8_t) (-char_pos_x/16) - 1);
+    } else if (char_pos_x > 16) {
+        oled_play_animation(&walking_left, (uint8_t) (char_pos_x/16) - 1);
+    }
+}
+
 void oled_anim_next_frame() {
     if (oled_anim_state == OLED_ANIM_DONE)
         return;
 
     do_move(anim_data->movement[anim_index]);
-
-    GrClearDisplay(&g_sContext);
-    GrImageDraw(&g_sContext, anim_data->images[anim_index], char_pos_x, SPRITE_Y - char_pos_y);
-    oled_draw_pane(idle_mode_softkey_sel);
-    GrFlush(&g_sContext);
+    oled_anim_disp_frame(anim_data->images[anim_index]);
 
     anim_index++;
 
@@ -107,8 +118,11 @@ void oled_anim_next_frame() {
         anim_loops--;
     }
 
-    if (anim_index == anim_data->len)
+    if (anim_index == anim_data->len) {
+        s_oled_anim_finished = 1;
         oled_anim_state = OLED_ANIM_DONE;
+        oled_consider_walking_back();
+    }
 }
 
 void oled_play_animation(const qc12_anim_t *anim, uint8_t loops) {
@@ -117,6 +131,7 @@ void oled_play_animation(const qc12_anim_t *anim, uint8_t loops) {
     anim_data = anim;
     anim_frame_skip = anim->speed;
     oled_anim_state = OLED_ANIM_START;
+    s_oled_anim_finished = 0;
 }
 
 void oled_timestep() {

@@ -38,9 +38,13 @@ uint8_t s_new_uber_seen = 0;
 uint8_t s_new_badge_seen = 0;
 uint8_t s_new_uber_friend = 0;
 uint8_t s_new_friend = 0;
+uint8_t s_oled_anim_finished = 0;
 
 uint8_t disable_beacon_service = 0;
 uint8_t idle_mode_softkey_sel = 0;
+
+uint8_t s_need_idle_action = 0;
+uint8_t idle_action_seconds = 10;
 
 void poll_buttons();
 
@@ -280,6 +284,7 @@ void init() {
     init_radio();
     init_oled();
     init_rtc();
+    srand(my_conf.badge_id);
 }
 
 // Power-on self test
@@ -421,9 +426,6 @@ void handle_infrastructure_services() {
     }
 
     if (f_new_second) {
-        f_new_second = 0;
-
-
         if (flag_in_cooldown) {
             flag_in_cooldown--;
         }
@@ -518,15 +520,44 @@ void handle_character_actions() {
     if (f_time_loop) {
         oled_timestep();
 
-        // Determine whether we should do a random action.
     }
 
-    if ((s_new_uber_seen & SIGNAL_BIT_OLED || s_new_badge_seen & SIGNAL_BIT_OLED) && oled_anim_state == OLED_ANIM_DONE) {
+    if (f_new_second) {
+        // Determine whether we should do a random action.
+        if (oled_anim_state == OLED_ANIM_DONE) {
+            idle_action_seconds--;
+        }
+        if (!idle_action_seconds) {
+            s_need_idle_action = 1;
+            idle_action_seconds = rand() % 8 + 2;
+        }
+    }
+
+    if (s_oled_anim_finished) {
+        s_oled_anim_finished = 0;
+        oled_anim_disp_frame(standing.images[0]);
+    }
+
+    // Bail if we're not going to be able to start an animation, because that's
+    // all that the rest of this function does.
+    if (oled_anim_state != OLED_ANIM_DONE) {
+        return;
+    }
+
+    if (s_new_uber_seen & SIGNAL_BIT_OLED || s_new_badge_seen & SIGNAL_BIT_OLED) {
         // Wave!
         oled_play_animation(&wave_right, 4);
         s_new_badge_seen &= ~SIGNAL_BIT_OLED;
         s_new_uber_seen &= ~SIGNAL_BIT_OLED;
     }
+
+    if (s_need_idle_action) {
+        // Pick a random idle animation to do.
+        oled_play_animation(idle_anims[rand() % idle_anim_count], rand() % 5);
+        s_need_idle_action = 0;
+    }
+
+    // Determine whether we need to walk back onto the screen.
 
 }
 
@@ -578,6 +609,10 @@ void handle_mode_name() {
     while (1) {
         handle_infrastructure_services();
         handle_led_actions();
+
+        if (f_new_second) {
+            f_new_second = 0;
+        }
 
         if (f_time_loop) {
             f_time_loop = 0;
@@ -701,6 +736,9 @@ void handle_mode_idle() {
         handle_led_actions();
         handle_character_actions();
 
+        if (f_new_second) {
+            f_new_second = 0;
+        }
         if (f_time_loop) {
             f_time_loop = 0;
             if (f_br == BUTTON_PRESS) {
@@ -895,6 +933,10 @@ void handle_mode_asl() {
         handle_infrastructure_services();
         handle_led_actions();
 
+        if (f_new_second) {
+            f_new_second = 0;
+        }
+
         if (f_time_loop) {
             f_time_loop = 0;
             if (f_br == BUTTON_PRESS) {
@@ -1074,6 +1116,11 @@ void handle_mode_setflag() {
         handle_infrastructure_services();
         handle_led_actions();
 
+
+        if (f_new_second) {
+            f_new_second = 0;
+        }
+
         if (f_time_loop) {
             f_time_loop = 0;
             if (f_br == BUTTON_PRESS) {
@@ -1134,7 +1181,6 @@ void handle_mode_rps() {
 
 int main(void)
 {
-    init();
     intro();
     delay(1000);
     post();

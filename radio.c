@@ -181,13 +181,13 @@ void write_single_register(uint8_t addr, uint8_t data) {
 }
 
 uint8_t read_single_register_sync(uint8_t addr) {
-    if (radio_barrier_with_timeout()) return; // Block until ready to read.
+    if (radio_barrier_with_timeout()) return 0; // Block until ready to read.
     rfm_reg_state = RFM_REG_RX_SINGLE_CMD;
     addr = 0b01111111 & addr; // MSB=0 => write command
     // Hold NSS low to begin frame.
     RFM_NSS_PORT_OUT &= ~RFM_NSS_PIN;
     EUSCI_B_SPI_transmitData(EUSCI_B0_BASE, addr); // Send our command.
-    if (radio_barrier_with_timeout()) return; // Block until read finished.
+    if (radio_barrier_with_timeout()) return 0; // Block until read finished.
     return rfm_single_msg;
 }
 

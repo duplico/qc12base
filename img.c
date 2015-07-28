@@ -149,9 +149,10 @@ const tImage flag1 =
     pixel_flag,
 };
 
-
-/////////////////////////////////////
-// Generated code goes below here. //
-/////////////////////////////////////
-
 #include "generated_images.h"
+
+
+const qc12_anim_t *idle_anims[] = {
+        &walking, &walking_left, &running, &running_left, &zombie, &zombie_left, &jump, &march, &exercise_1, &flap_arms, &silly, &dance, &wave_right
+};
+const uint8_t idle_anim_count = 13;
