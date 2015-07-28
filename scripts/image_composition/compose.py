@@ -16,6 +16,8 @@ HEAD_HEIGHT = 22
 BODY_HEIGHT = 24
 FEET_HEIGHT = 18
 
+DEFAULT_SPEED = 15
+
 is_a_number = re.compile("[0-9]+")
 
 def make_sprite(head_path, body_path, legs_path, heights=tuple(), show=False, thumb_id=False):
@@ -169,7 +171,8 @@ def main(inifile, head_dir, body_dir, legs_dir, show, thumb_id=False):
         elif ":out" in anim_name:
             anim['loop_end_index'] = index_offset = index
         else:
-            anim=dict(looped=(":in" in anim_name), name=anim_name.split(':')[0], images=[], persistent=False, moves=[])
+            anim = dict(looped=(":in" in anim_name), name=anim_name.split(':')[0], images=[], persistent=False, moves=[])
+            anim['speed'] = DEFAULT_SPEED
             animations.append(anim)
             index_offset = 0
         # TODO: assert there's no other :s in the name?
@@ -222,6 +225,8 @@ def main(inifile, head_dir, body_dir, legs_dir, show, thumb_id=False):
             elif frame[0] == "right": # 11xxxxxx - right
                 move = 0xC0 + int(frame[1])
                 assert int(frame[1]) < 50
+            elif frame[0] == "speed":
+                anim['speed'] = int(frame[1])
         if not anim['persistent'] and index > longest_anim_buffer:
             longest_anim_buffer = index
     
@@ -264,6 +269,7 @@ def main(inifile, head_dir, body_dir, legs_dir, show, thumb_id=False):
         print "\t%d, // Loop start index" % (anim['loop_start_index'] if 'loop_start_index' in anim else 0)
         print "\t%d, // Loop end index" % (anim['loop_end_index'] if 'loop_end_index' in anim else len(anim['image_pointers']))
         print "\t%d, // Length" % len(anim['images'])
+        print "\t%d, // Speed" % anim['speed']
         print "\t{%s}, // Pointers to frames" % ",\n\t ".join(anim['image_pointers'])
         print "\t{%s} // Movements" % ",\n\t ".join(anim['moves'])
         print "};"
