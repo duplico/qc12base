@@ -1181,6 +1181,7 @@ void handle_mode_rps() {
 
 int main(void)
 {
+    init();
     intro();
     delay(1000);
     post();
