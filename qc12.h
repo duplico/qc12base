@@ -29,7 +29,7 @@
 #define MOOD_TICK_AMOUNT -3
 #define BEFRIEND_TIMEOUT_SECONDS 3
 #define BEFRIEND_RESEND_TRIES 10
-#define BEFRIEND_LOOPS_TO_RESEND 10
+#define BEFRIEND_LOOPS_TO_RESEND 15
 
 #define RECEIVE_WINDOW 8
 #define RECEIVE_WINDOW_LENGTH_SECONDS 10
@@ -95,8 +95,7 @@
 #define OP_MODE_ASL 4
 #define OP_MODE_SLEEP 6
 #define OP_MODE_SETFLAG 8
-#define OP_MODE_BEFRIEND 10
-#define OP_MODE_MAX OP_MODE_BEFRIEND
+#define OP_MODE_MAX OP_MODE_SETFLAG
 
 // Softkey options:
 #define SK_SEL_PLAY 0
@@ -140,6 +139,7 @@ extern volatile uint8_t f_rfm_tx_done;
 extern volatile uint8_t f_tlc_anim_done;
 
 extern uint8_t s_oled_anim_finished;
+extern uint8_t s_flag_wave;
 
 typedef struct {
     uint8_t to_addr, from_addr, base_id;
