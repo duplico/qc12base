@@ -149,6 +149,18 @@ void init_radio() {
 
 }
 
+uint8_t radio_barrier_with_timeout() {
+    uint16_t spin = 65535;
+    while (rfm_reg_state != RFM_REG_IDLE) {
+        spin--;
+        if (!spin) {
+            init_radio();
+            return 1;
+        }
+    }
+    return 0;
+}
+
 void write_single_register_async(uint8_t addr, uint8_t data) {
     if (rfm_reg_state != RFM_REG_IDLE)
         return;
@@ -163,34 +175,35 @@ void write_single_register(uint8_t addr, uint8_t data) {
     /*
      * This blocks.
      */
-    while (rfm_reg_state != RFM_REG_IDLE)
-        ; // Block until ready to write.
+    if (radio_barrier_with_timeout()) return; // Block until ready to write.
     write_single_register_async(addr, data);
-    while (rfm_reg_state != RFM_REG_IDLE)
-        ; // Block until written.
+    if (radio_barrier_with_timeout()) return; // Block until written.
 }
 
 uint8_t read_single_register_sync(uint8_t addr) {
-    while (rfm_reg_state != RFM_REG_IDLE)
-        ; // Block until ready to read.
+    if (radio_barrier_with_timeout()) return; // Block until ready to read.
     rfm_reg_state = RFM_REG_RX_SINGLE_CMD;
     addr = 0b01111111 & addr; // MSB=0 => write command
     // Hold NSS low to begin frame.
     RFM_NSS_PORT_OUT &= ~RFM_NSS_PIN;
     EUSCI_B_SPI_transmitData(EUSCI_B0_BASE, addr); // Send our command.
-    while (rfm_reg_state != RFM_REG_IDLE)
-        ; // Block until read finished.
+    if (radio_barrier_with_timeout()) return; // Block until read finished.
     return rfm_single_msg;
 }
 
 void mode_sync(uint8_t mode) {
-    while (rfm_reg_state != RFM_REG_IDLE)
-        ;
+    if (radio_barrier_with_timeout()) return;
     write_single_register_async(RFM_OPMODE, mode);
-    while (rfm_reg_state != RFM_REG_IDLE)
-        ;
+    if (radio_barrier_with_timeout()) return;
     uint8_t reg_read;
+    uint16_t spin = 65535;
     do {
+        spin--;
+        if (!spin) {
+            init_radio();
+            return; // This is potentially going to put us in a very weird state.
+            // Happily this isn't a failure mode we really see.
+        }
         reg_read = read_single_register_sync(RFM_IRQ1);
     } while (!(BIT7 & reg_read));
 }
@@ -199,8 +212,7 @@ uint8_t expected_dio_interrupt = 0;
 
 void radio_send_sync() {
     // Wait for, e.g., completion of receiving something.
-    while (rfm_reg_state != RFM_REG_IDLE)
-        ;
+    if (radio_barrier_with_timeout()) return;
     mode_sync(RFM_MODE_SB);
     // Intermediate mode is TX
     // Enter condition is FIFO level
@@ -215,8 +227,7 @@ void radio_send_sync() {
     // Hold NSS low to begin frame.
     RFM_NSS_PORT_OUT &= ~RFM_NSS_PIN;
     EUSCI_B_SPI_transmitData(EUSCI_B0_BASE, RFM_FIFO | 0b10000000); // Send write command.
-    while (rfm_reg_state != RFM_REG_IDLE)
-        ;
+    if (radio_barrier_with_timeout()) return;
 }
 
 inline void radio_recv_start() {
