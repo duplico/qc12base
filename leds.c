@@ -33,6 +33,7 @@ volatile uint8_t tlc_color_index = 0;
 uint8_t tlc_anim_mode = TLC_ANIM_MODE_IDLE;
 uint8_t tlc_anim_index = 0;   // Number of channels to shift gs_data by
 uint8_t tlc_anim_pad_len = 0;
+uint8_t tlc_is_ambient = 0;
 
 uint8_t tlc_loopback_data_out = 0x00;
 volatile uint8_t tlc_loopback_data_in = 0x00;
@@ -298,16 +299,22 @@ uint8_t ring_fade_index = 0;
 uint8_t ring_fade_steps = 0;
 
 const rgbcolor_t color_off = {0, 0, 0};
-const rgbcolor_t mood_green = { 0x0000, 0x00FF, 0x0000};
-const rgbcolor_t mood_yellow   = { 0x0080, 0x0080, 0x0000}; // To account for roundoff error.
-const rgbcolor_t mood_red   = { 0x00FF, 0x0000, 0x0000};
+const rgbcolor_t mood_green = { 0x0000, 0x0f00, 0x0000};
+const rgbcolor_t mood_yellow   = { 0x0800, 0x0800, 0x0000}; // To account for roundoff error.
+const rgbcolor_t mood_red   = { 0x0f00, 0x0000, 0x0000};
 const rgbdelta_t mood_step = {
-        (-0x00FF) / 100,
-        (0x00FF) / 100,
+        (-0x0f00) / 100,
+        (0x0f00) / 100,
         (0x0000) / 100
 };
 
 rgbcolor_t tlc_ambient_colors = { 0x0000, 0x0000, 0x0000};
+
+const tlc_animation_t flag_ambient = {
+        &tlc_ambient_colors,
+        1,
+        "Mood"
+};
 
 rgbcolor_t tlc_colors_curr[5] = {
         {0, 0, 0},
@@ -523,7 +530,7 @@ void tlc_fade_colors() {
     }
 }
 
-uint8_t tlc_first_frame = 0; // TODO
+volatile uint8_t tlc_first_frame = 0; // TODO
 
 void tlc_set_ambient(uint8_t mood) {
     if (mood == 100) {
@@ -551,16 +558,28 @@ void tlc_set_ambient(uint8_t mood) {
 void tlc_display_ambient() {
     if (tlc_anim_mode != TLC_ANIM_MODE_IDLE)
         return;
-    for (uint8_t i=0; i<5; i++) {
-        memcpy(&tlc_colors_curr[i], &tlc_ambient_colors, sizeof(rgbcolor_t));
+
+    uint8_t speed = 50;
+    if (neighbor_count > 7) {
+        speed = 2;
+    } else {
+        speed = 50 - 50 * (neighbor_count / 7);
     }
-    tlc_set_gs();
+
+    tlc_start_anim(&flag_ambient, 0, speed, 0, 3);
+    tlc_is_ambient = 1;
+
+//    for (uint8_t i=0; i<5; i++) {
+//        memcpy(&tlc_colors_curr[i], &tlc_ambient_colors, sizeof(rgbcolor_t));
+//    }
+//    tlc_set_gs();
 }
 
 void tlc_start_anim(const tlc_animation_t *anim, uint8_t anim_len, uint8_t fade_steps, uint8_t all_lights_same, uint8_t loop) {
     f_tlc_anim_done = 0;
     tlc_first_frame = 1;
     tlc_anim_index = 0; // This is our index in the animation.
+    tlc_is_ambient = 0;
 
     if (all_lights_same) {
         tlc_anim_mode = TLC_ANIM_MODE_SAME;
@@ -587,12 +606,6 @@ void tlc_start_anim(const tlc_animation_t *anim, uint8_t anim_len, uint8_t fade_
     }
     tlc_anim_looping = loop;
     tlc_load_colors();
-
-    if (tlc_first_frame) {
-        tlc_first_frame = 0;
-        tlc_stage_blank(0);
-        tlc_set_fun();
-    }
 }
 
 void tlc_stop_anim(uint8_t blank) {
@@ -600,6 +613,7 @@ void tlc_stop_anim(uint8_t blank) {
         tlc_stage_blank(blank);
         tlc_set_fun();
     }
+    tlc_is_ambient = 0;
     tlc_anim_mode = TLC_ANIM_MODE_IDLE;
 }
 
@@ -624,7 +638,8 @@ inline void tlc_timestep() {
         // unless we're looping.
         if (tlc_anim_index == tlc_curr_anim_len - tlc_anim_pad_len) {
             if (tlc_anim_looping) {
-                tlc_anim_looping--;
+                if (tlc_anim_looping != 0xFF)
+                    tlc_anim_looping--;
                 tlc_anim_index = 0;
             } else {
                 tlc_anim_mode = TLC_ANIM_MODE_IDLE;
@@ -670,6 +685,11 @@ __interrupt void EUSCI_A0_ISR(void)
             } else if (tlc_tx_index == 32) { // done
                 GPIO_pulse(TLC_LATPORT, TLC_LATPIN); // LATCH.
                 tlc_send_type = TLC_SEND_IDLE;
+                if (tlc_first_frame) {
+                    tlc_first_frame = 0;
+                    tlc_stage_blank(0);
+                    tlc_set_fun();
+                }
                 break;
             } else { // gs
                 switch(rgb_element_index % 6) { // WATCH OUT! Weird order below:
