@@ -254,18 +254,19 @@ static void
 qc12_oledPixelDraw(void *pvDisplayData, int16_t lX, int16_t lY,
                                    uint16_t ulValue)
 {  
+    if (lX < 0 || lY < 0) {
+        return;
+    }
   /* This function already has checked that the pixel is within the extents of  
   the LCD screen and the color ulValue has already been translated to the LCD.
   */
 
-	int16_t mapped_x = MAPPED_X(lX, lY);
-	int16_t mapped_y = MAPPED_Y(lX, lY);
+	uint16_t mapped_x = MAPPED_X(lX, lY);
+	uint16_t mapped_y = MAPPED_Y(lX, lY);
 
-	if (mapped_y >= LCD_Y_SIZE || mapped_x >= LCD_X_SIZE ||
-	        mapped_y < 0 || mapped_x < 0) {
-	    return; // it's offscreen, ignore it.
+	if (mapped_x & BIT7 || mapped_y & (BIT6|BIT7)) {
+	    return;
 	}
-
 	// Our COLUMN NUMBER is just x.
 	// Our PAGE NUMBER is y/8
 	// This is our ROW VALUE (by shifting 0b10000000 >> by row number):
