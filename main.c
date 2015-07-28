@@ -514,14 +514,10 @@ void handle_led_actions() {
 }
 
 void handle_character_actions() {
-    static uint8_t skip_frame = 10;
     if (f_time_loop) {
-        skip_frame--;
+        oled_timestep();
 
-        if (!skip_frame) {
-            skip_frame = 10;
-            oled_timestep();
-        }
+        // Determine whether we should do a random action.
     }
 
     if ((s_new_uber_seen & SIGNAL_BIT_OLED || s_new_badge_seen & SIGNAL_BIT_OLED) && oled_anim_state == OLED_ANIM_DONE) {
@@ -1139,7 +1135,7 @@ void handle_mode_rps() {
 int main(void)
 {
     init();
-    intro(); // Play a cute animation when we first turn the badge on.
+    intro();
     delay(1000);
     post();
 

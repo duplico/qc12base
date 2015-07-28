@@ -15,6 +15,7 @@ typedef struct {
     uint8_t loop_start;
     uint8_t loop_end;
     uint8_t len;
+    uint8_t speed;
     const tImage* images[10];
     const uint8_t movement[10];
 } qc12_anim_t;

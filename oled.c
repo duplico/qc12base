@@ -23,7 +23,8 @@
 uint8_t oled_anim_state = OLED_ANIM_DONE;
 uint8_t anim_index = 0;
 uint8_t anim_loops = 0;
-qc12_anim_t anim_data;
+uint8_t anim_frame_skip = 0;
+const qc12_anim_t *anim_data;
 
 void init_oled() {
     qc12_oledInit();
@@ -54,34 +55,41 @@ void oled_anim_next_frame() {
     if (oled_anim_state == OLED_ANIM_DONE)
         return;
 
-    GrImageDraw(&g_sContext, anim_data.images[anim_index], 0, SPRITE_Y);
+    GrImageDraw(&g_sContext, anim_data->images[anim_index], 0, SPRITE_Y);
     GrFlush(&g_sContext);
 
     anim_index++;
 
     // If we need to loop, loop:
-    if (anim_loops && anim_data.looped) {
-        if (anim_index == anim_data.loop_end) {
-            anim_index = anim_data.loop_start;
+    if (anim_loops && anim_data->looped) {
+        if (anim_index == anim_data->loop_end) {
+            anim_index = anim_data->loop_start;
             anim_loops--;
         }
-    } else if (anim_loops && anim_index == anim_data.len) {
+    } else if (anim_loops && anim_index == anim_data->len) {
         anim_index = 0;
         anim_loops--;
     }
 
-    if (anim_index == anim_data.len)
+    if (anim_index == anim_data->len)
         oled_anim_state = OLED_ANIM_DONE;
 }
 
 void oled_play_animation(const qc12_anim_t *anim, uint8_t loops) {
     anim_index = 0;
     anim_loops = loops;
-    anim_data = *anim;
+    anim_data = anim;
+    anim_frame_skip = anim->speed;
     oled_anim_state = OLED_ANIM_START;
 }
 
 void oled_timestep() {
-    if (oled_anim_state)
-        oled_anim_next_frame();
+    if (oled_anim_state) {
+        if (anim_frame_skip) {
+            anim_frame_skip--;
+        } else {
+            anim_frame_skip = anim_data->speed;
+            oled_anim_next_frame();
+        }
+    }
 }
