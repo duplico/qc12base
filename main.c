@@ -682,13 +682,12 @@ uint8_t softkey_enabled(uint8_t index) {
 void handle_mode_idle() {
     // Clear any outstanding stray flags asking the character to do stuff
     //    so we know we're in a consistent state when we enter this mode.
-    static uint8_t idle_mode_softkey_sel = 0;
     if (!softkey_enabled(idle_mode_softkey_sel))
         idle_mode_softkey_sel = 0;
-    uint8_t s_new_pane = 0;
+    uint8_t s_new_pane = 1;
 
     GrClearDisplay(&g_sContext);
-    oled_draw_pane(idle_mode_softkey_sel);
+//    oled_draw_pane(idle_mode_softkey_sel);
     // Pick our current appearance...
     oled_play_animation(&standing, 0);
     oled_anim_next_frame();
