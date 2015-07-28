@@ -63,7 +63,7 @@ qc12conf my_conf;
 const qc12conf backup_conf;
 
 const qc12conf default_conf = {
-        3,     // id
+        4,     // id
         0,    // mood
         0,     // title
         0,     // flag
@@ -360,7 +360,7 @@ void intro() {
 }
 
 void befriend_send_appropriate_message(uint8_t received_flag) {
-    if (!befriend_mode) {
+    if (!befriend_mode || rfm_reg_state != RFM_REG_IDLE) {
         return;
     }
 
@@ -369,6 +369,10 @@ void befriend_send_appropriate_message(uint8_t received_flag) {
         s_befriend_failed = 1;
         return;
     }
+    char buf[10] = "";
+    sprintf(buf, "m%d i%d", befriend_mode, befriend_candidate);
+    GrStringDraw(&g_sContext, buf, -1, 5, 30, 0);
+    GrFlush(&g_sContext);
 
     // If we're still ticking, and we got our partner's previous message,
     // (also used as a standin for time-based sending), then re-send our
@@ -387,7 +391,7 @@ void befriend_send_appropriate_message(uint8_t received_flag) {
     }
 
     if (befriend_mode == 6 || (befriend_mode == 5 && !befriend_mode_ticks)) {
-        // success.
+        tlc_start_anim(&flag_green, 0, 1, 1, 10);
         befriend_mode = 0;
         set_badge_friend(befriend_candidate);
     } else if (!befriend_mode_ticks) {
@@ -404,6 +408,7 @@ void befriend_send_appropriate_message(uint8_t received_flag) {
     } else {
         out_payload.to_addr = RFM_BROADCAST;
     }
+    radio_send_sync();
 }
 
 // Shared activities between modes are:
@@ -466,11 +471,11 @@ void handle_infrastructure_services() {
         if (in_payload.flag_id && in_payload.from_addr < BADGES_IN_SYSTEM && in_payload.flag_from < BADGES_IN_SYSTEM && (in_payload.flag_id & 0b01111111) < FLAG_COUNT) {
             // Wave a flag.
             if (!flag_in_cooldown) {
-                s_flag_wave = 1;
                 out_payload.to_addr = RFM_BROADCAST;
                 out_payload.flag_id = in_payload.flag_id;
                 out_payload.flag_from = in_payload.flag_from;
                 tlc_start_anim(flags[in_payload.flag_id & 0b01111111], 0, 3, 0, 0);
+                s_flag_wave = 1;
                 s_flag_send = 1;
             } // Otherwise, ignore it.
         }
@@ -594,6 +599,11 @@ void handle_infrastructure_services() {
 void handle_led_actions() {
     if (f_time_loop) {
 
+    }
+
+    if (s_befriend_failed) {
+        s_befriend_failed = 0;
+        tlc_start_anim(&flag_red, 0, 3, 1, 2);
     }
 
     if (f_tlc_anim_done && s_flag_wave) {
@@ -884,6 +894,9 @@ void handle_mode_idle() {
                     befriend_mode_loops_to_tick = BEFRIEND_LOOPS_TO_RESEND;
                     befriend_mode_secs = BEFRIEND_TIMEOUT_SECONDS;
                     befriend_mode_ticks = BEFRIEND_RESEND_TRIES;
+
+                    tlc_start_anim(&flag_blue, 0, 30, 1, 2);
+
                     if (befriend_candidate_age) { // We have a valid candidate:
                         // This will be from a beacon, so we'll be the client:
                         befriend_mode = 2;
@@ -1139,78 +1152,6 @@ void handle_mode_sleep() {
     op_mode = OP_MODE_IDLE;
 }
 
-//void handle_mode_setflag() { // The testing character animations version.
-//    static uint8_t softkey_sel;
-//    softkey_sel = 0;
-//    uint8_t s_new_pane = 1;
-//
-//    char buf[2] = "";
-//
-//    oled_draw_pane(softkey_sel);
-//    // Pick our current appearance...
-//    oled_play_animation(&standing, 0);
-//    oled_anim_next_frame();
-//
-//    while (1) {
-//        handle_infrastructure_services();
-//        handle_led_actions();
-//        handle_character_actions();
-//
-//        if (f_time_loop) {
-//            f_time_loop = 0;
-//            if (f_br == BUTTON_PRESS) {
-//                softkey_sel = (softkey_sel+1) % (demo_anim_count+1);
-//                s_new_pane = 1;
-//            }
-//            f_br = 0;
-//
-//            if (f_bl == BUTTON_PRESS) {
-//                softkey_sel = (softkey_sel+demo_anim_count) % (demo_anim_count+1);
-//                s_new_pane = 1;
-//            }
-//            f_bl = 0;
-//
-//            if (f_bs == BUTTON_RELEASE) {
-//                f_bs = 0;
-//                // Select button
-//                if (softkey_sel == demo_anim_count) {
-//                    op_mode = OP_MODE_IDLE;
-//                    break;
-//                } else {
-//                    oled_play_animation(demo_anims[softkey_sel], 3);
-//                }
-//            }
-//            f_bs = 0;
-//        }
-//
-//        if (s_new_pane) {
-//            // softkey or something changed:
-//            s_new_pane = 0;
-//            GrContextFontSet(&g_sContext, &SOFTKEY_LABEL_FONT);
-//            GrStringDrawCentered(&g_sContext, "                ", -1, 31, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
-//
-//            if (softkey_sel == demo_anim_count) {
-//                GrStringDrawCentered(&g_sContext, "Done", -1, 32, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
-//            } else {
-//                buf[0] = 'A' + softkey_sel;
-//                buf[1] = 0;
-//                GrStringDrawCentered(&g_sContext, buf, 1, 32, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
-//            }
-//
-//            GrLineDrawH(&g_sContext, 0, 64, 116);
-//            GrFlush(&g_sContext);
-//        }
-//
-//        try_to_sleep();
-//
-//    }
-//    f_bs = 0;
-//
-//    // Cleanup:
-//
-//    tlc_stop_anim(1);
-//}
-
 void handle_mode_setflag() {
     static uint8_t softkey_sel;
     softkey_sel = my_conf.flag_id;
@@ -1314,8 +1255,6 @@ int main(void)
             break;
         case OP_MODE_SETFLAG:
             handle_mode_setflag();
-            break;
-        case OP_MODE_BEFRIEND:
             break;
         case OP_MODE_SLEEP:
             handle_mode_sleep();

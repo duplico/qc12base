@@ -579,6 +579,7 @@ void tlc_start_anim(const tlc_animation_t *anim, uint8_t anim_len, uint8_t fade_
     tlc_first_frame = 1;
     tlc_anim_index = 0; // This is our index in the animation.
     tlc_is_ambient = 0;
+    s_flag_wave = 0;
 
     if (all_lights_same) {
         tlc_anim_mode = TLC_ANIM_MODE_SAME;
