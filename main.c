@@ -40,6 +40,7 @@ uint8_t s_new_uber_friend = 0;
 uint8_t s_new_friend = 0;
 
 uint8_t disable_beacon_service = 0;
+uint8_t idle_mode_softkey_sel = 0;
 
 void poll_buttons();
 
@@ -681,13 +682,13 @@ uint8_t softkey_enabled(uint8_t index) {
 void handle_mode_idle() {
     // Clear any outstanding stray flags asking the character to do stuff
     //    so we know we're in a consistent state when we enter this mode.
-    static uint8_t softkey_sel = 0;
-    if (!softkey_enabled(softkey_sel))
-        softkey_sel = 0;
+    static uint8_t idle_mode_softkey_sel = 0;
+    if (!softkey_enabled(idle_mode_softkey_sel))
+        idle_mode_softkey_sel = 0;
     uint8_t s_new_pane = 0;
 
     GrClearDisplay(&g_sContext);
-    oled_draw_pane(softkey_sel);
+    oled_draw_pane(idle_mode_softkey_sel);
     // Pick our current appearance...
     oled_play_animation(&standing, 0);
     oled_anim_next_frame();
@@ -706,23 +707,23 @@ void handle_mode_idle() {
             if (f_br == BUTTON_PRESS) {
                 // Left button
                 do {
-                    softkey_sel = (softkey_sel+1) % (SK_SEL_MAX+1);
-                } while (!softkey_enabled(softkey_sel));
+                    idle_mode_softkey_sel = (idle_mode_softkey_sel+1) % (SK_SEL_MAX+1);
+                } while (!softkey_enabled(idle_mode_softkey_sel));
                 s_new_pane = 1;
             }
             f_br = 0;
 
             if (f_bl == BUTTON_PRESS) {
                 do {
-                    softkey_sel = (softkey_sel+SK_SEL_MAX) % (SK_SEL_MAX+1);
-                } while (!softkey_enabled(softkey_sel));
+                    idle_mode_softkey_sel = (idle_mode_softkey_sel+SK_SEL_MAX) % (SK_SEL_MAX+1);
+                } while (!softkey_enabled(idle_mode_softkey_sel));
                 s_new_pane = 1;
             }
             f_bl = 0;
 
             if (f_bs == BUTTON_RELEASE) {
                 // Select button
-                switch (softkey_sel) {
+                switch (idle_mode_softkey_sel) {
                 case SK_SEL_ASL:
                     op_mode = OP_MODE_ASL;
                     break;
@@ -741,7 +742,7 @@ void handle_mode_idle() {
                     out_payload.flag_from = my_conf.badge_id;
                     out_payload.flag_id = BIT7 | my_conf.flag_id;
                     s_flag_send = FLAG_SEND_TRIES;
-                    softkey_sel = 0;
+                    idle_mode_softkey_sel = 0;
                     s_new_pane = 1;
                     break;
                 case SK_SEL_RPS:
@@ -761,7 +762,7 @@ void handle_mode_idle() {
         if (s_new_pane) {
             // Title or softkey or something changed:
             s_new_pane = 0;
-            oled_draw_pane(softkey_sel);
+            oled_draw_pane(idle_mode_softkey_sel);
         }
 
         if (op_mode != OP_MODE_IDLE) {
@@ -854,7 +855,7 @@ void asl_draw_page(uint8_t page) {
         break;
     case 3:
         // I see
-        GrStringDrawCentered(&g_sContext, "I can see:", -1, 32, 8, 0);
+        GrStringDrawCentered(&g_sContext, "I can see", -1, 32, 8, 0);
 
         // Badges visible:
         sprintf(buf, "%d", neighbor_count);

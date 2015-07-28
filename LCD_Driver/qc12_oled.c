@@ -327,7 +327,7 @@ qc12_oledPixelDrawMultiple(void *pvDisplayData, int16_t lX,
                 for(; (lX0 < 8) && lCount; lX0++, lCount--)
                 {
                     // Draw this pixel in the appropriate color
-					qc12_oledPixelDraw(pvDisplayData, lX++, lY, 
+					qc12_oledPixelDraw(pvDisplayData, lX++, lY,
 											((uint16_t *)pucPalette)[(ulByte >> (7 - lX0)) & 1]);
                 }
                 
