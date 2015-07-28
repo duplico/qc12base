@@ -27,6 +27,9 @@
 #define FLAG_SEND_TRIES 3
 #define MOOD_TICK_MINUTES 10
 #define MOOD_TICK_AMOUNT -3
+#define BEFRIEND_TIMEOUT_SECONDS 3
+#define BEFRIEND_RESEND_TRIES 10
+#define BEFRIEND_LOOPS_TO_RESEND 10
 
 #define RECEIVE_WINDOW 8
 #define RECEIVE_WINDOW_LENGTH_SECONDS 10
@@ -141,6 +144,7 @@ extern uint8_t s_oled_anim_finished;
 typedef struct {
     uint8_t to_addr, from_addr, base_id;
     uint8_t beacon;
+    uint8_t friendship;
     uint8_t flag_from;
     uint8_t flag_id;
     uint8_t play_id;
