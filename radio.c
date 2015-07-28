@@ -38,9 +38,6 @@ volatile uint8_t rfm_single_msg = 0;
 volatile uint8_t rfm_reg_ifgs = 0;
 volatile uint8_t rfm_reg_state = RFM_REG_IDLE;
 
-// The protocol machine:
-volatile uint8_t rfm_proto_state = 0;
-
 qc12payload in_payload;
 qc12payload out_payload = { 0xff, 1, 1, 0 };
 
