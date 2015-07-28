@@ -112,7 +112,7 @@ uint8_t oled_memory[LCD_X_SIZE*PAGES]; // TODO???
 #define THISISDATA  GPIO_setOutputHighOnPin(DCPORT, DCPIN)
 #define THISISCMD   GPIO_setOutputLowOnPin(DCPORT, DCPIN);
 
-#define GRAM_BUFFER(page, column) oled_memory[(((PAGES-1)-page) * LCD_X_SIZE) + column]
+#define GRAM_BUFFER(page, column) oled_memory[((7-(page)) * LCD_X_SIZE) + column]
 
 uint8_t ok_to_send = 1;
 
@@ -258,8 +258,13 @@ qc12_oledPixelDraw(void *pvDisplayData, int16_t lX, int16_t lY,
   the LCD screen and the color ulValue has already been translated to the LCD.
   */
 
-	uint16_t mapped_x = MAPPED_X(lX, lY);
-	uint16_t mapped_y = MAPPED_Y(lX, lY);
+	int16_t mapped_x = MAPPED_X(lX, lY);
+	int16_t mapped_y = MAPPED_Y(lX, lY);
+
+	if (mapped_y >= LCD_Y_SIZE || mapped_x >= LCD_X_SIZE ||
+	        mapped_y < 0 || mapped_x < 0) {
+	    return; // it's offscreen, ignore it.
+	}
 
 	// Our COLUMN NUMBER is just x.
 	// Our PAGE NUMBER is y/8
