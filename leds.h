@@ -46,6 +46,10 @@ extern const tlc_animation_t flag_pink;
 #define FLAG_COUNT 14
 extern const tlc_animation_t *flags[FLAG_COUNT];
 
+extern const tlc_animation_t flag_ambient;
+
+extern uint8_t tlc_is_ambient;
+
 void init_tlc();
 
 uint8_t tlc_test_loopback(uint8_t);

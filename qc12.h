@@ -56,6 +56,8 @@
 #define SPRITE_Y 128 - 64 - SOFTKEY_FONT_HEIGHT // Top of the char sprite.
 #define RFM_TX_POWER (((uint8_t)(18 + RADIO_TX_POWER_DB)) & 0b00011111)
 
+#define TLC_IS_A_GO (tlc_anim_mode == TLC_ANIM_MODE_IDLE || tlc_is_ambient)
+
 /////////////////////////////////////////////////////////////////////
 // Hardware related defines /////////////////////////////////////////
 
@@ -168,5 +170,7 @@ extern qc12conf my_conf;
 extern const qc12conf default_conf;
 
 extern uint8_t op_mode;
+
+extern uint8_t neighbor_count;
 
 #endif /* QC12_H_ */

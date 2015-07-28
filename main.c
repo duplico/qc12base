@@ -50,8 +50,8 @@ qc12conf my_conf;
 const qc12conf backup_conf;
 
 const qc12conf default_conf = {
-        2,     // id
-        50,    // mood
+        3,     // id
+        0,    // mood
         0,     // title
         0,     // flag
         0,     // flag_cooldown
@@ -129,9 +129,6 @@ void mood_adjust(int8_t change) {
     my_conf_write_crc();
 
     tlc_set_ambient(my_conf.mood);
-
-    // Set our mood light color. TODO
-
 }
 
 void set_badge_seen(uint8_t id) {
@@ -146,12 +143,16 @@ void set_badge_seen(uint8_t id) {
         if (id < UBERS_IN_SYSTEM) {
             my_conf.uber_seen_count++;
             // flag an animation
-            s_new_uber_seen = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
-            mood_adjust(50);
+            if (id != my_conf.badge_id) {
+                s_new_uber_seen = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
+                mood_adjust(50);
+            }
         } else {
             // flag a lamer animation
-            s_new_badge_seen = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
-            mood_adjust(10);
+            if (id != my_conf.badge_id) {
+                s_new_badge_seen = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
+                mood_adjust(10);
+            }
         }
         // No need to write a CRC here because adjust_mood takes care of that for us.
     }
@@ -169,10 +170,14 @@ void set_badge_friend(uint8_t id) {
         if (id < UBERS_IN_SYSTEM) {
             my_conf.uber_friend_count++;
             // flag an animation
-            s_new_uber_friend = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
+            if (id != my_conf.badge_id) {
+                s_new_uber_friend = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
+            }
         } else {
             // flag a lamer animation
-            s_new_friend = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
+            if (id != my_conf.badge_id) {
+                s_new_friend = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
+            }
         }
         my_conf_write_crc();
     }
@@ -496,7 +501,7 @@ void handle_led_actions() {
         f_tlc_anim_done = 0;
     }
 
-    if ((s_new_uber_seen & SIGNAL_BIT_TLC || s_new_badge_seen & SIGNAL_BIT_TLC) && tlc_anim_mode == TLC_ANIM_MODE_IDLE) {
+    if ((s_new_uber_seen & SIGNAL_BIT_TLC || s_new_badge_seen & SIGNAL_BIT_TLC) && TLC_IS_A_GO) {
         // Big rainbow animation.
         tlc_start_anim(&flag_rainbow, 0, 4, 1, 4);
         s_new_badge_seen &= ~SIGNAL_BIT_TLC;
@@ -691,6 +696,10 @@ void handle_mode_idle() {
     oled_play_animation(&standing, 0);
     oled_anim_next_frame();
 
+    if (tlc_anim_mode == TLC_ANIM_MODE_IDLE) {
+        tlc_display_ambient();
+    }
+
     while (1) {
         handle_infrastructure_services();
         handle_led_actions();
@@ -767,11 +776,8 @@ void handle_mode_idle() {
 
     }
 
-    f_bs = 0;
-
     // Cleanup:
-
-    tlc_stop_anim(1);
+    f_bs = 0;
 }
 
 void asl_draw_page(uint8_t page) {
@@ -780,7 +786,6 @@ void asl_draw_page(uint8_t page) {
     tRectangle uber_rect = {5, 93, 59, 103};
     switch (page) {
     case 0:
-        // Title and level
         GrContextFontSet(&g_sContext, &SYS_FONT);
         GrStringDrawCentered(&g_sContext, "I've seen:", -1, 32, 8, 0);
 
@@ -837,7 +842,6 @@ void asl_draw_page(uint8_t page) {
         uber_rect.sYMax++;
         break;
     case 2:
-        // I see
         // Top friends
         GrContextFontSet(&g_sContext, &SYS_FONT);
         GrStringDrawCentered(&g_sContext, "My faves:", -1, 32, 8, 0);
@@ -851,6 +855,25 @@ void asl_draw_page(uint8_t page) {
         GrStringDraw(&g_sContext, "#3", -1, 3, 82, 0);
         GrStringDraw(&g_sContext, fav_badges_handles[2], -1, 3, 97, 0);
 
+        break;
+    case 3:
+        // I see
+        GrStringDrawCentered(&g_sContext, "I can see:", -1, 32, 8, 0);
+
+        // Badges visible:
+        sprintf(buf, "%d", neighbor_count);
+        GrStringDrawCentered(&g_sContext, buf, -1, 32, 20, 0);
+        GrStringDrawCentered(&g_sContext, "badges", neighbor_count == 1 ? 5 : 6, 32, 32, 0);
+
+        // Mood:
+        GrStringDrawCentered(&g_sContext, "My mood:", -1, 32, 83, 0);
+        GrRectDraw(&g_sContext, &uber_rect);
+        uber_rect.sXMax = 5 + 54 * my_conf.mood / 100;
+
+        // Fill both meters:
+        uber_rect.sYMax--;
+        GrRectFill(&g_sContext, &uber_rect);
+        uber_rect.sYMax++;
         break;
     default:
         // Achievement listing.
@@ -867,7 +890,7 @@ void handle_mode_asl() {
     static uint8_t page_num;
     page_num = 0;
     uint8_t s_redraw = 1;
-    uint8_t asl_pages = 3;
+    uint8_t asl_pages = 4;
 
     GrClearDisplay(&g_sContext);
     GrFlush(&g_sContext);
@@ -935,8 +958,7 @@ void handle_mode_sleep() {
 
 
     // Kill the LEDs.
-    tlc_stage_blank(1);
-    tlc_set_fun();
+    tlc_stop_anim(1);
 
     // Clear the screen.
     GrClearDisplay(&g_sContext);
