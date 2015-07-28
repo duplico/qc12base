@@ -341,7 +341,7 @@ if (__name__ == '__main__'):
     
     if args.id:
         assert args.id >= 15 # ubers are done manually.
-        c = ["bear", "human", "lizard", "octopus", "robot"]
+        c = ["alien", "bear", "human", "lizard", "octopus", "robot"]
         l = list(itertools.product(c, repeat=3))
         head, body, legs = l[(args.id-15) % len(l)]
     
