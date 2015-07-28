@@ -91,6 +91,7 @@ void oled_anim_disp_frame(const tImage* image) {
 }
 
 void oled_consider_walking_back() {
+    // Determine whether we need to walk back onto the screen after anim.
     if (char_pos_x < -16) {
         oled_play_animation(&walking, (uint8_t) (-char_pos_x/16) - 1);
     } else if (char_pos_x > 16) {

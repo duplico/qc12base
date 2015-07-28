@@ -557,8 +557,6 @@ void handle_character_actions() {
         s_need_idle_action = 0;
     }
 
-    // Determine whether we need to walk back onto the screen.
-
 }
 
 void try_to_sleep() {
