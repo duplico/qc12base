@@ -26,6 +26,14 @@ uint8_t anim_loops = 0;
 uint8_t anim_frame_skip = 0;
 const qc12_anim_t *anim_data;
 
+#define OLED_OVERHEAD_OFF 0
+#define OLED_OVERHEAD_TXT 1
+#define OLED_OVERHEAD_IMG 2
+
+uint8_t oled_overhead_type = OLED_OVERHEAD_OFF;
+tImage *oled_overhead_image;
+char *oled_overhead_text;
+
 int8_t char_pos_x = 0;
 int8_t char_pos_y = 0;
 
@@ -52,6 +60,32 @@ void oled_draw_pane(uint8_t softkey_sel) {
     GrStringDrawCentered(&g_sContext, sk_labels[softkey_sel], -1, 32,  SPRITE_Y + 64 + SOFTKEY_FONT_HEIGHT/2, 0);
     GrLineDrawH(&g_sContext, 0, 64, SPRITE_Y + 64);
     GrFlush(&g_sContext);
+}
+
+void draw_overhead() {
+    if (oled_overhead_type == OLED_OVERHEAD_TXT) {
+        GrContextFontSet(&g_sContext, &SYS_FONT);
+        GrStringDrawCentered(&g_sContext, oled_overhead_text, -1, 32, SPRITE_Y+SYS_FONT_HEIGHT/2, 0);
+    } else if (oled_overhead_type == OLED_OVERHEAD_IMG) {
+        GrImageDraw(&g_sContext, oled_overhead_image, char_pos_x, SPRITE_Y);
+    }
+}
+
+void oled_set_overhead_image(tImage *image, uint8_t len) {
+    oled_overhead_type = OLED_OVERHEAD_IMG;
+    oled_overhead_image = image;
+    draw_overhead();
+    GrFlush(&g_sContext);
+//    oled_anim_disp_frame(anim_data->images[anim_index]);
+}
+
+
+void oled_set_overhead_text(char *text, uint8_t len) {
+    oled_overhead_type = OLED_OVERHEAD_TXT;
+    oled_overhead_text = text;
+    draw_overhead();
+    GrFlush(&g_sContext);
+//    oled_anim_disp_frame(anim_data->images[anim_index]);
 }
 
 void do_move(uint8_t move_signal) {
@@ -87,6 +121,7 @@ void oled_anim_disp_frame(const tImage* image) {
     GrClearDisplay(&g_sContext);
     GrImageDraw(&g_sContext, image, char_pos_x, SPRITE_Y - char_pos_y);
     oled_draw_pane(idle_mode_softkey_sel);
+    draw_overhead();
     GrFlush(&g_sContext);
 }
 
