@@ -27,6 +27,7 @@ volatile uint8_t f_rfm_rx_done = 0;
 volatile uint8_t f_rfm_tx_done = 0;
 volatile uint8_t f_tlc_anim_done = 0;
 volatile uint8_t s_new_minute = 0;
+volatile uint8_t f_radio_fault = 0;
 
 // Non-interrupt signal flags (no need to avoid optimization):
 uint8_t s_default_conf_loaded = 0;
@@ -54,6 +55,16 @@ uint8_t befriend_mode_secs = 0;
 uint8_t befriend_candidate = 0;
 uint8_t befriend_candidate_age = 0;
 
+#define BF_S_BEACON 1
+#define BF_S_OPEN   3
+#define BF_S_WAIT   5
+#define BF_C_OPENING 2
+#define BF_C_CLOSING 4
+#define BF_C_WAIT   6
+
+uint8_t flag_from = BADGES_IN_SYSTEM;
+uint8_t flag_id = 0;
+
 void poll_buttons();
 
 #pragma DATA_SECTION (my_conf, ".infoA");
@@ -63,7 +74,7 @@ qc12conf my_conf;
 const qc12conf backup_conf;
 
 const qc12conf default_conf = {
-        4,     // id
+        2,     // id
         0,    // mood
         0,     // title
         0,     // flag
@@ -205,7 +216,7 @@ void check_conf() {
     }
 
     // Load default config:
-    if (1 || my_conf.crc16 != CRC_getResult(CRC_BASE)) { // TODO!
+    if (my_conf.crc16 != CRC_getResult(CRC_BASE)) { // TODO!
         memcpy(&my_conf, &default_conf, sizeof(qc12conf));
         my_conf_write_crc();
         memset(badges_seen, 0, sizeof(uint16_t) * BADGES_IN_SYSTEM);
@@ -279,6 +290,8 @@ void init_rtc() {
 void init_payload() {
     out_payload.base_id = NOT_A_BASE;
     out_payload.beacon = 0;
+    out_payload.flag_from = BADGES_IN_SYSTEM;
+    out_payload.flag_id = 0;
     out_payload.friendship = 0;
     out_payload.from_addr = my_conf.badge_id;
     out_payload.to_addr = RFM_BROADCAST;
@@ -359,50 +372,26 @@ void intro() {
     GrFlush(&g_sContext);
 }
 
-void befriend_send_appropriate_message(uint8_t received_flag) {
-    if (!befriend_mode || rfm_reg_state != RFM_REG_IDLE) {
-        return;
-    }
+void radio_send_beacon() {
+    out_payload.beacon = 1;
+    out_payload.flag_from = BADGES_IN_SYSTEM;
+    out_payload.flag_id = 0;
+    out_payload.friendship = 0;
+    out_payload.from_addr = my_conf.badge_id;
+    out_payload.to_addr = RFM_BROADCAST;
+    radio_send_sync();
+}
 
-    // Flag 5 is the highest we ever send:
-    if (received_flag > 5) {
-        s_befriend_failed = 1;
-        return;
-    }
-    char buf[10] = "";
+void radio_send_befriend(uint8_t mode) {
+    char buf[11] = "";
     sprintf(buf, "m%d i%d", befriend_mode, befriend_candidate);
     GrStringDraw(&g_sContext, buf, -1, 5, 30, 0);
     GrFlush(&g_sContext);
-
-    // If we're still ticking, and we got our partner's previous message,
-    // (also used as a standin for time-based sending), then re-send our
-    // current message.
-    if (received_flag == befriend_mode-1 && befriend_mode_ticks) { // resend current mode.
-        if (befriend_mode > 2) {
-            befriend_mode_ticks--;
-        }
-    } else if (received_flag == befriend_mode+1) { // Send the next one and inc.
-        befriend_mode_ticks = BEFRIEND_RESEND_TRIES;
-        befriend_mode += 2;
-    } else {
-        s_befriend_failed = 1;
-        befriend_mode = 0;
-        return;
-    }
-
-    if (befriend_mode == 6 || (befriend_mode == 5 && !befriend_mode_ticks)) {
-        tlc_start_anim(&flag_green, 0, 1, 1, 10);
-        befriend_mode = 0;
-        set_badge_friend(befriend_candidate);
-    } else if (!befriend_mode_ticks) {
-        s_befriend_failed = 1;
-    }
-
-
-    out_payload.friendship = befriend_mode;
     out_payload.beacon = 0;
-    out_payload.flag_from = 0;
+    out_payload.flag_from = BADGES_IN_SYSTEM;
     out_payload.flag_id = 0;
+    out_payload.friendship = mode;
+    out_payload.from_addr = my_conf.badge_id;
     if (befriend_mode > 1) {
         out_payload.to_addr = befriend_candidate;
     } else {
@@ -411,10 +400,132 @@ void befriend_send_appropriate_message(uint8_t received_flag) {
     radio_send_sync();
 }
 
-// Shared activities between modes are:
-//   Infrastructure service
-//   LED actions
-//   Character actions
+void radio_send_flag(uint8_t from, uint8_t flag) {
+    out_payload.beacon = 0;
+    out_payload.flag_from = from;
+    out_payload.flag_id = flag;
+    out_payload.friendship = 0;
+    out_payload.from_addr = my_conf.badge_id;
+    out_payload.to_addr = RFM_BROADCAST;
+    radio_send_sync();
+}
+
+inline void set_befriend_failed() {
+    s_befriend_failed = 1;
+    befriend_mode = 0;
+}
+
+// Received_flag is ignored if from_radio is 0.
+void befriend_proto_step(uint8_t from_radio, uint8_t received_flag, uint8_t from_id) {
+    if (!befriend_mode || rfm_reg_state != RFM_REG_IDLE) {
+        return;
+    }
+
+    // Flag 5 is the highest that ever gets sent. If we see
+    //  something higher, someone's ruined something.
+    //  Therefore we fail.
+    if (received_flag > 5 || (from_radio && !received_flag)) {
+        set_befriend_failed();
+        return;
+    }
+
+    if (from_radio) {
+        // Here, we've received a radio message.
+        // We expect it to be either:
+        //  befriend_mode+1 (time to move to next state)
+        //      or
+        //  befriend_mode-1 (need to re-send this state)
+
+        // First we'll want to validate the sender's ID.
+        if (befriend_mode == 1) {
+            // If we are a beaconing server, we use the incoming
+            //  sender to set our befriend_candidate.
+            befriend_candidate = from_id;
+            befriend_candidate_age = BEFRIEND_TIMEOUT_SECONDS;
+        } else if (from_id != befriend_candidate) {
+            // Otherwise, we need to reject anything that's not
+            //  from our befriend_candidate.
+            set_befriend_failed();
+            return;
+        }
+
+        // Now let's handle the protocol machine:
+        if (received_flag == befriend_mode-1) {
+            // Older message received: we need to re-transmit our current mode.
+            radio_send_befriend(befriend_mode);
+        } else if (received_flag == befriend_mode+1) {
+            // Next message received: we're ready to move along in the protocol.
+            befriend_mode_ticks = BEFRIEND_RESEND_TRIES;
+            befriend_mode += 2;
+
+            // Two valid protocol states are TIME ONLY:
+            //  BF_S_WAIT (where we think we've transmitted the last packet
+            //              in the conversation but want to make sure that
+            //              the client has received it)
+            //      and
+            // BF_C_WAIT (where we've transmitted the client's last packet in
+            //              the conversation, received the server's last
+            //              packet, and we're waiting a bit in order to try
+            //              to synchronize our next actions with the server.)
+
+            // So if we're in one of those states, don't send anything.
+            if (befriend_mode != BF_S_WAIT && befriend_mode != BF_C_WAIT) {
+                radio_send_befriend(befriend_mode);
+            }
+        } else {
+            // Malformed response.
+            set_befriend_failed();
+            return;
+        }
+
+        if (befriend_mode == 6 || (befriend_mode == 5 && !befriend_mode_ticks)) {
+            tlc_start_anim(&flag_green, 0, 1, 1, 10);
+            befriend_mode = 0;
+            set_badge_friend(befriend_candidate);
+        } else if (!befriend_mode_ticks) {
+            set_befriend_failed();
+            return;
+        }
+        // End of radio handling section
+
+    } else {
+
+        // (we've already ruled out 0)
+        if (befriend_mode < 5) { // the "normal" modes:
+            // BEACON, OPEN
+            // OPENING, and CLOSING.
+
+            // In these we retransmit if we have ticks left,
+            //  otherwise we time out.
+
+            if (befriend_mode == BF_S_BEACON || befriend_mode == BF_C_OPENING) {
+                // Modes 1 and 2's timeout is controlled outside of this
+                //  function, so make sure it never times out here.
+                //  This is kind of a kludge.
+                befriend_mode_ticks = BEFRIEND_RESEND_TRIES;
+            }
+
+            if (befriend_mode_ticks) {
+                // still some retries left.
+                befriend_mode_ticks--;
+                // Do re-send our message.
+                radio_send_befriend(befriend_mode);
+            } else {
+                set_befriend_failed();
+            }
+        } else {
+            // CLOSE_WAIT and JUST_WAIT. (The waiting modes)
+            // Here we just tick down and call things a success if we reach
+            //  zero.
+            if (befriend_mode_ticks) {
+                befriend_mode_ticks--;
+            } else {
+                befriend_mode = 0;
+                set_badge_friend(befriend_candidate);
+            }
+        }
+    } // end of time-step handling section.
+}
 
 void handle_infrastructure_services() {
     static uint8_t minute_secs = 60;
@@ -426,18 +537,6 @@ void handle_infrastructure_services() {
         // RX->SB->RX on receive.
         mode_sync(RFM_MODE_RX);
         write_single_register(0x3b, RFM_AUTOMODE_RX);
-
-        if (out_payload.flag_id) {
-            // If we just sent a flag, clear that info.
-            out_payload.flag_id = 0;
-            out_payload.flag_from = BADGES_IN_SYSTEM;
-        }
-
-        if (out_payload.friendship) {
-            // If we just sent a friendship message, clear that.
-            out_payload.friendship = 0;
-            out_payload.to_addr = RFM_BROADCAST;
-        }
     }
 
     // Radio RX tasks:
@@ -471,9 +570,9 @@ void handle_infrastructure_services() {
         if (in_payload.flag_id && in_payload.from_addr < BADGES_IN_SYSTEM && in_payload.flag_from < BADGES_IN_SYSTEM && (in_payload.flag_id & 0b01111111) < FLAG_COUNT) {
             // Wave a flag.
             if (!flag_in_cooldown) {
-                out_payload.to_addr = RFM_BROADCAST;
-                out_payload.flag_id = in_payload.flag_id;
-                out_payload.flag_from = in_payload.flag_from;
+                flag_from = in_payload.flag_from;
+                flag_id = in_payload.flag_id & 0b01111111;
+                radio_send_flag(flag_from, flag_id | BIT7);
                 tlc_start_anim(flags[in_payload.flag_id & 0b01111111], 0, 3, 0, 0);
                 s_flag_wave = 1;
                 s_flag_send = 1;
@@ -484,12 +583,17 @@ void handle_infrastructure_services() {
         if (in_payload.friendship) {
             if (befriend_mode && befriend_candidate != in_payload.from_addr) {
                 // Check our befriend partner:
-                s_befriend_failed = 1;
+                set_befriend_failed();
                 befriend_mode = 0;
-            } else {
+            } else if (befriend_mode) {
+                // We're currently somewhere in the befriend process,
+                //  so the protocol function will handle managing
+                //  befriend_candidate for us.
+                befriend_proto_step(1, in_payload.friendship, in_payload.from_addr);
+            } else if (in_payload.friendship == BF_S_BEACON) {
+                // Only track beacons in this way.
                 befriend_candidate = in_payload.from_addr;
                 befriend_candidate_age = BEFRIEND_TIMEOUT_SECONDS;
-                befriend_send_appropriate_message(in_payload.friendship);
             }
         }
         // Do base check-ins and related tasks:
@@ -508,7 +612,7 @@ void handle_infrastructure_services() {
         poll_buttons();
         if (befriend_mode && !befriend_mode_loops_to_tick &&
                 rfm_reg_state == RFM_REG_IDLE) {
-            befriend_send_appropriate_message(befriend_mode-1);
+            befriend_proto_step(0, befriend_mode-1, BADGES_IN_SYSTEM);
             befriend_mode_loops_to_tick = BEFRIEND_LOOPS_TO_RESEND;
         } else if (befriend_mode && befriend_mode_loops_to_tick) {
             befriend_mode_loops_to_tick--;
@@ -516,6 +620,12 @@ void handle_infrastructure_services() {
     }
 
     if (f_new_second) {
+        if (f_radio_fault) {
+            f_radio_fault = 0;
+            tlc_start_anim(&flag_pink, 0, 0, 1, 3);
+            init_radio();
+        }
+
         if (befriend_candidate_age) {
             befriend_candidate_age--;
         }
@@ -523,8 +633,7 @@ void handle_infrastructure_services() {
             if (befriend_mode_secs) {
                 befriend_mode_secs--;
             } else {
-                befriend_mode = 0;
-                s_befriend_failed = 1;
+                set_befriend_failed();
             }
         }
 
@@ -576,9 +685,8 @@ void handle_infrastructure_services() {
 
     if (s_flag_send && rfm_reg_state == RFM_REG_IDLE) {
         s_flag_send--;
-        out_payload.beacon = 0;
         flag_in_cooldown = FLAG_IN_COOLDOWN_SECONDS;
-        radio_send_sync();
+        radio_send_flag(flag_from, flag_id | BIT7);
     }
 
     if (!disable_beacon_service && s_need_rf_beacon && rfm_reg_state == RFM_REG_IDLE) {
@@ -589,11 +697,8 @@ void handle_infrastructure_services() {
         // receiving something or are in our receive intermediate state.)
         // I'm not sure it added any robustness.
         s_need_rf_beacon = 0;
-        out_payload.beacon = 1;
-        out_payload.to_addr = RFM_BROADCAST;
-        radio_send_sync();
+        radio_send_beacon();
     }
-
 }
 
 void handle_led_actions() {
@@ -882,8 +987,8 @@ void handle_mode_idle() {
                     tlc_start_anim(flags[my_conf.flag_id], 0, 3, 0, 5);
                     my_conf.flag_cooldown = FLAG_OUT_COOLDOWN_MINUTES;
                     my_conf_write_crc();
-                    out_payload.flag_from = my_conf.badge_id;
-                    out_payload.flag_id = BIT7 | my_conf.flag_id;
+                    flag_from = my_conf.badge_id;
+                    flag_id = my_conf.flag_id;
                     s_flag_send = FLAG_SEND_TRIES;
                     idle_mode_softkey_sel = 0;
                     s_new_pane = 1;
@@ -900,11 +1005,11 @@ void handle_mode_idle() {
                     if (befriend_candidate_age) { // We have a valid candidate:
                         // This will be from a beacon, so we'll be the client:
                         befriend_mode = 2;
-                        befriend_send_appropriate_message(1);
+                        befriend_proto_step(0, 1, BADGES_IN_SYSTEM);
                     } else { // We haven't seen any beacons,
                         // so we'll be the server.
                         befriend_mode = 1;
-                        befriend_send_appropriate_message(0);
+                        befriend_proto_step(0, 0, BADGES_IN_SYSTEM);
                     }
                     break;
                 case SK_SEL_SLEEP:
