@@ -549,6 +549,9 @@ void handle_infrastructure_services() {
     //    Clock sync???
 
     static uint8_t flag_in_cooldown = 0;
+    if (f_rfm_rx_done) {
+        radio_recv();
+    }
 
     // Got a probably valid message:
     if (f_rfm_rx_done && in_payload.from_addr != my_conf.badge_id) {
