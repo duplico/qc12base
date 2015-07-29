@@ -179,6 +179,7 @@ void set_badge_seen(uint8_t id) {
                 mood_adjust(10);
             }
         }
+        my_conf_write_crc();
         // No need to write a CRC here because adjust_mood takes care of that for us.
     }
 }
@@ -916,6 +917,7 @@ void handle_mode_name() {
         name_len++;
     name[name_len] = 0; // null terminate.
     strcpy(my_conf.handle, name);
+    my_conf_write_crc();
     strcpy(out_payload.handle, name);
     op_mode = OP_MODE_IDLE;
     suppress_softkey = 1; // And don't register the button release
