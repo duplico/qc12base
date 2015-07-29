@@ -50,6 +50,8 @@ void radio_send_sync();
 void radio_send_half_async();
 void radio_send_async();
 
+void radio_recv();
+
 uint8_t rfm_crcok();
 
 #endif /* RADIO_H_ */
