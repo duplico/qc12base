@@ -241,7 +241,6 @@ void radio_send_sync() {
     // Wait for, e.g., completion of receiving something.
     if (radio_barrier_with_timeout()) return;
     mode_sync(RFM_MODE_SB);
-    rfm_state = RFM_BUSY;
     // Intermediate mode is TX
     // Enter condition is FIFO level
     // Exit condition is PacketSent.
@@ -250,6 +249,7 @@ void radio_send_sync() {
     write_single_register(0x3b, RFM_AUTOMODE_TX);
 
     expected_dio_interrupt = 1; // will be xmit finished.
+    rfm_state = RFM_BUSY;
 
     EUSCI_B_SPI_disableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_RECEIVE_INTERRUPT);
     EUSCI_B_SPI_disableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_TRANSMIT_INTERRUPT);

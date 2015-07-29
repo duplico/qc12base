@@ -24,6 +24,9 @@ void oled_draw_pane(uint8_t);
 void oled_anim_next_frame();
 void oled_anim_disp_frame(const tImage* image);
 void oled_play_animation(const qc12_anim_t*, uint8_t);
+void oled_set_overhead_image(tImage *image, uint8_t len);
+void oled_set_overhead_text(char *text, uint8_t len);
+
 void oled_timestep();
 
 #endif /* OLED_H_ */

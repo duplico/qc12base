@@ -10,12 +10,12 @@
 
 // Project includes:
 #include <qc12_oled.h>
-#include "img.h"
-#include "qc12.h"
-#include "radio.h"
+#include <img.h>
+#include <qc12.h>
+#include <radio.h>
 #include <leds.h>
-#include "oled.h"
-#include "flash.h"
+#include <oled.h>
+#include <flash.h>
 
 // Interrupt flags:
 volatile uint8_t f_bl = 0;
@@ -387,8 +387,7 @@ void radio_send_beacon() {
 void radio_send_befriend(uint8_t mode) {
     char buf[11] = "";
     sprintf(buf, "m%d i%d", befriend_mode, befriend_candidate);
-    GrStringDraw(&g_sContext, buf, -1, 5, 30, 0);
-    GrFlush(&g_sContext);
+    oled_set_overhead_text(buf, 0);
     out_payload.beacon = 0;
     out_payload.flag_from = BADGES_IN_SYSTEM;
     out_payload.flag_id = 0;
