@@ -217,7 +217,7 @@ void check_conf() {
     }
 
     // Load default config:
-    if (my_conf.crc16 != CRC_getResult(CRC_BASE)) { // TODO!
+    if (my_conf.crc16 != CRC_getResult(CRC_BASE)) {
         memcpy(&my_conf, &default_conf, sizeof(qc12conf));
         memset(badges_seen, 0, sizeof(uint16_t) * BADGES_IN_SYSTEM);
         memset(fav_badges_ids, 0xff, sizeof(uint8_t) * FAVORITE_COUNT);
