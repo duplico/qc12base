@@ -28,8 +28,8 @@
 #define MOOD_TICK_MINUTES 10
 #define MOOD_TICK_AMOUNT -3
 #define BEFRIEND_TIMEOUT_SECONDS 3
-#define BEFRIEND_RESEND_TRIES 10
-#define BEFRIEND_LOOPS_TO_RESEND 5
+#define BEFRIEND_RESEND_TRIES 5
+#define BEFRIEND_LOOPS_TO_RESEND 10
 
 #define RECEIVE_WINDOW 8
 #define RECEIVE_WINDOW_LENGTH_SECONDS 10
@@ -149,7 +149,7 @@ typedef struct {
     uint8_t flag_from;
     uint8_t flag_id;
     uint8_t play_id;
-    char handle[NAME_MAX_LEN];
+    char handle[NAME_MAX_LEN+1];
 } qc12payload;
 
 extern qc12payload in_payload, out_payload;
@@ -169,7 +169,7 @@ typedef struct {
     uint8_t uber_friend_count;
     uint8_t achievements[CEILING_DIV(NUM_ACHIEVEMENTS, 8)];
     uint8_t top_seen[3];
-    char top_seen_handles[3][NAME_MAX_LEN];
+    char top_seen_handles[3][NAME_MAX_LEN+1];
     char handle[NAME_MAX_LEN+1];
     uint16_t crc16;
 } qc12conf;

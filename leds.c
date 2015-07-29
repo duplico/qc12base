@@ -564,11 +564,6 @@ void tlc_display_ambient() {
 
     tlc_start_anim(&flag_ambient, 0, speed, 0, 3);
     tlc_is_ambient = 1;
-
-//    for (uint8_t i=0; i<5; i++) {
-//        memcpy(&tlc_colors_curr[i], &tlc_ambient_colors, sizeof(rgbcolor_t));
-//    }
-//    tlc_set_gs();
 }
 
 void tlc_start_anim(const tlc_animation_t *anim, uint8_t anim_len, uint8_t fade_steps, uint8_t all_lights_same, uint8_t loop) {

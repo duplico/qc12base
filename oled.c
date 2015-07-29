@@ -32,7 +32,7 @@ const qc12_anim_t *anim_data;
 
 uint8_t oled_overhead_type = OLED_OVERHEAD_OFF;
 tImage *oled_overhead_image;
-char *oled_overhead_text;
+char oled_overhead_text[NAME_MAX_LEN+1] = "";
 
 int8_t char_pos_x = 0;
 int8_t char_pos_y = 0;
@@ -71,7 +71,7 @@ void draw_overhead() {
     }
 }
 
-void oled_set_overhead_image(tImage *image, uint8_t len) {
+void oled_set_overhead_image(tImage *image, uint8_t loop_len) {
     oled_overhead_type = OLED_OVERHEAD_IMG;
     oled_overhead_image = image;
     draw_overhead();
@@ -79,10 +79,10 @@ void oled_set_overhead_image(tImage *image, uint8_t len) {
 //    oled_anim_disp_frame(anim_data->images[anim_index]);
 }
 
-
-void oled_set_overhead_text(char *text, uint8_t len) {
+void oled_set_overhead_text(char *text, uint8_t loop_len) {
     oled_overhead_type = OLED_OVERHEAD_TXT;
-    oled_overhead_text = text;
+    if (strlen(text) > NAME_MAX_LEN)
+    strcpy(oled_overhead_text, text);
     draw_overhead();
     GrFlush(&g_sContext);
 //    oled_anim_disp_frame(anim_data->images[anim_index]);
