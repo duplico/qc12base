@@ -78,7 +78,7 @@ qc12conf my_conf = {0};
 const qc12conf backup_conf;
 
 const qc12conf default_conf = {
-        2,     // id
+        1,     // id
         0,    // mood
         0,     // title
         0,     // flag
@@ -96,7 +96,7 @@ uint8_t badges_seen[BADGES_IN_SYSTEM] = {0};
 #pragma PERSISTENT(fav_badges_ids)
 uint8_t fav_badges_ids[FAVORITE_COUNT] = {0};
 #pragma PERSISTENT(fav_badges_handles)
-char fav_badges_handles[FAVORITE_COUNT][NAME_MAX_LEN] = {0};
+char fav_badges_handles[FAVORITE_COUNT][NAME_MAX_LEN+1] = {0};
 
 // Gaydar:
 uint8_t window_position = 0; // Currently only used for restarting radio & skipping windows.
@@ -226,7 +226,7 @@ void check_conf() {
         memcpy(&my_conf, &default_conf, sizeof(qc12conf));
         memset(badges_seen, 0, sizeof(uint16_t) * BADGES_IN_SYSTEM);
         memset(fav_badges_ids, 0xff, sizeof(uint8_t) * FAVORITE_COUNT);
-        memset(fav_badges_handles, 0, sizeof(char) * FAVORITE_COUNT * NAME_MAX_LEN);
+        memset(fav_badges_handles, 0, sizeof(char) * FAVORITE_COUNT * (NAME_MAX_LEN+1));
         s_default_conf_loaded = 1;
         out_payload.handle[0] = 0;
         set_badge_seen(my_conf.badge_id);
@@ -553,7 +553,7 @@ void handle_infrastructure_services() {
     // Got a probably valid message:
     if (f_rfm_rx_done && in_payload.from_addr != my_conf.badge_id) {
         f_rfm_rx_done = 0;
-        in_payload.handle[NAME_MAX_LEN-1] = 0; // Make sure it's definitely null-terminated.
+        in_payload.handle[NAME_MAX_LEN] = 0; // Make sure it's definitely null-terminated.
 
         // It's a standard beacon:
         // Increment the badge count if needed:
@@ -612,7 +612,7 @@ void handle_infrastructure_services() {
         poll_buttons();
         if (befriend_mode && !befriend_mode_loops_to_tick &&
                 rfm_state == RFM_IDLE) {
-            befriend_proto_step(0, befriend_mode-1, BADGES_IN_SYSTEM);
+            befriend_proto_step(0, 0, BADGES_IN_SYSTEM);
             befriend_mode_loops_to_tick = BEFRIEND_LOOPS_TO_RESEND;
         } else if (befriend_mode && befriend_mode_loops_to_tick) {
             befriend_mode_loops_to_tick--;
@@ -1017,7 +1017,7 @@ void handle_mode_idle() {
                     if (befriend_candidate_age) { // We have a valid candidate:
                         // This will be from a beacon, so we'll be the client:
                         befriend_mode = 2;
-                        befriend_proto_step(0, 1, BADGES_IN_SYSTEM);
+                        befriend_proto_step(0, 0, BADGES_IN_SYSTEM);
                     } else { // We haven't seen any beacons,
                         // so we'll be the server.
                         befriend_mode = 1;
