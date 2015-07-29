@@ -20,7 +20,7 @@ extern uint8_t oled_anim_state;
 tContext g_sContext;
 
 void init_oled();
-void oled_draw_pane(uint8_t);
+void oled_draw_pane_and_flush(uint8_t);
 void oled_anim_next_frame();
 void oled_anim_disp_frame(const tImage* image);
 void oled_play_animation(const qc12_anim_t*, uint8_t);

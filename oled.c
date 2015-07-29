@@ -19,6 +19,7 @@
 #include <grlib.h>
 #include <qc12_oled.h>
 #include <qc12.h>
+#include <string.h>
 
 uint8_t oled_anim_state = OLED_ANIM_DONE;
 uint8_t anim_index = 0;
@@ -31,6 +32,7 @@ const qc12_anim_t *anim_data;
 #define OLED_OVERHEAD_IMG 2
 
 uint8_t oled_overhead_type = OLED_OVERHEAD_OFF;
+uint8_t oled_overhead_loops = 0;
 tImage *oled_overhead_image;
 char oled_overhead_text[NAME_MAX_LEN+1] = "";
 
@@ -47,16 +49,23 @@ void init_oled() {
     GrFlush(&g_sContext);
 }
 
-void oled_draw_pane(uint8_t softkey_sel) {
+void oled_draw_pane_and_flush(uint8_t softkey_sel) {
+    static tRectangle erase_rect_top = {0, 0, 64, 2*NAME_FONT_HEIGHT+1};
+    static tRectangle erase_rect_btm = {0, SPRITE_Y + 64, 64, 127};
+
+    GrContextForegroundSet(&g_sContext, ClrBlack);
+    GrRectFill(&g_sContext, &erase_rect_btm);
+    GrRectFill(&g_sContext, &erase_rect_top);
+    GrContextForegroundSet(&g_sContext, ClrWhite);
+
     GrContextFontSet(&g_sContext, &NAME_FONT);
     GrStringDraw(&g_sContext, my_conf.handle, -1, 0, 0, 0);
     uint8_t title_width = GrStringWidthGet(&g_sContext, titles[my_conf.title_index], -1);
     uint8_t the_width = GrStringWidthGet(&g_sContext, "the", -1);
     GrStringDraw(&g_sContext, "the", -1, 63 - title_width - the_width - 3, NAME_FONT_HEIGHT, 0);
-    GrStringDraw(&g_sContext, titles[my_conf.title_index], -1, 63 - title_width, NAME_FONT_HEIGHT, 1);
+    GrStringDraw(&g_sContext, titles[my_conf.title_index], -1, 63 - title_width, NAME_FONT_HEIGHT, 0);
     GrLineDrawH(&g_sContext, 0, 64, 2*NAME_FONT_HEIGHT+1);
     GrContextFontSet(&g_sContext, &SOFTKEY_LABEL_FONT);
-    GrStringDrawCentered(&g_sContext, "                ", -1, 31, SPRITE_Y + 64 + SOFTKEY_FONT_HEIGHT/2, 1);
     GrStringDrawCentered(&g_sContext, sk_labels[softkey_sel], -1, 32,  SPRITE_Y + 64 + SOFTKEY_FONT_HEIGHT/2, 0);
     GrLineDrawH(&g_sContext, 0, 64, SPRITE_Y + 64);
     GrFlush(&g_sContext);
@@ -65,27 +74,31 @@ void oled_draw_pane(uint8_t softkey_sel) {
 void draw_overhead() {
     if (oled_overhead_type == OLED_OVERHEAD_TXT) {
         GrContextFontSet(&g_sContext, &SYS_FONT);
-        GrStringDrawCentered(&g_sContext, oled_overhead_text, -1, 32, SPRITE_Y+SYS_FONT_HEIGHT/2, 0);
+        GrStringDrawCentered(&g_sContext, oled_overhead_text, -1, 32, SPRITE_Y-SYS_FONT_HEIGHT/2, 0);
     } else if (oled_overhead_type == OLED_OVERHEAD_IMG) {
-        GrImageDraw(&g_sContext, oled_overhead_image, char_pos_x, SPRITE_Y);
+        GrImageDraw(&g_sContext, oled_overhead_image, char_pos_x, SPRITE_Y-20);
     }
 }
 
 void oled_set_overhead_image(tImage *image, uint8_t loop_len) {
+    oled_overhead_loops = loop_len;
     oled_overhead_type = OLED_OVERHEAD_IMG;
     oled_overhead_image = image;
-    draw_overhead();
-    GrFlush(&g_sContext);
-//    oled_anim_disp_frame(anim_data->images[anim_index]);
+    if (oled_anim_state == OLED_ANIM_DONE) {
+        s_oled_anim_finished = 1;
+    }
 }
 
 void oled_set_overhead_text(char *text, uint8_t loop_len) {
+    oled_overhead_loops = loop_len;
     oled_overhead_type = OLED_OVERHEAD_TXT;
-    if (strlen(text) > NAME_MAX_LEN)
+    if (strlen(text) > NAME_MAX_LEN) {
+        return; // PROBLEM
+    }
     strcpy(oled_overhead_text, text);
-    draw_overhead();
-    GrFlush(&g_sContext);
-//    oled_anim_disp_frame(anim_data->images[anim_index]);
+    if (oled_anim_state == OLED_ANIM_DONE) {
+        s_oled_anim_finished = 1;
+    }
 }
 
 void do_move(uint8_t move_signal) {
@@ -120,9 +133,8 @@ void do_move(uint8_t move_signal) {
 void oled_anim_disp_frame(const tImage* image) {
     GrClearDisplay(&g_sContext);
     GrImageDraw(&g_sContext, image, char_pos_x, SPRITE_Y - char_pos_y);
-    oled_draw_pane(idle_mode_softkey_sel);
     draw_overhead();
-    GrFlush(&g_sContext);
+    oled_draw_pane_and_flush(idle_mode_softkey_sel); // This flushes.
 }
 
 void oled_consider_walking_back() {
@@ -171,6 +183,17 @@ void oled_play_animation(const qc12_anim_t *anim, uint8_t loops) {
 }
 
 void oled_timestep() {
+    if (oled_overhead_loops && oled_overhead_type != OLED_OVERHEAD_OFF) {
+        if (oled_overhead_loops != 0xFF) {
+            oled_overhead_loops--;
+        }
+        if (!oled_overhead_loops) {
+            oled_overhead_type = OLED_OVERHEAD_OFF;
+            if (!oled_anim_state) {
+                s_oled_anim_finished = 1;
+            }
+        }
+    }
     if (oled_anim_state) {
         if (anim_frame_skip) {
             anim_frame_skip--;

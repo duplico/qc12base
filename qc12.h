@@ -50,13 +50,13 @@
 
 // Softkey label font:
 #define SOFTKEY_LABEL_FONT SYS_FONT
-#define SOFTKEY_FONT_HEIGHT 12 // not 12 because we're using sm. caps only.
+#define SOFTKEY_FONT_HEIGHT 12
 
 //////////////////////////
 // Derived definitions ///
 
 #define NAME_Y_OFFSET 10+SYS_FONT_HEIGHT*7 // Top of the name entry field.
-#define SPRITE_Y 128 - 64 - SOFTKEY_FONT_HEIGHT - 3 // Top of the char sprite.
+#define SPRITE_Y 64 - SOFTKEY_FONT_HEIGHT - 3 // Top of the char sprite.
 #define RFM_TX_POWER (((uint8_t)(18 + RADIO_TX_POWER_DB)) & 0b00011111)
 
 #define TLC_IS_A_GO (tlc_anim_mode == TLC_ANIM_MODE_IDLE || tlc_is_ambient)
