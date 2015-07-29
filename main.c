@@ -419,7 +419,7 @@ inline void set_befriend_failed() {
 
 // Received_flag is ignored if from_radio is 0.
 void befriend_proto_step(uint8_t from_radio, uint8_t received_flag, uint8_t from_id) {
-    if (!befriend_mode || rfm_reg_state != RFM_REG_IDLE) {
+    if (!befriend_mode || rfm_state != RFM_IDLE) {
         return;
     }
 
@@ -608,7 +608,7 @@ void handle_infrastructure_services() {
     if (f_time_loop) {
         poll_buttons();
         if (befriend_mode && !befriend_mode_loops_to_tick &&
-                rfm_reg_state == RFM_REG_IDLE) {
+                rfm_state == RFM_IDLE) {
             befriend_proto_step(0, befriend_mode-1, BADGES_IN_SYSTEM);
             befriend_mode_loops_to_tick = BEFRIEND_LOOPS_TO_RESEND;
         } else if (befriend_mode && befriend_mode_loops_to_tick) {
@@ -680,13 +680,13 @@ void handle_infrastructure_services() {
         }
     }
 
-    if (s_flag_send && rfm_reg_state == RFM_REG_IDLE) {
+    if (s_flag_send && rfm_state == RFM_IDLE) {
         s_flag_send--;
         flag_in_cooldown = FLAG_IN_COOLDOWN_SECONDS;
         radio_send_flag(flag_from, flag_id | BIT7);
     }
 
-    if (!disable_beacon_service && s_need_rf_beacon && rfm_reg_state == RFM_REG_IDLE) {
+    if (!disable_beacon_service && s_need_rf_beacon && rfm_state == RFM_IDLE) {
         // If we need to beacon, and we're not talking to the RFM module.
         // Note: Last year we also had a check for
         //  "!(read_single_register_sync(0x27) & (BIT1+BIT0))".

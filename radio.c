@@ -27,16 +27,7 @@
 
 uint8_t returnValue = 0;
 
-// The register-reading machine:
-volatile uint8_t rfm_reg_tx_index = 0;
-volatile uint8_t rfm_reg_rx_index = 0;
-volatile uint8_t rfm_begin = 0;
-volatile uint8_t rfm_rw_reading = 0; // 0- read, 1- write
-volatile uint8_t rfm_rw_single = 0; // 0- single, 1- fifo
-volatile uint8_t rfm_single_msg = 0;
-
-volatile uint8_t rfm_reg_ifgs = 0;
-volatile uint8_t rfm_reg_state = RFM_REG_IDLE;
+volatile uint8_t rfm_state = RFM_IDLE;
 
 qc12payload in_payload;
 qc12payload out_payload = { 0xff, 1, 1, 0 };
@@ -67,7 +58,7 @@ void init_radio() {
     volatile uint8_t rfm_single_msg = 0;
 
     volatile uint8_t rfm_reg_ifgs = 0;
-    volatile uint8_t rfm_reg_state = RFM_REG_IDLE;
+    volatile uint8_t rfm_reg_state = RFM_IDLE;
 
     // Radio reboot procedure:
     //  hold RESET high for > 100 us
@@ -88,7 +79,7 @@ void init_radio() {
     EUSCI_B_SPI_clearInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_TRANSMIT_INTERRUPT);
     EUSCI_B_SPI_enableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_TRANSMIT_INTERRUPT);
 
-    rfm_reg_state = RFM_REG_IDLE;
+    rfm_reg_state = RFM_IDLE;
     mode_sync(RFM_MODE_SB);
 
     // One weird thing about this radio module. The datasheet lists
@@ -161,7 +152,7 @@ void init_radio() {
 
 uint8_t radio_barrier_with_timeout() {
     uint32_t spin = 800000;
-    while (rfm_reg_state != RFM_REG_IDLE) {
+    while (rfm_state != RFM_IDLE) {
         spin--;
         if (!spin) {
             f_radio_fault = 1;
@@ -209,6 +200,7 @@ void write_single_register(uint8_t addr, uint8_t data) {
 }
 
 uint8_t read_single_register_sync(uint8_t addr) {
+    uint8_t rfm_single_msg = 0;
     if (radio_barrier_with_timeout()) return 0; // Block until ready to write.
     EUSCI_B_SPI_disableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_RECEIVE_INTERRUPT);
     EUSCI_B_SPI_disableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_TRANSMIT_INTERRUPT);
@@ -249,6 +241,7 @@ void radio_send_sync() {
     // Wait for, e.g., completion of receiving something.
     if (radio_barrier_with_timeout()) return;
     mode_sync(RFM_MODE_SB);
+    rfm_state = RFM_BUSY;
     // Intermediate mode is TX
     // Enter condition is FIFO level
     // Exit condition is PacketSent.
@@ -273,13 +266,12 @@ void radio_send_sync() {
     EUSCI_B_SPI_enableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_RECEIVE_INTERRUPT);
     EUSCI_B_SPI_clearInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_TRANSMIT_INTERRUPT);
     EUSCI_B_SPI_enableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_TRANSMIT_INTERRUPT);
-
-    if (radio_barrier_with_timeout()) return;
 }
 
 void radio_recv() {
     // Grab the data out of the FIFO. Side effects city here!
     if (radio_barrier_with_timeout()) return;
+    rfm_state = RFM_BUSY;
 
     EUSCI_B_SPI_disableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_RECEIVE_INTERRUPT);
     EUSCI_B_SPI_disableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_TRANSMIT_INTERRUPT);
@@ -298,8 +290,7 @@ void radio_recv() {
     EUSCI_B_SPI_enableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_RECEIVE_INTERRUPT);
     EUSCI_B_SPI_clearInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_TRANSMIT_INTERRUPT);
     EUSCI_B_SPI_enableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_TRANSMIT_INTERRUPT);
-
-    if (radio_barrier_with_timeout()) return;
+    rfm_state = RFM_IDLE;
 }
 
 /*
@@ -362,6 +353,7 @@ __interrupt void radio_interrupt_0(void) {
             // point. So raise our interrupt flag for tx_done...
             f_rfm_tx_done = 1;
             expected_dio_interrupt = 0;
+            rfm_state = RFM_IDLE;
             // NB: We will still need to return to our normal receive automode:
             // RX->SB->RX on receive.
             // OUTSIDE AN ISR we need: write_single_register(0x3b, RFM_AUTOMODE_RX);
