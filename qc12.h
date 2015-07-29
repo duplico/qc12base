@@ -137,6 +137,7 @@ extern volatile uint8_t f_time_loop;
 extern volatile uint8_t f_rfm_rx_done;
 extern volatile uint8_t f_rfm_tx_done;
 extern volatile uint8_t f_tlc_anim_done;
+extern volatile uint8_t f_radio_fault;
 
 extern uint8_t s_oled_anim_finished;
 extern uint8_t s_flag_wave;

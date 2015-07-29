@@ -59,6 +59,16 @@ void init_radio() {
 
     // SPI for radio is done in Grace.
 
+    volatile uint8_t rfm_reg_tx_index = 0;
+    volatile uint8_t rfm_reg_rx_index = 0;
+    volatile uint8_t rfm_begin = 0;
+    volatile uint8_t rfm_rw_reading = 0; // 0- read, 1- write
+    volatile uint8_t rfm_rw_single = 0; // 0- single, 1- fifo
+    volatile uint8_t rfm_single_msg = 0;
+
+    volatile uint8_t rfm_reg_ifgs = 0;
+    volatile uint8_t rfm_reg_state = RFM_REG_IDLE;
+
     // Radio reboot procedure:
     //  hold RESET high for > 100 us
     //  pull RESET low, wait 5 ms
@@ -68,6 +78,9 @@ void init_radio() {
     delay(10);
     GPIO_setOutputLowOnPin(RESET_PORT, RESET_PIN);
     delay(10);
+
+    EUSCI_B_SPI_disableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_RECEIVE_INTERRUPT);
+    EUSCI_B_SPI_disableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_TRANSMIT_INTERRUPT);
 
     //Enable Receive interrupt:
     EUSCI_B_SPI_clearInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_RECEIVE_INTERRUPT);
@@ -147,11 +160,11 @@ void init_radio() {
 }
 
 uint8_t radio_barrier_with_timeout() {
-    uint16_t spin = 65535;
+    uint32_t spin = 800000;
     while (rfm_reg_state != RFM_REG_IDLE) {
         spin--;
         if (!spin) {
-            init_radio();
+            f_radio_fault = 1;
             return 1;
         }
     }
