@@ -78,7 +78,7 @@ qc12conf my_conf = {0};
 const qc12conf backup_conf;
 
 const qc12conf default_conf = {
-        3,     // id
+        2,     // id
         0,    // mood
         0,     // title
         0,     // flag
