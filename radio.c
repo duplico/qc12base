@@ -73,12 +73,6 @@ void init_radio() {
     EUSCI_B_SPI_disableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_RECEIVE_INTERRUPT);
     EUSCI_B_SPI_disableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_TRANSMIT_INTERRUPT);
 
-    //Enable Receive interrupt:
-    EUSCI_B_SPI_clearInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_RECEIVE_INTERRUPT);
-    EUSCI_B_SPI_enableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_RECEIVE_INTERRUPT);
-    EUSCI_B_SPI_clearInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_TRANSMIT_INTERRUPT);
-    EUSCI_B_SPI_enableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_TRANSMIT_INTERRUPT);
-
     rfm_reg_state = RFM_IDLE;
     mode_sync(RFM_MODE_SB);
 
@@ -185,25 +179,16 @@ void write_single_register(uint8_t addr, uint8_t data) {
      * This blocks.
      */
     if (radio_barrier_with_timeout()) return; // Block until ready to write.
-    EUSCI_B_SPI_disableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_RECEIVE_INTERRUPT);
-    EUSCI_B_SPI_disableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_TRANSMIT_INTERRUPT);
 
     RFM_NSS_PORT_OUT &= ~RFM_NSS_PIN;
     usci_b0_send_sync(addr | BIT7);
     usci_b0_send_sync(data);
     RFM_NSS_PORT_OUT |= RFM_NSS_PIN;
-
-    EUSCI_B_SPI_clearInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_RECEIVE_INTERRUPT);
-    EUSCI_B_SPI_enableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_RECEIVE_INTERRUPT);
-    EUSCI_B_SPI_clearInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_TRANSMIT_INTERRUPT);
-    EUSCI_B_SPI_enableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_TRANSMIT_INTERRUPT);
 }
 
 uint8_t read_single_register_sync(uint8_t addr) {
     uint8_t rfm_single_msg = 0;
     if (radio_barrier_with_timeout()) return 0; // Block until ready to write.
-    EUSCI_B_SPI_disableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_RECEIVE_INTERRUPT);
-    EUSCI_B_SPI_disableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_TRANSMIT_INTERRUPT);
 
     addr = 0b01111111 & addr; // MSB=0 => write command
     // Hold NSS low to begin frame.
@@ -213,10 +198,6 @@ uint8_t read_single_register_sync(uint8_t addr) {
     // Hold NSS high to end frame.
     RFM_NSS_PORT_OUT |= RFM_NSS_PIN;
 
-    EUSCI_B_SPI_clearInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_RECEIVE_INTERRUPT);
-    EUSCI_B_SPI_enableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_RECEIVE_INTERRUPT);
-    EUSCI_B_SPI_clearInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_TRANSMIT_INTERRUPT);
-    EUSCI_B_SPI_enableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_TRANSMIT_INTERRUPT);
     return rfm_single_msg;
 }
 
@@ -226,6 +207,7 @@ void mode_sync(uint8_t mode) {
     uint16_t spin = 65535;
     do {
         spin--;
+        write_single_register(RFM_OPMODE, mode);
         if (!spin) {
             init_radio();
             return; // This is potentially going to put us in a very weird state.
@@ -251,9 +233,6 @@ void radio_send_sync() {
     expected_dio_interrupt = 1; // will be xmit finished.
     rfm_state = RFM_BUSY;
 
-    EUSCI_B_SPI_disableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_RECEIVE_INTERRUPT);
-    EUSCI_B_SPI_disableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_TRANSMIT_INTERRUPT);
-
     RFM_NSS_PORT_OUT &= ~RFM_NSS_PIN;
     usci_b0_send_sync(RFM_FIFO | BIT7); // FIFO write command
 
@@ -262,10 +241,6 @@ void radio_send_sync() {
     }
     RFM_NSS_PORT_OUT |= RFM_NSS_PIN;
 
-    EUSCI_B_SPI_clearInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_RECEIVE_INTERRUPT);
-    EUSCI_B_SPI_enableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_RECEIVE_INTERRUPT);
-    EUSCI_B_SPI_clearInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_TRANSMIT_INTERRUPT);
-    EUSCI_B_SPI_enableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_TRANSMIT_INTERRUPT);
 }
 
 void radio_recv() {
@@ -273,8 +248,6 @@ void radio_recv() {
     if (radio_barrier_with_timeout()) return;
     rfm_state = RFM_BUSY;
 
-    EUSCI_B_SPI_disableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_RECEIVE_INTERRUPT);
-    EUSCI_B_SPI_disableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_TRANSMIT_INTERRUPT);
     // Hold NSS low to begin frame.
     RFM_NSS_PORT_OUT &= ~RFM_NSS_PIN;
     usci_b0_send_sync(RFM_FIFO); // FIFO read command
@@ -286,10 +259,6 @@ void radio_recv() {
     // Ideally FifoNotEmpty would be asserted here... TODO.
     memcpy(&in_payload, in_bytes, sizeof(qc12payload));
 
-    EUSCI_B_SPI_clearInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_RECEIVE_INTERRUPT);
-    EUSCI_B_SPI_enableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_RECEIVE_INTERRUPT);
-    EUSCI_B_SPI_clearInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_TRANSMIT_INTERRUPT);
-    EUSCI_B_SPI_enableInterrupt(EUSCI_B0_BASE, EUSCI_B_SPI_TRANSMIT_INTERRUPT);
     rfm_state = RFM_IDLE;
 }
 
