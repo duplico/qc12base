@@ -152,8 +152,6 @@ and could also include Set_Address(), Write_Data(), etc. */
 //
 // \return Returns the display-driver specific color
 
-// TODO:
-
 #define DPYCOLORTRANSLATE(c) (c ? 1 : 0)
 
 //*****************************************************************************

@@ -94,7 +94,7 @@
   displays. This allows you to update pixels while reading the neighboring pixels
   from the buffer instead of a read from the LCD controller. A buffer is not required
   as a read followed by a write can be used instead.*/
-uint8_t oled_memory[LCD_X_SIZE*PAGES]; // TODO???
+uint8_t oled_memory[LCD_X_SIZE*PAGES];
 //                        (LCD_X_SIZE * LCD_Y_SIZE * BPP + 7) / 8];
 
 //*****************************************************************************
