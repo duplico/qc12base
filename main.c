@@ -41,6 +41,7 @@ uint8_t s_new_uber_friend = 0;
 uint8_t s_new_friend = 0;
 uint8_t s_oled_anim_finished = 0;
 uint8_t s_befriend_failed = 0;
+uint8_t s_befriend_success = 0;
 
 uint8_t disable_beacon_service = 0;
 uint8_t idle_mode_softkey_sel = 0;
@@ -218,7 +219,6 @@ void check_conf() {
     // Load default config:
     if (my_conf.crc16 != CRC_getResult(CRC_BASE)) { // TODO!
         memcpy(&my_conf, &default_conf, sizeof(qc12conf));
-        my_conf_write_crc();
         memset(badges_seen, 0, sizeof(uint16_t) * BADGES_IN_SYSTEM);
         memset(fav_badges_ids, 0xff, sizeof(uint8_t) * FAVORITE_COUNT);
         memset(fav_badges_handles, 0, sizeof(char) * FAVORITE_COUNT * NAME_MAX_LEN);
@@ -226,6 +226,7 @@ void check_conf() {
         out_payload.handle[0] = 0;
         set_badge_seen(my_conf.badge_id);
         set_badge_friend(my_conf.badge_id);
+        my_conf_write_crc();
         // Suppress any flags set from these so we don't do the animation:
         s_new_uber_seen = s_new_badge_seen = s_new_uber_friend = s_new_friend = 0;
     }
@@ -477,15 +478,6 @@ void befriend_proto_step(uint8_t from_radio, uint8_t received_flag, uint8_t from
             set_befriend_failed();
             return;
         }
-
-        if (befriend_mode == 6 || (befriend_mode == 5 && !befriend_mode_ticks)) {
-            tlc_start_anim(&flag_green, 0, 1, 1, 10);
-            befriend_mode = 0;
-            set_badge_friend(befriend_candidate);
-        } else if (!befriend_mode_ticks) {
-            set_befriend_failed();
-            return;
-        }
         // End of radio handling section
 
     } else {
@@ -521,6 +513,7 @@ void befriend_proto_step(uint8_t from_radio, uint8_t received_flag, uint8_t from
                 befriend_mode_ticks--;
             } else {
                 befriend_mode = 0;
+                s_befriend_success = 1;
                 set_badge_friend(befriend_candidate);
             }
         }
@@ -713,6 +706,16 @@ void handle_led_actions() {
         s_befriend_failed = 0;
         tlc_start_anim(&flag_red, 0, 3, 1, 2);
     }
+    if (s_befriend_success) {
+        s_befriend_success = 0;
+        if (s_new_uber_friend || s_new_friend) {
+            tlc_start_anim(&flag_rainbow, 0, 3, 1, 2);
+            s_new_uber_friend = 0;
+            s_new_friend = 0;
+        } else {
+            tlc_start_anim(&flag_green, 0, 3, 1, 2);
+        }
+    }
 
     if (f_tlc_anim_done && s_flag_wave) {
         tlc_start_anim(flags[my_conf.flag_id], 0, 3, 0, 3);
@@ -726,6 +729,7 @@ void handle_led_actions() {
         s_new_badge_seen &= ~SIGNAL_BIT_TLC;
         s_new_uber_seen &= ~SIGNAL_BIT_TLC;
     }
+
     if (f_tlc_anim_done) {
         f_tlc_anim_done = 0;
         tlc_display_ambient();
