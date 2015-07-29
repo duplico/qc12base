@@ -16,7 +16,7 @@
 
 #include "qc12.h"
 #include "leds.h"
-#include <string.h>
+#include <radio.h>
 
 #define TLC_THISISGS    0x00
 #define TLC_THISISFUN   0x01
@@ -38,9 +38,6 @@ uint8_t tlc_is_ambient = 0;
 
 uint8_t tlc_loopback_data_out = 0x00;
 volatile uint8_t tlc_loopback_data_in = 0x00;
-
-// Utility light:
-uint16_t tlc_tx_light = 0xffff;
 
 rgbcolor_t *tlc_curr_anim;
 uint8_t tlc_curr_anim_len;
@@ -676,11 +673,10 @@ __interrupt void EUSCI_A0_ISR(void)
     case 4: // Vector 4 - TXIFG : I just sent a byte.
         if (tlc_send_type == TLC_SEND_TYPE_GS) {
             if (tlc_tx_index == 0) { // txl, msb
-                EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, (uint8_t) (tlc_tx_light >> 8));
+                EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, (uint8_t) (rfm_state ? 0xFF : 0x00));
             } else if (tlc_tx_index == 1) { // txl, lsb
-                EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, (uint8_t) (tlc_tx_light & 0x00ff));
+                EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, (uint8_t) (rfm_state ? 0xFF : 0x00));
                 rgb_element_index = 0;
-//                tlc_color_index = tlc_light_offset % tlc_curr_colors_len;
                 tlc_color_index = 0;
             } else if (tlc_tx_index == 32) { // done
                 GPIO_pulse(TLC_LATPORT, TLC_LATPIN); // LATCH.
