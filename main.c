@@ -71,11 +71,14 @@ void poll_buttons();
 #pragma DATA_SECTION (my_conf, ".infoA");
 #pragma DATA_SECTION (default_conf, ".infoB");
 
-qc12conf my_conf;
+// This is PERSISTENT:
+//  That means that it will be CLOBBERED by the DEBUG TOOLCHAIN ONLY.
+//  But it WON'T be on power cycle.
+qc12conf my_conf = {0};
 const qc12conf backup_conf;
 
 const qc12conf default_conf = {
-        2,     // id
+        3,     // id
         0,    // mood
         0,     // title
         0,     // flag
@@ -86,13 +89,14 @@ const qc12conf default_conf = {
 };
 
 
-#pragma DATA_SECTION (badges_seen, ".qcpersist");
-uint16_t badge_seen_ticks[BADGES_IN_SYSTEM];
-uint8_t badges_seen[BADGES_IN_SYSTEM];
-#pragma DATA_SECTION (fav_badges_ids, ".qcpersist");
-uint8_t fav_badges_ids[FAVORITE_COUNT];
-#pragma DATA_SECTION (fav_badges_handles, ".qcpersist");
-char fav_badges_handles[FAVORITE_COUNT][NAME_MAX_LEN];
+#pragma PERSISTENT(badge_seen_ticks)
+uint16_t badge_seen_ticks[BADGES_IN_SYSTEM] = {0};
+#pragma PERSISTENT(badges_seen)
+uint8_t badges_seen[BADGES_IN_SYSTEM] = {0};
+#pragma PERSISTENT(fav_badges_ids)
+uint8_t fav_badges_ids[FAVORITE_COUNT] = {0};
+#pragma PERSISTENT(fav_badges_handles)
+char fav_badges_handles[FAVORITE_COUNT][NAME_MAX_LEN] = {0};
 
 // Gaydar:
 uint8_t window_position = 0; // Currently only used for restarting radio & skipping windows.
