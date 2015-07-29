@@ -54,6 +54,7 @@ uint8_t befriend_mode_loops_to_tick = 0;
 uint8_t befriend_mode_ticks = 0;
 uint8_t befriend_mode_secs = 0;
 uint8_t befriend_candidate = 0;
+char befriend_candidate_handle[NAME_MAX_LEN+1] = {0};
 uint8_t befriend_candidate_age = 0;
 
 #define BF_S_BEACON 1
@@ -389,9 +390,6 @@ void radio_send_beacon() {
 }
 
 void radio_send_befriend(uint8_t mode) {
-    char buf[11] = "";
-    sprintf(buf, "m%d i%d", befriend_mode, befriend_candidate);
-    oled_set_overhead_text(buf, 0);
     out_payload.beacon = 0;
     out_payload.flag_from = BADGES_IN_SYSTEM;
     out_payload.flag_id = 0;
@@ -416,6 +414,7 @@ void radio_send_flag(uint8_t from, uint8_t flag) {
 }
 
 inline void set_befriend_failed() {
+    oled_set_overhead_text("Okbai :(", 20);
     s_befriend_failed = 1;
     befriend_mode = 0;
 }
@@ -475,6 +474,7 @@ void befriend_proto_step(uint8_t from_radio, uint8_t received_flag, uint8_t from
 
             // So if we're in one of those states, don't send anything.
             if (befriend_mode != BF_S_WAIT && befriend_mode != BF_C_WAIT) {
+                oled_set_overhead_text("Hello!", 20);
                 radio_send_befriend(befriend_mode);
             }
         } else {
@@ -505,6 +505,7 @@ void befriend_proto_step(uint8_t from_radio, uint8_t received_flag, uint8_t from
                 // still some retries left.
                 befriend_mode_ticks--;
                 // Do re-send our message.
+                oled_set_overhead_text("Hello?", 20);
                 radio_send_befriend(befriend_mode);
             } else {
                 set_befriend_failed();
@@ -518,6 +519,7 @@ void befriend_proto_step(uint8_t from_radio, uint8_t received_flag, uint8_t from
             } else {
                 befriend_mode = 0;
                 s_befriend_success = 1;
+                oled_set_overhead_text(in_payload.from_addr, 40);
                 set_badge_friend(befriend_candidate);
             }
         }
@@ -1037,7 +1039,7 @@ void handle_mode_idle() {
         if (s_new_pane) {
             // Title or softkey or something changed:
             s_new_pane = 0;
-            oled_draw_pane(idle_mode_softkey_sel);
+            oled_draw_pane_and_flush(idle_mode_softkey_sel);
         }
 
         if (op_mode != OP_MODE_IDLE) {
