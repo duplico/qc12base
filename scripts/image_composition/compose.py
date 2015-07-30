@@ -314,6 +314,8 @@ if (__name__ == '__main__'):
                              "legs (must have a `legs' subdirectory)")
     args = parser.parse_args()
     
+    use_file = args.config
+    
     if args.fixini:
         filestring = ""
         with open(args.config) as configfile:
@@ -335,9 +337,9 @@ if (__name__ == '__main__'):
             filestring = filestring.replace("down:", "down%d:" % down_num, 1)
             left_num = right_num = up_num = down_num = down_num+1
             
-        with open(args.config, 'w') as configfile:
+        with open(args.config + '.tmp', 'w') as configfile:
             configfile.write(filestring)
-        exit(0)
+        use_file = args.config + '.tmp'
     
     if args.id:
         assert args.id >= 15 # ubers are done manually.
@@ -346,3 +348,6 @@ if (__name__ == '__main__'):
         head, body, legs = l[(args.id-15) % len(l)]
     
     main(args.config, args.head or head, args.body or body, args.legs or legs, args.show, thumb_id=args.id)
+    
+    if args.fixini:
+        os.remove(use_file)
