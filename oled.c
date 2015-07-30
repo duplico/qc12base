@@ -76,7 +76,7 @@ void draw_overhead() {
         GrContextFontSet(&g_sContext, &SYS_FONT);
         GrStringDrawCentered(&g_sContext, oled_overhead_text, -1, 32, SPRITE_Y-SYS_FONT_HEIGHT/2, 0);
     } else if (oled_overhead_type == OLED_OVERHEAD_IMG) {
-        GrImageDraw(&g_sContext, oled_overhead_image, char_pos_x + (64 - oled_overhead_image->XSize / 2), SPRITE_Y-20);
+        GrImageDraw(&g_sContext, oled_overhead_image, char_pos_x + (32 - oled_overhead_image->XSize/2), SPRITE_Y-20);
     }
 }
 
