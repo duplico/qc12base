@@ -297,9 +297,9 @@ uint8_t ring_fade_index = 0;
 uint8_t ring_fade_steps = 0;
 
 const rgbcolor_t color_off = {0, 0, 0};
-const rgbcolor_t mood_green = { 0x0000, 0x2000, 0x0000};
+const rgbcolor_t mood_green = { 0x0000, 0x1500, 0x0000};
 const rgbcolor_t mood_yellow   = { 0x1000, 0x1000, 0x0000}; // To account for roundoff error.
-const rgbcolor_t mood_red   = { 0x2000, 0x0000, 0x0000};
+const rgbcolor_t mood_red   = { 0x1500, 0x0000, 0x0000};
 const rgbdelta_t mood_step = {
         (-0x2000) / 100,
         (0x2000) / 100,
@@ -555,7 +555,7 @@ void tlc_display_ambient() {
     if (tlc_anim_mode != TLC_ANIM_MODE_IDLE)
         return;
 
-    uint8_t speed = 8;
+    uint8_t speed = 35;
     if (neighbor_count > 7) {
         speed = 2;
     } else {
