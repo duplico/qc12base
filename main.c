@@ -75,8 +75,7 @@ void poll_buttons();
 // This is PERSISTENT:
 //  That means that it will be CLOBBERED by the DEBUG TOOLCHAIN ONLY.
 //  But it WON'T be on power cycle.
-qc12conf my_conf = {0};
-const qc12conf backup_conf;
+qc12conf my_conf;
 
 const qc12conf default_conf = {
         1,     // id
@@ -299,6 +298,7 @@ void init_payload() {
     out_payload.beacon = 0;
     out_payload.flag_from = BADGES_IN_SYSTEM;
     out_payload.flag_id = 0;
+    out_payload.play_id = 0;
     out_payload.friendship = 0;
     out_payload.from_addr = my_conf.badge_id;
     out_payload.to_addr = RFM_BROADCAST;
@@ -519,7 +519,7 @@ void befriend_proto_step(uint8_t from_radio, uint8_t received_flag, uint8_t from
             } else {
                 befriend_mode = 0;
                 s_befriend_success = 1;
-                oled_set_overhead_text(in_payload.from_addr, 40);
+                oled_set_overhead_text(in_payload.handle, 40);
                 set_badge_friend(befriend_candidate);
             }
         }

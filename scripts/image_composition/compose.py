@@ -214,17 +214,17 @@ def main(inifile, head_dir, body_dir, legs_dir, show, thumb_id=False):
                 assert not anim['images'] # Persistent MUST BE FIRST.
                 anim['persistent'] = True
             elif frame[0].startswith("up"): # 00xxxxxx - up
-                assert int(frame[1]) < 50
+                assert int(frame[1]) < 65
                 move = frame[1]
             elif frame[0].startswith("down"): # 01xxxxxx - down
-                assert int(frame[1]) < 50
+                assert int(frame[1]) < 65
                 move = 0x40 + int(frame[1])
             elif frame[0].startswith("left"): # 10xxxxxx - left
                 move = 0x80 + int(frame[1])
-                assert int(frame[1]) < 50
+                assert int(frame[1]) < 65
             elif frame[0].startswith("right"): # 11xxxxxx - right
                 move = 0xC0 + int(frame[1])
-                assert int(frame[1]) < 50
+                assert int(frame[1]) < 65
             elif frame[0] == "speed":
                 anim['speed'] = int(frame[1])
         if not anim['persistent'] and index > longest_anim_buffer:
@@ -252,26 +252,51 @@ def main(inifile, head_dir, body_dir, legs_dir, show, thumb_id=False):
     
     """
     typedef struct {
-        uint8_t persistent;
         uint8_t looped;
         uint8_t loop_start;
         uint8_t loop_end;
-        tImage* images[8];
+        uint8_t len;
+        uint8_t speed;
+        const tImage** images;
+        const uint8_t* movement;
     } qc12_anim_t;
     """
     
+    print "uint8_t no_moves[%d] = {%s};" % (longest_anim_buffer, '0')
+    print
+    
     for anim in animations:
+        no_moves = all(i == 0 for i in anim['moves'])
         anim['moves'] = map(str, anim['moves'])
         bank_buffer = "persistent_sprite_bank" if anim['persistent'] else "flash_sprite_bank"
         anim['image_pointers'] = map(lambda a: "&%s[%d]" % (bank_buffer, a), anim['images'])
+        
+        print "const tImage *%s_images[%d] = {\n\t%s\n};" % (
+            anim['name'],
+            len(anim['images']),
+            ",\n\t ".join(anim['image_pointers'])
+        )
+        print ""
+        
+        if not no_moves:
+            print "const uint8_t %s_moves[%d] = {\n\t%s\n};" % (
+                anim['name'],
+                len(anim['images']),
+                ",\n\t ".join(anim['moves'])
+            )
+            print ""
+        
         print "const qc12_anim_t %s = {" % anim['name']
         print "\t%d, // Looped?" % (int(anim['looped']) if 'looped' in anim else 0)
         print "\t%d, // Loop start index" % (anim['loop_start_index'] if 'loop_start_index' in anim else 0)
         print "\t%d, // Loop end index" % (anim['loop_end_index'] if 'loop_end_index' in anim else len(anim['image_pointers']))
         print "\t%d, // Length" % len(anim['images'])
         print "\t%d, // Speed" % anim['speed']
-        print "\t{%s}, // Pointers to frames" % ",\n\t ".join(anim['image_pointers'])
-        print "\t{%s} // Movements" % ",\n\t ".join(anim['moves'])
+        print "\t%s_images, // Images" % anim['name']
+        if no_moves:
+            print "\tno_moves, // Moves"
+        else:
+            print "\t%s_moves, // Moves" % anim['name']
         print "};"
         print
         
@@ -327,14 +352,14 @@ if (__name__ == '__main__'):
         down_num = 0
         # TODO: should not match animation names.
         # TODO: this should search for the highest one.
-        while filestring.find("left:") != -1 or \
-              filestring.find("right:") != -1 or \
-              filestring.find("up:") != -1 or \
-              filestring.find("down:") != -1:
-            filestring = filestring.replace("left:", "left%d:" % left_num, 1)
-            filestring = filestring.replace("right:", "right%d:" % right_num, 1)
-            filestring = filestring.replace("up:", "up%d:" % up_num, 1)
-            filestring = filestring.replace("down:", "down%d:" % down_num, 1)
+        while filestring.find("left: ") != -1 or \
+              filestring.find("right: ") != -1 or \
+              filestring.find("up: ") != -1 or \
+              filestring.find("down: ") != -1:
+            filestring = filestring.replace("left: ", "left%d: " % left_num, 1)
+            filestring = filestring.replace("right: ", "right%d: " % right_num, 1)
+            filestring = filestring.replace("up: ", "up%d: " % up_num, 1)
+            filestring = filestring.replace("down: ", "down%d: " % down_num, 1)
             left_num = right_num = up_num = down_num = down_num+1
             
         with open(args.config + '.tmp', 'w') as configfile:
@@ -347,7 +372,7 @@ if (__name__ == '__main__'):
         l = list(itertools.product(c, repeat=3))
         head, body, legs = l[(args.id-15) % len(l)]
     
-    main(args.config, args.head or head, args.body or body, args.legs or legs, args.show, thumb_id=args.id)
+    main(use_file, args.head or head, args.body or body, args.legs or legs, args.show, thumb_id=args.id)
     
     if args.fixini:
         os.remove(use_file)
