@@ -76,7 +76,7 @@ void draw_overhead() {
         GrContextFontSet(&g_sContext, &SYS_FONT);
         GrStringDrawCentered(&g_sContext, oled_overhead_text, -1, 32, SPRITE_Y-SYS_FONT_HEIGHT/2, 0);
     } else if (oled_overhead_type == OLED_OVERHEAD_IMG) {
-        GrImageDraw(&g_sContext, oled_overhead_image, char_pos_x, SPRITE_Y-20);
+        GrImageDraw(&g_sContext, oled_overhead_image, char_pos_x + (64 - oled_overhead_image->XSize / 2), SPRITE_Y-20);
     }
 }
 
@@ -96,6 +96,14 @@ void oled_set_overhead_text(char *text, uint8_t loop_len) {
         return; // PROBLEM
     }
     strcpy(oled_overhead_text, text);
+    if (oled_anim_state == OLED_ANIM_DONE) {
+        s_oled_anim_finished = 1;
+    }
+}
+
+void oled_set_overhead_off() {
+    oled_overhead_loops = 0;
+    oled_overhead_type = OLED_OVERHEAD_OFF;
     if (oled_anim_state == OLED_ANIM_DONE) {
         s_oled_anim_finished = 1;
     }
