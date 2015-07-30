@@ -16,7 +16,12 @@ typedef struct {
     uint8_t loop_end;
     uint8_t len;
     uint8_t speed;
-    const tImage** images;
+    const uint8_t* heads_indices;
+    const uint8_t* bodies_indices;
+    const uint8_t* legs_indices;
+    const int8_t* head_tops;
+    const int8_t* body_tops;
+    const int8_t* legs_tops;
     const uint8_t* movement;
 } qc12_anim_t;
 
@@ -26,8 +31,9 @@ extern const tImage flag1;
 extern const uint8_t persistent_sprite_bank_pixels[][];
 extern const uint8_t flash_sprite_bank_pixels[][];
 
-extern const tImage persistent_sprite_bank[];
-extern const tImage flash_sprite_bank[];
+extern const tImage heads[];
+extern const tImage bodies[];
+extern const tImage legs[];
 
 extern const qc12_anim_t standing;
 extern const qc12_anim_t walking;
