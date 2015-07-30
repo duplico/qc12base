@@ -1,5 +1,7 @@
 import os, sys, argparse, re, itertools
 
+from collections import OrderedDict
+
 from glob import glob
 from ConfigParser import ConfigParser
 
@@ -16,15 +18,65 @@ HEAD_HEIGHT = 22
 BODY_HEIGHT = 24
 FEET_HEIGHT = 18
 
-DEFAULT_SPEED = 5
+DEFAULT_SPEED = 3
 
 is_a_number = re.compile("[0-9]+")
 
-def make_sprite(head_path, body_path, legs_path, heights=tuple(), show=False, thumb_id=False):
-    global uniform_sprite_size
-
-    sprite = Image.new('RGBA', (SPRITE_WIDTH, SPRITE_HEIGHT), (0,0,0,0))
+def get_bits(paths):
+    segs = []
+    for path in paths:
+        head_in, head_mask = adjust_image(Image.open(path))
+        seg = Image.new('RGBA', (SPRITE_WIDTH, SPRITE_HEIGHT), (0,0,0,0))
+        seg.paste(head_in, (0, 0), head_mask)
+        
+        out_str = "{0b"
+        index = 0
+        sprite_size = 0
+        for pixel in list(seg.getdata()):
+            if index == SPRITE_WIDTH:
+                # zero-pad...
+                while index % 8:
+                    out_str += "0"
+                out_str += ", \n     0b"
+                index = 0
+            if index and index % 8 == 0:
+                out_str += ", 0b"
+            out_str += "1" if sum(pixel[:-1]) else "0" # Everything but alpha...
+            index += 1
+            sprite_size += 1
+        out_str += "},"
+        segs.append(out_str)
+    return segs
     
+
+def make_outputs(head_paths, body_paths, legs_paths):
+    parts = dict(
+        heads = get_bits(head_paths),
+        bodies = get_bits(body_paths),
+        legs = get_bits(legs_paths)
+    )
+    
+    for partname, bits in parts.items():
+        print 'const uint8_t %s_pixels[%d][512] = {' % (partname, len(bits))
+        print '   ',
+        print '\n    '.join(bits)
+        print '};'
+    
+    print
+    
+    for partname, bits in parts.items():
+        print "const tImage %s[%d] = {" % (partname, len(bits))
+        for i in range(len(bits)):
+            print "   {IMAGE_FMT_1BPP_UNCOMP, 64, 64, 2, palette_bw, %s_pixels[%d]}," % (
+                partname,
+                i
+            )
+        print '};'
+        print
+    
+    return parts['heads'], parts['bodies'], parts['legs']
+
+def get_tops(head_path, body_path, legs_path, heights):
     head, head_mask = adjust_image(Image.open(head_path))
     body, body_mask = adjust_image(Image.open(body_path))
     legs, legs_mask = adjust_image(Image.open(legs_path))
@@ -47,85 +99,7 @@ def make_sprite(head_path, body_path, legs_path, heights=tuple(), show=False, th
     # It's actually on something with body+legs height of heights[1]+heights[2].
     head_y = squat_amount + (heights[4]+heights[5]-heights[2]-heights[1])
     
-    sd = ImageDraw.Draw(sprite)
-    
-    # For making lines at the demarcation points:
-    #sd.line((0, 64-heights[2], 64, 64-heights[2]))
-    #sd.line((0, 64-heights[2]-heights[1], 64, 64-heights[2]-heights[1]))
-    
-    sprite.paste(
-        head, 
-        ((SPRITE_WIDTH-head.size[0])/2, 
-         head_y), 
-        head_mask
-    )
-    sprite.paste(
-        legs, 
-        ((SPRITE_WIDTH-legs.size[0])/2, 
-         legs_y), 
-        legs_mask
-    )
-    sprite.paste(
-        body, 
-        ((SPRITE_WIDTH-body.size[0])/2, 
-         body_y), 
-        body_mask
-    )
-    
-    if show:
-        sprite.show()
-    if thumb_id:
-        text_image = Image.new('RGBA', (SPRITE_HEIGHT+20, SPRITE_WIDTH), (255,255,255,0))
-        f = ImageFont.truetype(font="Consolas.ttf", size=10)
-        td = ImageDraw.Draw(text_image)
-        #td.text((0,0), "queercon", font=f, fill=(0,0,0))
-        #td.text((0,54), " twelve", font=f, fill=(0,0,0))
-        
-        sprite_image, sprite_mask = adjust_image(sprite)
-        sprite_image.save(os.path.join("thumbs", "%03d.png") % thumb_id)
-        thumbnail = Image.new('RGBA', (SPRITE_WIDTH, SPRITE_HEIGHT+20), (0,0,0,0))
-        f = ImageFont.truetype(font="Consolas.ttf", size=20)
-        td = ImageDraw.Draw(thumbnail)
-        width = td.textsize(str(thumb_id), font=f)[0]
-        thumbnail.paste(text_image.rotate(-90), (0,0))
-        thumbnail.paste(adjust_image(sprite)[0], (0,0), sprite_mask)
-        td.text(((64-width)/2,68), str(thumb_id), font=f, fill=(0,0,0))
-        thumbnail.save(os.path.join("thumbs", "label_%03d.png") % thumb_id)
-            
-    out_str = "{0b"
-    
-    index = 0
-    sprite_size = 0
-    
-    for pixel in list(sprite.getdata()):
-        if index == SPRITE_WIDTH:
-            # zero-pad...
-            while index % 8:
-                out_str += "0"
-            out_str += ", \n     0b"
-            index = 0
-        if index and index % 8 == 0:
-            out_str += ", 0b"
-        out_str += "1" if sum(pixel[:-1]) else "0" # Everything but alpha...
-        index += 1
-        sprite_size += 1
-    out_str += "},"
-    
-    sprite_size = sprite_size / 8
-    if uniform_sprite_size:
-        assert sprite_size == uniform_sprite_size
-    else:
-        uniform_sprite_size = sprite_size
-    
-    return out_str
-
-p_sprite_bank = []
-p_sprite_pixel_bank = []
-p_sprite_bank_indices = dict()
-    
-f_sprite_bank = []
-f_sprite_pixel_bank = []
-f_sprite_bank_indices = dict()
+    return head_y, body_y, legs_y
 
 animations = []
 
@@ -158,6 +132,9 @@ def main(inifile, head_dir, body_dir, legs_dir, show, thumb_id=False):
         with open(os.path.join(head_dir, 'legs', 'height')) as height_file:
             heights[5] = int(height_file.readline())
     
+    make_outputs(head_files, body_files, legs_files) # Prints directly.
+    
+    
     index_offset = 0
     index = 0
     longest_anim_buffer = 0
@@ -171,48 +148,32 @@ def main(inifile, head_dir, body_dir, legs_dir, show, thumb_id=False):
         elif ":out" in anim_name:
             anim['loop_end_index'] = index_offset = index
         else:
-            anim = dict(looped=(":in" in anim_name), name=anim_name.split(':')[0], images=[], persistent=False, moves=[])
+            anim = dict(looped=(":in" in anim_name), name=anim_name.split(':')[0], parts=OrderedDict(heads=[], bodies=[], legs=[]), offsets=OrderedDict(head=[], body=[], legs=[]), moves=[])
             anim['speed'] = DEFAULT_SPEED
             animations.append(anim)
             index_offset = 0
-        # TODO: assert there's no other :s in the name?
         for frame in parser.items(anim_name):
             if is_a_number.match(frame[0]):
                 # It's a frame number.
-                
-                if anim['persistent']:
-                    sprite_bank = p_sprite_bank
-                    sprite_pixel_bank = p_sprite_pixel_bank
-                    sprite_bank_indices = p_sprite_bank_indices
-                else:
-                    sprite_bank = f_sprite_bank
-                    sprite_pixel_bank = f_sprite_pixel_bank
-                    sprite_bank_indices = f_sprite_bank_indices
                 
                 # TODO: assert that the frame numbers are correct please.
                 # TODO: assert indices are in bounds
                 # TODO: assert the the filename endswith index-1
                 
                 head_index, body_index, legs_index = map(int, frame[1].split(','))
-                if (head_index, body_index, legs_index) in sprite_bank_indices:
-                    frame_bank_index = sprite_bank_indices[(head_index, body_index, legs_index)]
-                else:
-                    frame_bank_index = len(sprite_pixel_bank)
-                    sprite_bank_indices[(head_index, body_index, legs_index)] = frame_bank_index
-                    pixels = make_sprite(head_files[head_index-1], body_files[body_index-1], legs_files[legs_index-1], show=show, heights=heights, thumb_id=thumb_id if anim['name']=="standing" else False)
-                    metadata = "{ IMAGE_FMT_1BPP_UNCOMP, %d, %d, 2, palette_bw, %s_sprite_bank_pixels[%d] }," % (SPRITE_WIDTH, SPRITE_HEIGHT, "persistent" if anim['persistent'] else "flash", frame_bank_index)
-                    metadata += " // %d:%d:%d" % (head_index, body_index, legs_index)
-                    sprite_pixel_bank.append(pixels)
-                    sprite_bank.append(metadata)
-                    
+                anim['parts']['heads'].append(head_index-1)
+                anim['parts']['bodies'].append(body_index-1)
+                anim['parts']['legs'].append(legs_index-1)
+                
+                h,b,t = get_tops(head_files[head_index-1], body_files[body_index-1], legs_files[legs_index-1], heights)
+                
+                anim['offsets']['head'].append(h)
+                anim['offsets']['body'].append(b)
+                anim['offsets']['legs'].append(t)
+                
                 index = int(frame[0]) + index_offset
-                img_name = "%s_%d" % (anim['name'], (index-1))
-                anim['images'].append(frame_bank_index)
                 anim['moves'].append(move)
                 move = 0
-            elif frame[0] == "persistent":
-                assert not anim['images'] # Persistent MUST BE FIRST.
-                anim['persistent'] = True
             elif frame[0].startswith("up"): # 00xxxxxx - up
                 assert int(frame[1]) < 65
                 move = frame[1]
@@ -227,28 +188,12 @@ def main(inifile, head_dir, body_dir, legs_dir, show, thumb_id=False):
                 assert int(frame[1]) < 65
             elif frame[0] == "speed":
                 anim['speed'] = int(frame[1])
-        if not anim['persistent'] and index > longest_anim_buffer:
+        if index > longest_anim_buffer:
             longest_anim_buffer = index
     
-    print "const uint8_t persistent_sprite_bank_pixels[%d][%d] = {\n   " % (len(p_sprite_pixel_bank), uniform_sprite_size),
-    print "\n\n    ".join(p_sprite_pixel_bank)
-    print "};"
-    print
-    
-    print "const uint8_t flash_sprite_bank_pixels[%d][%d] = {\n   " % (len(f_sprite_pixel_bank), uniform_sprite_size),
-    print "\n\n    ".join(f_sprite_pixel_bank)
-    print "};"
-    print
-    
-    print "const tImage persistent_sprite_bank[%d] = {\n   " % (len(p_sprite_bank)),
-    print "\n    ".join(p_sprite_bank)
-    print "};"
-    print
-    
-    print "const tImage flash_sprite_bank[%d] = {\n   " % (len(f_sprite_bank)),
-    print "\n    ".join(f_sprite_bank)
-    print "};"
-    print
+    for anim in animations:
+        assert len(anim['parts']['heads']) == len(anim['parts']['bodies']) == len(anim['parts']['legs']) == len(anim['moves'])
+        anim['len'] = len(anim['parts']['heads'])
     
     """
     typedef struct {
@@ -257,7 +202,12 @@ def main(inifile, head_dir, body_dir, legs_dir, show, thumb_id=False):
         uint8_t loop_end;
         uint8_t len;
         uint8_t speed;
-        const tImage** images;
+        const tImage** head_images;
+        const tImage** body_images;
+        const tImage** legs_images;
+        const uint8_t* head_tops;
+        const uint8_t* body_tops;
+        const uint8_t* legs_tops;
         const uint8_t* movement;
     } qc12_anim_t;
     """
@@ -268,31 +218,37 @@ def main(inifile, head_dir, body_dir, legs_dir, show, thumb_id=False):
     for anim in animations:
         no_moves = all(i == 0 for i in anim['moves'])
         anim['moves'] = map(str, anim['moves'])
-        bank_buffer = "persistent_sprite_bank" if anim['persistent'] else "flash_sprite_bank"
-        anim['image_pointers'] = map(lambda a: "&%s[%d]" % (bank_buffer, a), anim['images'])
         
-        print "const tImage *%s_images[%d] = {\n\t%s\n};" % (
-            anim['name'],
-            len(anim['images']),
-            ",\n\t ".join(anim['image_pointers'])
-        )
-        print ""
+        print "// " + anim['name']
         
+        for partname, indices in anim['parts'].items():
+            print "const uint8_t %s_%s[%d] = {" % (anim['name'], partname, anim['len']),
+            print "" + ', '.join(map(str, indices)),
+            print "};"
+        
+        for partname, tops in anim['offsets'].items():
+            print "const int8_t %s_%s_tops[%d] = {" % (anim['name'], partname, anim['len']),
+            print "" + ', '.join(map(str, tops)),
+            print "};"
+                
         if not no_moves:
-            print "const uint8_t %s_moves[%d] = {\n\t%s\n};" % (
+            print "const uint8_t %s_moves[%d] = { %s };" % (
                 anim['name'],
-                len(anim['images']),
-                ",\n\t ".join(anim['moves'])
+                anim['len'],
+                ", ".join(anim['moves'])
             )
             print ""
         
         print "const qc12_anim_t %s = {" % anim['name']
         print "\t%d, // Looped?" % (int(anim['looped']) if 'looped' in anim else 0)
         print "\t%d, // Loop start index" % (anim['loop_start_index'] if 'loop_start_index' in anim else 0)
-        print "\t%d, // Loop end index" % (anim['loop_end_index'] if 'loop_end_index' in anim else len(anim['image_pointers']))
-        print "\t%d, // Length" % len(anim['images'])
+        print "\t%d, // Loop end index" % (anim['loop_end_index'] if 'loop_end_index' in anim else anim['len'])
+        print "\t%d, // Length" % anim['len']
         print "\t%d, // Speed" % anim['speed']
-        print "\t%s_images, // Images" % anim['name']
+        for partname in ['heads', 'bodies', 'legs']:
+            print "\t%s_%s, //%s" % (anim['name'], partname, partname)
+        for partname in ['head', 'body', 'legs']:
+            print "\t%s_%s_tops, //%s" % (anim['name'], partname, partname)
         if no_moves:
             print "\tno_moves, // Moves"
         else:

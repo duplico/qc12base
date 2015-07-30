@@ -761,7 +761,7 @@ void handle_character_actions() {
 
     if (s_oled_anim_finished) {
         s_oled_anim_finished = 0;
-        oled_anim_disp_frame(standing.images[0]);
+        oled_anim_disp_frame(&standing, 0);
     }
 
     // Bail if we're not going to be able to start an animation, because that's
@@ -779,7 +779,8 @@ void handle_character_actions() {
 
     if (s_need_idle_action) {
         // Pick a random idle animation to do.
-        oled_play_animation(idle_anims[rand() % idle_anim_count], rand() % 5);
+        volatile uint8_t anim = rand() % idle_anim_count;
+        oled_play_animation(idle_anims[anim], rand() % 5);
         s_need_idle_action = 0;
     }
 
