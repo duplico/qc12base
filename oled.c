@@ -132,7 +132,7 @@ void do_move(uint8_t move_signal) {
 
 void oled_anim_disp_frame(const qc12_anim_t *animation_data, uint8_t frame_no) {
     GrClearDisplay(&g_sContext);
-    GrImageDraw(&g_sContext, &legs[animation_data->legs_indices[frame_no]], char_pos_x, animation_data->legs_tops[frame_no] + SPRITE_Y - char_pos_y);
+    GrImageDraw(&g_sContext, &legs[animation_data->legs_indices[frame_no]], char_pos_x, legs_clip_offset + animation_data->legs_tops[frame_no] + SPRITE_Y - char_pos_y);
     GrImageDraw(&g_sContext, &bodies[animation_data->bodies_indices[frame_no]], char_pos_x, animation_data->body_tops[frame_no] + SPRITE_Y - char_pos_y);
     GrImageDraw(&g_sContext, &heads[animation_data->heads_indices[frame_no]], char_pos_x, animation_data->head_tops[frame_no] + SPRITE_Y - char_pos_y);
     draw_overhead();

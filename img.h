@@ -25,6 +25,8 @@ typedef struct {
     const uint8_t* movement;
 } qc12_anim_t;
 
+extern const uint8_t legs_clip_offset;
+
 extern const tImage  fingerprint_1BPP_UNCOMP;
 extern const tImage flag1;
 
