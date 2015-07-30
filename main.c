@@ -88,7 +88,6 @@ const qc12conf default_conf = {
         0,
 };
 
-
 #pragma PERSISTENT(badge_seen_ticks)
 uint16_t badge_seen_ticks[BADGES_IN_SYSTEM] = {0};
 #pragma PERSISTENT(badges_seen)
@@ -339,7 +338,7 @@ void post() {
     EUSCI_A_SPI_enableInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
 
     // If we detected no errors, we're done here.
-    if (!(flash_error || led_error || crystal_error))
+    if (!(flash_error || led_error || crystal_error)) // TODO:
         return;
 
     // Otherwise, show those errors and then delay for a bit so we can
@@ -612,6 +611,7 @@ void handle_infrastructure_services() {
     // Poll buttons and check whether we need to resend a befriend message:
     if (f_time_loop) {
         poll_buttons();
+        WDT_A_resetTimer(WDT_A_BASE); // pat pat pat
         if (befriend_mode && !befriend_mode_loops_to_tick &&
                 rfm_state == RFM_IDLE) {
             befriend_proto_step(0, 0, BADGES_IN_SYSTEM);
@@ -1250,6 +1250,9 @@ void handle_mode_sleep() {
         if (f_time_loop) {
             f_time_loop = 0;
             poll_buttons();
+            WDT_A_resetTimer(WDT_A_BASE); // pat pat pat
+
+            /* Clear watchdog timer counter */
 
             if (f_bs == BUTTON_RELEASE) {
                 f_bs = 0;
@@ -1361,6 +1364,8 @@ int main(void)
         op_mode = OP_MODE_NAME;
         s_default_conf_loaded = 0;
     }
+
+    WDT_A_start(WDT_A_BASE);
 
     while (1) {
         switch(op_mode) {
