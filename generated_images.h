@@ -2200,7 +2200,7 @@ const tImage bodies[20] = {
    {IMAGE_FMT_1BPP_UNCOMP, 64, 64, 2, palette_bw, bodies_pixels[19]},
 };
 
-uint8_t no_moves[10] = {0};
+uint8_t no_moves[25] = {0};
 
 // standing
 const uint8_t standing_legs[1] = { 0 };
@@ -2678,11 +2678,217 @@ const qc12_anim_t wave_right = {
 	no_moves, // Moves
 };
 
-// anim_buffer_alloc = 10
+// trapdoor_creator
+const uint8_t trapdoor_creator_legs[6] = { 0, 2, 2, 2, 2, 0 };
+const uint8_t trapdoor_creator_heads[6] = { 12, 12, 12, 12, 12, 12 };
+const uint8_t trapdoor_creator_bodies[6] = { 0, 6, 6, 6, 6, 0 };
+const int8_t trapdoor_creator_body_tops[6] = { -6, -6, -6, -6, -6, -6 };
+const int8_t trapdoor_creator_head_tops[6] = { -6, -6, -6, -6, -6, -6 };
+const int8_t trapdoor_creator_legs_tops[6] = { 0, 0, 0, 0, 0, 0 };
+const qc12_anim_t trapdoor_creator = {
+	0, // Looped?
+	0, // Loop start index
+	6, // Loop end index
+	6, // Length
+	3, // Speed
+	trapdoor_creator_heads, //heads
+	trapdoor_creator_bodies, //bodies
+	trapdoor_creator_legs, //legs
+	trapdoor_creator_head_tops, //head
+	trapdoor_creator_body_tops, //body
+	trapdoor_creator_legs_tops, //legs
+	no_moves, // Moves
+};
+
+// trapdoor_effect
+const uint8_t trapdoor_effect_legs[15] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+const uint8_t trapdoor_effect_heads[15] = { 12, 12, 12, 12, 3, 3, 3, 3, 3, 3, 3, 3, 12, 12, 12 };
+const uint8_t trapdoor_effect_bodies[15] = { 0, 0, 0, 0, 6, 5, 5, 5, 5, 5, 5, 5, 0, 0, 0 };
+const int8_t trapdoor_effect_body_tops[15] = { -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6 };
+const int8_t trapdoor_effect_head_tops[15] = { -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6 };
+const int8_t trapdoor_effect_legs_tops[15] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+const uint8_t trapdoor_effect_moves[15] = { 0, 0, 0, 65, 66, 68, 72, 72, 72, 72, 72, 72, 73, 192, 64 };
+
+const qc12_anim_t trapdoor_effect = {
+	0, // Looped?
+	0, // Loop start index
+	15, // Loop end index
+	15, // Length
+	3, // Speed
+	trapdoor_effect_heads, //heads
+	trapdoor_effect_bodies, //bodies
+	trapdoor_effect_legs, //legs
+	trapdoor_effect_head_tops, //head
+	trapdoor_effect_body_tops, //body
+	trapdoor_effect_legs_tops, //legs
+	trapdoor_effect_moves, // Moves
+};
+
+// trapdoor_creator_observer
+const uint8_t trapdoor_creator_observer_legs[13] = { 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0 };
+const uint8_t trapdoor_creator_observer_heads[13] = { 12, 12, 12, 12, 3, 0, 0, 0, 0, 0, 0, 0, 0 };
+const uint8_t trapdoor_creator_observer_bodies[13] = { 0, 0, 0, 0, 0, 0, 1, 1, 3, 3, 3, 1, 0 };
+const int8_t trapdoor_creator_observer_body_tops[13] = { -6, -6, -6, -6, -6, -2, -6, -6, -6, -6, -6, -6, -6 };
+const int8_t trapdoor_creator_observer_head_tops[13] = { -6, -6, -6, -6, -6, -2, -6, -6, -6, -6, -6, -6, -6 };
+const int8_t trapdoor_creator_observer_legs_tops[13] = { 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0 };
+const uint8_t trapdoor_creator_observer_moves[13] = { 0, 0, 0, 0, 0, 0, 0, 2, 2, 66, 66, 0, 0 };
+
+const qc12_anim_t trapdoor_creator_observer = {
+	0, // Looped?
+	0, // Loop start index
+	13, // Loop end index
+	13, // Length
+	3, // Speed
+	trapdoor_creator_observer_heads, //heads
+	trapdoor_creator_observer_bodies, //bodies
+	trapdoor_creator_observer_legs, //legs
+	trapdoor_creator_observer_head_tops, //head
+	trapdoor_creator_observer_body_tops, //body
+	trapdoor_creator_observer_legs_tops, //legs
+	trapdoor_creator_observer_moves, // Moves
+};
+
+// earthquake_creator
+const uint8_t earthquake_creator_legs[8] = { 1, 2, 1, 2, 1, 2, 0, 0 };
+const uint8_t earthquake_creator_heads[8] = { 12, 12, 12, 12, 12, 12, 12, 12 };
+const uint8_t earthquake_creator_bodies[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+const int8_t earthquake_creator_body_tops[8] = { -6, -6, -6, -6, -6, -6, -6, -6 };
+const int8_t earthquake_creator_head_tops[8] = { -6, -6, -6, -6, -6, -6, -6, -6 };
+const int8_t earthquake_creator_legs_tops[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+const qc12_anim_t earthquake_creator = {
+	0, // Looped?
+	0, // Loop start index
+	8, // Loop end index
+	8, // Length
+	3, // Speed
+	earthquake_creator_heads, //heads
+	earthquake_creator_bodies, //bodies
+	earthquake_creator_legs, //legs
+	earthquake_creator_head_tops, //head
+	earthquake_creator_body_tops, //body
+	earthquake_creator_legs_tops, //legs
+	no_moves, // Moves
+};
+
+// earthquake_effect
+const uint8_t earthquake_effect_legs[18] = { 0, 0, 0, 0, 12, 0, 11, 4, 11, 0, 4, 11, 0, 0, 11, 0, 0, 0 };
+const uint8_t earthquake_effect_heads[18] = { 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 };
+const uint8_t earthquake_effect_bodies[18] = { 0, 0, 0, 6, 2, 0, 1, 6, 1, 0, 6, 1, 0, 0, 1, 0, 0, 0 };
+const int8_t earthquake_effect_body_tops[18] = { -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6 };
+const int8_t earthquake_effect_head_tops[18] = { -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6 };
+const int8_t earthquake_effect_legs_tops[18] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+const uint8_t earthquake_effect_moves[18] = { 0, 0, 3, 67, 197, 5, 130, 69, 136, 7, 71, 131, 0, 0, 130, 0, 0, 0 };
+
+const qc12_anim_t earthquake_effect = {
+	0, // Looped?
+	0, // Loop start index
+	18, // Loop end index
+	18, // Length
+	3, // Speed
+	earthquake_effect_heads, //heads
+	earthquake_effect_bodies, //bodies
+	earthquake_effect_legs, //legs
+	earthquake_effect_head_tops, //head
+	earthquake_effect_body_tops, //body
+	earthquake_effect_legs_tops, //legs
+	earthquake_effect_moves, // Moves
+};
+
+// earthquake_creator_observer
+const uint8_t earthquake_creator_observer_legs[18] = { 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+const uint8_t earthquake_creator_observer_heads[18] = { 12, 12, 12, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 3, 0 };
+const uint8_t earthquake_creator_observer_bodies[18] = { 0, 0, 0, 0, 0, 1, 1, 3, 3, 3, 1, 0, 0, 0, 0, 0, 0, 0 };
+const int8_t earthquake_creator_observer_body_tops[18] = { -6, -6, -6, -6, -2, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6 };
+const int8_t earthquake_creator_observer_head_tops[18] = { -6, -6, -6, -6, -2, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6 };
+const int8_t earthquake_creator_observer_legs_tops[18] = { 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+const uint8_t earthquake_creator_observer_moves[18] = { 0, 0, 0, 0, 0, 0, 2, 2, 66, 66, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+const qc12_anim_t earthquake_creator_observer = {
+	0, // Looped?
+	0, // Loop start index
+	18, // Loop end index
+	18, // Length
+	3, // Speed
+	earthquake_creator_observer_heads, //heads
+	earthquake_creator_observer_bodies, //bodies
+	earthquake_creator_observer_legs, //legs
+	earthquake_creator_observer_head_tops, //head
+	earthquake_creator_observer_body_tops, //body
+	earthquake_creator_observer_legs_tops, //legs
+	earthquake_creator_observer_moves, // Moves
+};
+
+// mimic_creator
+const uint8_t mimic_creator_legs[5] = { 0, 0, 0, 3, 3 };
+const uint8_t mimic_creator_heads[5] = { 12, 12, 12, 0, 0 };
+const uint8_t mimic_creator_bodies[5] = { 0, 0, 0, 6, 6 };
+const int8_t mimic_creator_body_tops[5] = { -6, -6, -6, -2, -2 };
+const int8_t mimic_creator_head_tops[5] = { -6, -6, -6, -2, -2 };
+const int8_t mimic_creator_legs_tops[5] = { 0, 0, 0, 4, 4 };
+const qc12_anim_t mimic_creator = {
+	0, // Looped?
+	0, // Loop start index
+	5, // Loop end index
+	5, // Length
+	3, // Speed
+	mimic_creator_heads, //heads
+	mimic_creator_bodies, //bodies
+	mimic_creator_legs, //legs
+	mimic_creator_head_tops, //head
+	mimic_creator_body_tops, //body
+	mimic_creator_legs_tops, //legs
+	no_moves, // Moves
+};
+
+// mimic_creator_observer
+const uint8_t mimic_creator_observer_legs[25] = { 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 0, 0, 3, 3, 3, 0, 0, 4, 4, 4, 0, 0, 0, 0, 0 };
+const uint8_t mimic_creator_observer_heads[25] = { 12, 12, 12, 8, 8, 8, 12, 0, 0, 0, 12, 12, 9, 9, 9, 12, 12, 0, 0, 0, 12, 12, 12, 12, 12 };
+const uint8_t mimic_creator_observer_bodies[25] = { 0, 0, 0, 1, 1, 1, 0, 9, 9, 9, 0, 0, 4, 4, 4, 0, 0, 6, 6, 6, 0, 0, 0, 0, 0 };
+const int8_t mimic_creator_observer_body_tops[25] = { -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -2, -2, -2, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6 };
+const int8_t mimic_creator_observer_head_tops[25] = { -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -2, -2, -2, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6 };
+const int8_t mimic_creator_observer_legs_tops[25] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+const qc12_anim_t mimic_creator_observer = {
+	0, // Looped?
+	0, // Loop start index
+	25, // Loop end index
+	25, // Length
+	3, // Speed
+	mimic_creator_observer_heads, //heads
+	mimic_creator_observer_bodies, //bodies
+	mimic_creator_observer_legs, //legs
+	mimic_creator_observer_head_tops, //head
+	mimic_creator_observer_body_tops, //body
+	mimic_creator_observer_legs_tops, //legs
+	no_moves, // Moves
+};
+
+// mimic_effect
+const uint8_t mimic_effect_legs[25] = { 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4 };
+const uint8_t mimic_effect_heads[25] = { 0, 0, 0, 0, 0, 8, 8, 8, 8, 8, 0, 0, 0, 0, 0, 9, 9, 9, 9, 9, 0, 0, 0, 0, 0 };
+const uint8_t mimic_effect_bodies[25] = { 6, 6, 6, 6, 6, 1, 1, 1, 1, 1, 9, 9, 9, 9, 9, 4, 4, 4, 4, 4, 6, 6, 6, 6, 6 };
+const int8_t mimic_effect_body_tops[25] = { -2, -2, -2, -2, -2, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -2, -2, -2, -2, -2, -6, -6, -6, -6, -6 };
+const int8_t mimic_effect_head_tops[25] = { -2, -2, -2, -2, -2, -6, -6, -6, -6, -6, -6, -6, -6, -6, -6, -2, -2, -2, -2, -2, -6, -6, -6, -6, -6 };
+const int8_t mimic_effect_legs_tops[25] = { 4, 4, 4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 4, 4, 4, 4, 0, 0, 0, 0, 0 };
+const qc12_anim_t mimic_effect = {
+	0, // Looped?
+	0, // Loop start index
+	25, // Loop end index
+	25, // Length
+	3, // Speed
+	mimic_effect_heads, //heads
+	mimic_effect_bodies, //bodies
+	mimic_effect_legs, //legs
+	mimic_effect_head_tops, //head
+	mimic_effect_body_tops, //body
+	mimic_effect_legs_tops, //legs
+	no_moves, // Moves
+};
+
+// anim_buffer_alloc = 25
 
 // For the animation demo:
 
 const qc12_anim_t *demo_anims[] = {
-    &standing, &walking, &walking_left, &running, &running_left, &zombie, &zombie_left, &jump, &march, &exercise_1, &flap_arms, &silly, &dance, &bored_standing, &bored_arms, &bored_crouch, &bored_wave, &bored_sad, &bored_yawn, &bored_talk_to_hand, &wave_right
+    &standing, &walking, &walking_left, &running, &running_left, &zombie, &zombie_left, &jump, &march, &exercise_1, &flap_arms, &silly, &dance, &bored_standing, &bored_arms, &bored_crouch, &bored_wave, &bored_sad, &bored_yawn, &bored_talk_to_hand, &wave_right, &trapdoor_creator, &trapdoor_effect, &trapdoor_creator_observer, &earthquake_creator, &earthquake_effect, &earthquake_creator_observer, &mimic_creator, &mimic_creator_observer, &mimic_effect
 };
-const uint8_t demo_anim_count = 21;
+const uint8_t demo_anim_count = 30;

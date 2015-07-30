@@ -75,7 +75,7 @@ void poll_buttons();
 // This is PERSISTENT:
 //  That means that it will be CLOBBERED by the DEBUG TOOLCHAIN ONLY.
 //  But it WON'T be on power cycle.
-qc12conf my_conf;
+qc12conf my_conf = {0};
 
 const qc12conf default_conf = {
         1,     // id
