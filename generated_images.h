@@ -2783,14 +2783,38 @@ const tImage flash_sprite_bank[42] = {
     { IMAGE_FMT_1BPP_UNCOMP, 64, 64, 2, palette_bw, flash_sprite_bank_pixels[41] }, // 1:5:1
 };
 
+uint8_t no_moves[10] = {0};
+
+const tImage *standing_images[1] = {
+	&flash_sprite_bank[0]
+};
+
 const qc12_anim_t standing = {
 	0, // Looped?
 	0, // Loop start index
 	1, // Loop end index
 	1, // Length
 	5, // Speed
-	{&flash_sprite_bank[0]}, // Pointers to frames
-	{0} // Movements
+	standing_images, // Images
+	no_moves, // Moves
+};
+
+const tImage *walking_images[6] = {
+	&flash_sprite_bank[1],
+	 &flash_sprite_bank[2],
+	 &flash_sprite_bank[1],
+	 &flash_sprite_bank[3],
+	 &flash_sprite_bank[1],
+	 &flash_sprite_bank[1]
+};
+
+const uint8_t walking_moves[6] = {
+	0,
+	 196,
+	 196,
+	 196,
+	 196,
+	 0
 };
 
 const qc12_anim_t walking = {
@@ -2799,18 +2823,26 @@ const qc12_anim_t walking = {
 	5, // Loop end index
 	6, // Length
 	5, // Speed
-	{&flash_sprite_bank[1],
-	 &flash_sprite_bank[2],
-	 &flash_sprite_bank[1],
-	 &flash_sprite_bank[3],
-	 &flash_sprite_bank[1],
-	 &flash_sprite_bank[1]}, // Pointers to frames
-	{0,
-	 196,
-	 196,
-	 196,
-	 196,
-	 0} // Movements
+	walking_images, // Images
+	walking_moves, // Moves
+};
+
+const tImage *walking_left_images[6] = {
+	&flash_sprite_bank[4],
+	 &flash_sprite_bank[5],
+	 &flash_sprite_bank[4],
+	 &flash_sprite_bank[6],
+	 &flash_sprite_bank[4],
+	 &flash_sprite_bank[4]
+};
+
+const uint8_t walking_left_moves[6] = {
+	0,
+	 132,
+	 132,
+	 132,
+	 132,
+	 0
 };
 
 const qc12_anim_t walking_left = {
@@ -2819,18 +2851,30 @@ const qc12_anim_t walking_left = {
 	5, // Loop end index
 	6, // Length
 	5, // Speed
-	{&flash_sprite_bank[4],
-	 &flash_sprite_bank[5],
-	 &flash_sprite_bank[4],
-	 &flash_sprite_bank[6],
-	 &flash_sprite_bank[4],
-	 &flash_sprite_bank[4]}, // Pointers to frames
-	{0,
-	 132,
-	 132,
-	 132,
-	 132,
-	 0} // Movements
+	walking_left_images, // Images
+	walking_left_moves, // Moves
+};
+
+const tImage *running_images[8] = {
+	&flash_sprite_bank[1],
+	 &flash_sprite_bank[2],
+	 &flash_sprite_bank[2],
+	 &flash_sprite_bank[1],
+	 &flash_sprite_bank[3],
+	 &flash_sprite_bank[3],
+	 &flash_sprite_bank[1],
+	 &flash_sprite_bank[1]
+};
+
+const uint8_t running_moves[8] = {
+	0,
+	 198,
+	 198,
+	 196,
+	 198,
+	 198,
+	 196,
+	 0
 };
 
 const qc12_anim_t running = {
@@ -2838,23 +2882,31 @@ const qc12_anim_t running = {
 	1, // Loop start index
 	7, // Loop end index
 	8, // Length
-	2, // Speed
-	{&flash_sprite_bank[1],
-	 &flash_sprite_bank[2],
-	 &flash_sprite_bank[2],
-	 &flash_sprite_bank[1],
-	 &flash_sprite_bank[3],
-	 &flash_sprite_bank[3],
-	 &flash_sprite_bank[1],
-	 &flash_sprite_bank[1]}, // Pointers to frames
-	{0,
-	 198,
-	 198,
-	 196,
-	 198,
-	 198,
-	 196,
-	 0} // Movements
+	5, // Speed
+	running_images, // Images
+	running_moves, // Moves
+};
+
+const tImage *running_left_images[8] = {
+	&flash_sprite_bank[4],
+	 &flash_sprite_bank[5],
+	 &flash_sprite_bank[5],
+	 &flash_sprite_bank[4],
+	 &flash_sprite_bank[6],
+	 &flash_sprite_bank[6],
+	 &flash_sprite_bank[4],
+	 &flash_sprite_bank[4]
+};
+
+const uint8_t running_left_moves[8] = {
+	0,
+	 134,
+	 134,
+	 132,
+	 134,
+	 134,
+	 132,
+	 0
 };
 
 const qc12_anim_t running_left = {
@@ -2862,32 +2914,13 @@ const qc12_anim_t running_left = {
 	1, // Loop start index
 	7, // Loop end index
 	8, // Length
-	2, // Speed
-	{&flash_sprite_bank[4],
-	 &flash_sprite_bank[5],
-	 &flash_sprite_bank[5],
-	 &flash_sprite_bank[4],
-	 &flash_sprite_bank[6],
-	 &flash_sprite_bank[6],
-	 &flash_sprite_bank[4],
-	 &flash_sprite_bank[4]}, // Pointers to frames
-	{0,
-	 134,
-	 134,
-	 132,
-	 134,
-	 134,
-	 132,
-	 0} // Movements
+	5, // Speed
+	running_left_images, // Images
+	running_left_moves, // Moves
 };
 
-const qc12_anim_t zombie = {
-	1, // Looped?
-	3, // Loop start index
-	7, // Loop end index
-	10, // Length
-	9, // Speed
-	{&flash_sprite_bank[7],
+const tImage *zombie_images[10] = {
+	&flash_sprite_bank[7],
 	 &flash_sprite_bank[8],
 	 &flash_sprite_bank[9],
 	 &flash_sprite_bank[10],
@@ -2896,26 +2929,34 @@ const qc12_anim_t zombie = {
 	 &flash_sprite_bank[11],
 	 &flash_sprite_bank[9],
 	 &flash_sprite_bank[8],
-	 &flash_sprite_bank[7]}, // Pointers to frames
-	{0,
-	 0,
-	 0,
-	 195,
-	 195,
-	 195,
-	 195,
-	 0,
-	 0,
-	 0} // Movements
+	 &flash_sprite_bank[7]
 };
 
-const qc12_anim_t zombie_left = {
+const uint8_t zombie_moves[10] = {
+	0,
+	 0,
+	 0,
+	 195,
+	 195,
+	 195,
+	 195,
+	 0,
+	 0,
+	 0
+};
+
+const qc12_anim_t zombie = {
 	1, // Looped?
 	3, // Loop start index
 	7, // Loop end index
 	10, // Length
-	9, // Speed
-	{&flash_sprite_bank[7],
+	5, // Speed
+	zombie_images, // Images
+	zombie_moves, // Moves
+};
+
+const tImage *zombie_left_images[10] = {
+	&flash_sprite_bank[7],
 	 &flash_sprite_bank[13],
 	 &flash_sprite_bank[14],
 	 &flash_sprite_bank[15],
@@ -2924,8 +2965,11 @@ const qc12_anim_t zombie_left = {
 	 &flash_sprite_bank[14],
 	 &flash_sprite_bank[14],
 	 &flash_sprite_bank[13],
-	 &flash_sprite_bank[7]}, // Pointers to frames
-	{0,
+	 &flash_sprite_bank[7]
+};
+
+const uint8_t zombie_left_moves[10] = {
+	0,
 	 0,
 	 0,
 	 131,
@@ -2934,7 +2978,37 @@ const qc12_anim_t zombie_left = {
 	 131,
 	 0,
 	 0,
-	 0} // Movements
+	 0
+};
+
+const qc12_anim_t zombie_left = {
+	1, // Looped?
+	3, // Loop start index
+	7, // Loop end index
+	10, // Length
+	5, // Speed
+	zombie_left_images, // Images
+	zombie_left_moves, // Moves
+};
+
+const tImage *jump_images[7] = {
+	&flash_sprite_bank[17],
+	 &flash_sprite_bank[0],
+	 &flash_sprite_bank[18],
+	 &flash_sprite_bank[19],
+	 &flash_sprite_bank[19],
+	 &flash_sprite_bank[19],
+	 &flash_sprite_bank[18]
+};
+
+const uint8_t jump_moves[7] = {
+	0,
+	 0,
+	 0,
+	 2,
+	 2,
+	 66,
+	 66
 };
 
 const qc12_anim_t jump = {
@@ -2942,21 +3016,16 @@ const qc12_anim_t jump = {
 	0, // Loop start index
 	7, // Loop end index
 	7, // Length
-	3, // Speed
-	{&flash_sprite_bank[17],
-	 &flash_sprite_bank[0],
-	 &flash_sprite_bank[18],
-	 &flash_sprite_bank[19],
-	 &flash_sprite_bank[19],
-	 &flash_sprite_bank[19],
-	 &flash_sprite_bank[18]}, // Pointers to frames
-	{0,
-	 0,
-	 0,
-	 2,
-	 2,
-	 66,
-	 66} // Movements
+	5, // Speed
+	jump_images, // Images
+	jump_moves, // Moves
+};
+
+const tImage *march_images[4] = {
+	&flash_sprite_bank[7],
+	 &flash_sprite_bank[20],
+	 &flash_sprite_bank[21],
+	 &flash_sprite_bank[7]
 };
 
 const qc12_anim_t march = {
@@ -2965,14 +3034,14 @@ const qc12_anim_t march = {
 	4, // Loop end index
 	4, // Length
 	5, // Speed
-	{&flash_sprite_bank[7],
-	 &flash_sprite_bank[20],
-	 &flash_sprite_bank[21],
-	 &flash_sprite_bank[7]}, // Pointers to frames
-	{0,
-	 0,
-	 0,
-	 0} // Movements
+	march_images, // Images
+	no_moves, // Moves
+};
+
+const tImage *exercise_1_images[3] = {
+	&flash_sprite_bank[7],
+	 &flash_sprite_bank[7],
+	 &flash_sprite_bank[7]
 };
 
 const qc12_anim_t exercise_1 = {
@@ -2981,12 +3050,15 @@ const qc12_anim_t exercise_1 = {
 	2, // Loop end index
 	3, // Length
 	5, // Speed
-	{&flash_sprite_bank[7],
-	 &flash_sprite_bank[7],
-	 &flash_sprite_bank[7]}, // Pointers to frames
-	{0,
-	 0,
-	 0} // Movements
+	exercise_1_images, // Images
+	no_moves, // Moves
+};
+
+const tImage *flap_arms_images[4] = {
+	&flash_sprite_bank[22],
+	 &flash_sprite_bank[23],
+	 &flash_sprite_bank[22],
+	 &flash_sprite_bank[22]
 };
 
 const qc12_anim_t flap_arms = {
@@ -2995,14 +3067,12 @@ const qc12_anim_t flap_arms = {
 	3, // Loop end index
 	4, // Length
 	5, // Speed
-	{&flash_sprite_bank[22],
-	 &flash_sprite_bank[23],
-	 &flash_sprite_bank[22],
-	 &flash_sprite_bank[22]}, // Pointers to frames
-	{0,
-	 0,
-	 0,
-	 0} // Movements
+	flap_arms_images, // Images
+	no_moves, // Moves
+};
+
+const tImage *silly_images[1] = {
+	&flash_sprite_bank[24]
 };
 
 const qc12_anim_t silly = {
@@ -3010,9 +3080,17 @@ const qc12_anim_t silly = {
 	0, // Loop start index
 	1, // Loop end index
 	1, // Length
-	30, // Speed
-	{&flash_sprite_bank[24]}, // Pointers to frames
-	{0} // Movements
+	5, // Speed
+	silly_images, // Images
+	no_moves, // Moves
+};
+
+const tImage *dance_images[5] = {
+	&flash_sprite_bank[25],
+	 &flash_sprite_bank[26],
+	 &flash_sprite_bank[25],
+	 &flash_sprite_bank[27],
+	 &flash_sprite_bank[25]
 };
 
 const qc12_anim_t dance = {
@@ -3021,16 +3099,12 @@ const qc12_anim_t dance = {
 	5, // Loop end index
 	5, // Length
 	5, // Speed
-	{&flash_sprite_bank[25],
-	 &flash_sprite_bank[26],
-	 &flash_sprite_bank[25],
-	 &flash_sprite_bank[27],
-	 &flash_sprite_bank[25]}, // Pointers to frames
-	{0,
-	 0,
-	 0,
-	 0,
-	 0} // Movements
+	dance_images, // Images
+	no_moves, // Moves
+};
+
+const tImage *bored_standing_images[1] = {
+	&flash_sprite_bank[7]
 };
 
 const qc12_anim_t bored_standing = {
@@ -3039,8 +3113,16 @@ const qc12_anim_t bored_standing = {
 	1, // Loop end index
 	1, // Length
 	5, // Speed
-	{&flash_sprite_bank[7]}, // Pointers to frames
-	{0} // Movements
+	bored_standing_images, // Images
+	no_moves, // Moves
+};
+
+const tImage *bored_arms_images[5] = {
+	&flash_sprite_bank[28],
+	 &flash_sprite_bank[7],
+	 &flash_sprite_bank[8],
+	 &flash_sprite_bank[29],
+	 &flash_sprite_bank[7]
 };
 
 const qc12_anim_t bored_arms = {
@@ -3049,16 +3131,12 @@ const qc12_anim_t bored_arms = {
 	5, // Loop end index
 	5, // Length
 	5, // Speed
-	{&flash_sprite_bank[28],
-	 &flash_sprite_bank[7],
-	 &flash_sprite_bank[8],
-	 &flash_sprite_bank[29],
-	 &flash_sprite_bank[7]}, // Pointers to frames
-	{0,
-	 0,
-	 0,
-	 0,
-	 0} // Movements
+	bored_arms_images, // Images
+	no_moves, // Moves
+};
+
+const tImage *bored_crouch_images[1] = {
+	&flash_sprite_bank[30]
 };
 
 const qc12_anim_t bored_crouch = {
@@ -3067,8 +3145,20 @@ const qc12_anim_t bored_crouch = {
 	1, // Loop end index
 	1, // Length
 	5, // Speed
-	{&flash_sprite_bank[30]}, // Pointers to frames
-	{0} // Movements
+	bored_crouch_images, // Images
+	no_moves, // Moves
+};
+
+const tImage *bored_wave_images[9] = {
+	&flash_sprite_bank[29],
+	 &flash_sprite_bank[31],
+	 &flash_sprite_bank[32],
+	 &flash_sprite_bank[33],
+	 &flash_sprite_bank[31],
+	 &flash_sprite_bank[32],
+	 &flash_sprite_bank[33],
+	 &flash_sprite_bank[28],
+	 &flash_sprite_bank[7]
 };
 
 const qc12_anim_t bored_wave = {
@@ -3077,24 +3167,12 @@ const qc12_anim_t bored_wave = {
 	9, // Loop end index
 	9, // Length
 	5, // Speed
-	{&flash_sprite_bank[29],
-	 &flash_sprite_bank[31],
-	 &flash_sprite_bank[32],
-	 &flash_sprite_bank[33],
-	 &flash_sprite_bank[31],
-	 &flash_sprite_bank[32],
-	 &flash_sprite_bank[33],
-	 &flash_sprite_bank[28],
-	 &flash_sprite_bank[7]}, // Pointers to frames
-	{0,
-	 0,
-	 0,
-	 0,
-	 0,
-	 0,
-	 0,
-	 0,
-	 0} // Movements
+	bored_wave_images, // Images
+	no_moves, // Moves
+};
+
+const tImage *bored_sad_images[1] = {
+	&flash_sprite_bank[34]
 };
 
 const qc12_anim_t bored_sad = {
@@ -3103,8 +3181,19 @@ const qc12_anim_t bored_sad = {
 	1, // Loop end index
 	1, // Length
 	5, // Speed
-	{&flash_sprite_bank[34]}, // Pointers to frames
-	{0} // Movements
+	bored_sad_images, // Images
+	no_moves, // Moves
+};
+
+const tImage *bored_yawn_images[8] = {
+	&flash_sprite_bank[35],
+	 &flash_sprite_bank[36],
+	 &flash_sprite_bank[37],
+	 &flash_sprite_bank[37],
+	 &flash_sprite_bank[37],
+	 &flash_sprite_bank[37],
+	 &flash_sprite_bank[8],
+	 &flash_sprite_bank[7]
 };
 
 const qc12_anim_t bored_yawn = {
@@ -3113,22 +3202,17 @@ const qc12_anim_t bored_yawn = {
 	8, // Loop end index
 	8, // Length
 	5, // Speed
-	{&flash_sprite_bank[35],
-	 &flash_sprite_bank[36],
-	 &flash_sprite_bank[37],
-	 &flash_sprite_bank[37],
-	 &flash_sprite_bank[37],
-	 &flash_sprite_bank[37],
-	 &flash_sprite_bank[8],
-	 &flash_sprite_bank[7]}, // Pointers to frames
-	{0,
-	 0,
-	 0,
-	 0,
-	 0,
-	 0,
-	 0,
-	 0} // Movements
+	bored_yawn_images, // Images
+	no_moves, // Moves
+};
+
+const tImage *bored_talk_to_hand_images[6] = {
+	&flash_sprite_bank[38],
+	 &flash_sprite_bank[39],
+	 &flash_sprite_bank[39],
+	 &flash_sprite_bank[39],
+	 &flash_sprite_bank[39],
+	 &flash_sprite_bank[38]
 };
 
 const qc12_anim_t bored_talk_to_hand = {
@@ -3137,18 +3221,15 @@ const qc12_anim_t bored_talk_to_hand = {
 	6, // Loop end index
 	6, // Length
 	5, // Speed
-	{&flash_sprite_bank[38],
-	 &flash_sprite_bank[39],
-	 &flash_sprite_bank[39],
-	 &flash_sprite_bank[39],
-	 &flash_sprite_bank[39],
-	 &flash_sprite_bank[38]}, // Pointers to frames
-	{0,
-	 0,
-	 0,
-	 0,
-	 0,
-	 0} // Movements
+	bored_talk_to_hand_images, // Images
+	no_moves, // Moves
+};
+
+const tImage *wave_right_images[4] = {
+	&flash_sprite_bank[40],
+	 &flash_sprite_bank[41],
+	 &flash_sprite_bank[40],
+	 &flash_sprite_bank[0]
 };
 
 const qc12_anim_t wave_right = {
@@ -3156,15 +3237,9 @@ const qc12_anim_t wave_right = {
 	1, // Loop start index
 	3, // Loop end index
 	4, // Length
-	3, // Speed
-	{&flash_sprite_bank[40],
-	 &flash_sprite_bank[41],
-	 &flash_sprite_bank[40],
-	 &flash_sprite_bank[0]}, // Pointers to frames
-	{0,
-	 0,
-	 0,
-	 0} // Movements
+	5, // Speed
+	wave_right_images, // Images
+	no_moves, // Moves
 };
 
 // anim_buffer_alloc = 10

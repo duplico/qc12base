@@ -30,7 +30,7 @@ uint8_t returnValue = 0;
 volatile uint8_t rfm_state = RFM_IDLE;
 
 qc12payload in_payload;
-qc12payload out_payload = { 0xff, 1, 1, 0 };
+qc12payload out_payload;
 
 // temp buffer:
 uint8_t in_bytes[sizeof(in_payload)];

@@ -16,8 +16,8 @@ typedef struct {
     uint8_t loop_end;
     uint8_t len;
     uint8_t speed;
-    const tImage* images[10];
-    const uint8_t movement[10];
+    const tImage** images;
+    const uint8_t* movement;
 } qc12_anim_t;
 
 extern const tImage  fingerprint_1BPP_UNCOMP;
