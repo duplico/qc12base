@@ -33,6 +33,8 @@ const qc12_anim_t *anim_data;
 
 uint8_t oled_overhead_type = OLED_OVERHEAD_OFF;
 uint8_t oled_overhead_loops = 0;
+uint8_t oled_overhead_half_width = 0;
+
 tImage *oled_overhead_image;
 char oled_overhead_text[NAME_MAX_LEN+1] = "";
 
@@ -74,7 +76,13 @@ void oled_draw_pane_and_flush(uint8_t softkey_sel) {
 void draw_overhead() {
     if (oled_overhead_type == OLED_OVERHEAD_TXT) {
         GrContextFontSet(&g_sContext, &SYS_FONT);
-        GrStringDrawCentered(&g_sContext, oled_overhead_text, -1, 32, SPRITE_Y-SYS_FONT_HEIGHT/2, 0);
+        int8_t text_x = char_pos_x + 32;
+        if (text_x + oled_overhead_half_width > 63) {
+            text_x = 63 - oled_overhead_half_width;
+        } else if (text_x - oled_overhead_half_width < 0) {
+            text_x = oled_overhead_half_width;
+        }
+        GrStringDrawCentered(&g_sContext, oled_overhead_text, -1, text_x, SPRITE_Y-SYS_FONT_HEIGHT/2, 0);
     } else if (oled_overhead_type == OLED_OVERHEAD_IMG) {
         GrImageDraw(&g_sContext, oled_overhead_image, char_pos_x + (32 - oled_overhead_image->XSize/2), SPRITE_Y-20);
     }
@@ -92,6 +100,7 @@ void oled_set_overhead_image(tImage *image, uint8_t loop_len) {
 void oled_set_overhead_text(char *text, uint8_t loop_len) {
     oled_overhead_loops = loop_len;
     oled_overhead_type = OLED_OVERHEAD_TXT;
+    oled_overhead_half_width = GrStringWidthGet(&g_sContext, text, -1)/2;
     if (strlen(text) > NAME_MAX_LEN) {
         return; // PROBLEM
     }
