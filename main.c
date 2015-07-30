@@ -174,13 +174,13 @@ void set_badge_seen(uint8_t id) {
             // flag an animation
             if (id != my_conf.badge_id) {
                 s_new_uber_seen = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
-                mood_adjust(50);
+                mood_adjust(MOOD_UBER_SEEN);
             }
         } else {
             // flag a lamer animation
             if (id != my_conf.badge_id) {
                 s_new_badge_seen = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
-                mood_adjust(10);
+                mood_adjust(MOOD_NEW_SEEN);
             }
         }
         my_conf_write_crc();

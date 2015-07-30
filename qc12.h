@@ -30,9 +30,22 @@
 #define BEFRIEND_TIMEOUT_SECONDS 3
 #define BEFRIEND_RESEND_TRIES 5
 #define BEFRIEND_LOOPS_TO_RESEND 10
+#define TITLE_CHEAT_CODE "MYTTL"
 
 #define RECEIVE_WINDOW 8
 #define RECEIVE_WINDOW_LENGTH_SECONDS 10
+
+// Mood changes:
+#define MOOD_NEW_UBER_SEEN 25
+#define MOOD_NEW_SEEN 10
+#define MOOD_TICK -3
+#define MOOD_NEW_FRIEND 25
+#define MOOD_NEW_UBER_FRIEND 50
+#define MOOD_OLD_FRIEND 3
+#define MOOD_OLD_UBER_FRIEND 6
+#define MOOD_EVENT_ARRIVE 100
+#define MOOD_PLAY_SEND 20
+#define MOOD_PLAY_RECV -12
 
 // Name entry configuration parameters:
 #define NAME_SEL_CHAR '*'
