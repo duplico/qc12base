@@ -20,6 +20,9 @@ FEET_HEIGHT = 18
 
 DEFAULT_SPEED = 3
 
+head_clip = 64
+legs_clip = 0
+
 is_a_number = re.compile("[0-9]+")
 
 def get_bits(paths):
@@ -33,10 +36,12 @@ def get_bits(paths):
         index = 0
         sprite_size = 0
         for pixel in list(seg.getdata()):
+            if 'head' in path and sprite_size/64 == head_clip:
+                break
+            if 'legs' in path and sprite_size/64 < legs_clip:
+                sprite_size += 1
+                continue
             if index == SPRITE_WIDTH:
-                # zero-pad...
-                while index % 8:
-                    out_str += "0"
                 out_str += ", \n     0b"
                 index = 0
             if index and index % 8 == 0:
@@ -48,6 +53,30 @@ def get_bits(paths):
         segs.append(out_str)
     return segs
     
+def get_clipping_areas(dirs):
+    lowest_head = 0
+    highest_body_top = 64
+    lowest_body_bottom = 0
+    tallest_legs = 64
+    for d in dirs:
+        head_files = sorted(glob(os.path.join(d, 'head', '*.png')), key=lambda a: int(is_a_number.findall(a)[0]))
+        body_files = sorted(glob(os.path.join(d, 'torso', '*.png')), key=lambda a: int(is_a_number.findall(a)[0]))
+        legs_files = sorted(glob(os.path.join(d, 'legs', '*.png')), key=lambda a: int(is_a_number.findall(a)[0]))
+        for headfile in head_files:
+            head, head_mask = adjust_image(Image.open(headfile))
+            if head_mask.getbbox()[3] > lowest_head:
+                lowest_head = head_mask.getbbox()[3]
+        for legsfile in legs_files:
+            legs, legs_mask = adjust_image(Image.open(legsfile))
+            if legs_mask.getbbox()[1] < tallest_legs:
+                tallest_legs = legs_mask.getbbox()[1]
+        for bodyfile in body_files:
+            body, body_mask = adjust_image(Image.open(bodyfile))
+            if body_mask.getbbox()[1] < highest_body_top:
+                highest_body_top = body_mask.getbbox()[1]
+            if body_mask.getbbox()[3] > lowest_body_bottom:
+                lowest_body_bottom = body_mask.getbbox()[3]
+    return lowest_head, tallest_legs
 
 def make_outputs(head_paths, body_paths, legs_paths):
     parts = dict(
@@ -57,7 +86,8 @@ def make_outputs(head_paths, body_paths, legs_paths):
     )
     
     for partname, bits in parts.items():
-        print 'const uint8_t %s_pixels[%d][512] = {' % (partname, len(bits))
+        size = {'heads': head_clip*8, 'bodies': 512, 'legs': (64-legs_clip)*8}[partname]
+        print 'const uint8_t %s_pixels[%d][%d] = {' % (partname, len(bits), size)
         print '   ',
         print '\n    '.join(bits)
         print '};'
@@ -67,7 +97,8 @@ def make_outputs(head_paths, body_paths, legs_paths):
     for partname, bits in parts.items():
         print "const tImage %s[%d] = {" % (partname, len(bits))
         for i in range(len(bits)):
-            print "   {IMAGE_FMT_1BPP_UNCOMP, 64, 64, 2, palette_bw, %s_pixels[%d]}," % (
+            print "   {IMAGE_FMT_1BPP_UNCOMP, 64, %d, 2, palette_bw, %s_pixels[%d]}," % (
+                {'heads': head_clip, 'bodies': 64, 'legs': 64-legs_clip}[partname],
                 partname,
                 i
             )
@@ -194,7 +225,7 @@ def main(inifile, head_dir, body_dir, legs_dir, show, thumb_id=False):
     for anim in animations:
         assert len(anim['parts']['heads']) == len(anim['parts']['bodies']) == len(anim['parts']['legs']) == len(anim['moves'])
         anim['len'] = len(anim['parts']['heads'])
-    
+        
     """
     typedef struct {
         uint8_t looped;
@@ -327,6 +358,13 @@ if (__name__ == '__main__'):
         c = ["alien", "bear", "human", "lizard", "octopus", "robot"]
         l = list(itertools.product(c, repeat=3))
         head, body, legs = l[(args.id-15) % len(l)]
+    
+    all_dirs = ["alien", "bear", "bender", "human", "lizard", "octopus", "robot", "uber_astronaut", "uber_blackhat", "uber_human", "uber_minion", "uber_shark", "uber_stig"]
+
+    head_clip, legs_clip = get_clipping_areas(all_dirs)
+    
+    print "const uint8_t legs_clip_offset = %d;" % legs_clip
+    print
     
     main(use_file, args.head or head, args.body or body, args.legs or legs, args.show, thumb_id=args.id)
     
