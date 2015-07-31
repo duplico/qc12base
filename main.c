@@ -221,16 +221,19 @@ void set_badge_friend(uint8_t id) {
             // flag an animation
             if (id != my_conf.badge_id) {
                 s_new_uber_friend = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
+                // TODO: mood
             }
         } else {
             // flag a lamer animation
             if (id != my_conf.badge_id) {
                 s_new_friend = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
+                // TODO: mood
             }
         }
         my_conf_write_crc();
     } else {
         // celebrate less.
+        // TODO: mood
     }
 
     if (oled_overhead_type == OLED_OVERHEAD_OFF) {
@@ -719,7 +722,13 @@ void handle_infrastructure_services() {
 
         mood_tick_minutes--;
         if (!mood_tick_minutes) {
-            mood_adjust_and_write_crc(MOOD_TICK_AMOUNT);
+            if (neighbor_count >= 5 || at_base) {
+                // Happy time.
+                mood_adjust_and_write_crc(MOOD_TICK_AMOUNT_UP);
+            } else {
+                // Boring time.
+                mood_adjust_and_write_crc(MOOD_TICK_AMOUNT);
+            }
             mood_tick_minutes = MOOD_TICK_MINUTES;
         }
     }
