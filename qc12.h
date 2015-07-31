@@ -199,6 +199,7 @@ extern qc12conf my_conf;
 extern const qc12conf default_conf;
 
 extern uint8_t idle_mode_softkey_sel;
+extern uint8_t idle_mode_softkey_dis;
 extern uint8_t op_mode;
 
 extern uint8_t neighbor_count;

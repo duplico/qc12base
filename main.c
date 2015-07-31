@@ -47,6 +47,7 @@ uint8_t s_new_checkin = 0;
 
 uint8_t disable_beacon_service = 0;
 uint8_t idle_mode_softkey_sel = 0;
+uint8_t idle_mode_softkey_dis = 0;
 
 uint8_t s_need_idle_action = 0;
 uint8_t idle_action_seconds = 10;
@@ -239,6 +240,11 @@ void set_badge_friend(uint8_t id) {
 
     if (oled_overhead_type == OLED_OVERHEAD_OFF) {
         s_overhead_done = 1;
+    }
+
+    if (id != my_conf.badge_id) {
+        idle_mode_softkey_dis = 0;
+        oled_draw_pane_and_flush(idle_mode_softkey_sel);
     }
 }
 
@@ -444,6 +450,8 @@ inline void set_befriend_failed() {
     oled_set_overhead_text("Okbai :(", 20);
     s_befriend_failed = 1;
     befriend_mode = 0;
+    idle_mode_softkey_dis = 0;
+    oled_draw_pane_and_flush(idle_mode_softkey_sel);
 }
 
 // Received_flag is ignored if from_radio is 0.
@@ -1097,6 +1105,10 @@ void handle_mode_idle() {
         }
         if (f_time_loop) {
             f_time_loop = 0;
+            if (idle_mode_softkey_dis) {
+                f_br = f_bl = f_bs = 0;
+            }
+
             if (f_br == BUTTON_PRESS) {
                 // Left button
                 do {
@@ -1120,7 +1132,7 @@ void handle_mode_idle() {
                 case SK_SEL_ASL:
                     op_mode = OP_MODE_ASL;
                     break;
-                case SK_SEL_SETFLAG: // TEMPORARILY: anim demo:
+                case SK_SEL_SETFLAG:
                     op_mode = OP_MODE_SETFLAG;
                     break;
                 case SK_SEL_NAME:
@@ -1143,6 +1155,8 @@ void handle_mode_idle() {
                 case SK_SEL_RPS:
                     break;
                 case SK_SEL_FRIEND:
+                    idle_mode_softkey_dis = 1;
+                    oled_draw_pane_and_flush(idle_mode_softkey_sel);
                     befriend_mode_loops_to_tick = BEFRIEND_LOOPS_TO_RESEND;
                     befriend_mode_secs = BEFRIEND_TIMEOUT_SECONDS;
                     befriend_mode_ticks = BEFRIEND_RESEND_TRIES;

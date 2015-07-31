@@ -392,4 +392,22 @@ const qc12_anim_t *moody_idle_anims[] = {
 };
 const uint8_t moody_idle_anim_count = 6;
 
-const uint8_t play_anim_count = 0;
+const qc12_anim_t *play_cause[] = {
+        &trapdoor_creator,
+        &earthquake_creator,
+        &mimic_creator
+};
+
+const qc12_anim_t *play_effect[] = {
+        &trapdoor_effect,
+        &earthquake_effect,
+        &mimic_effect
+};
+
+const qc12_anim_t *play_observe[] = {
+        &trapdoor_creator_observer,
+        &earthquake_creator_observer,
+        &mimic_creator_observer
+};
+
+const uint8_t play_anim_count = 3;
