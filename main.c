@@ -39,7 +39,7 @@ uint8_t s_new_uber_seen = 0;
 uint8_t s_new_badge_seen = 0;
 uint8_t s_new_uber_friend = 0;
 uint8_t s_new_friend = 0;
-uint8_t s_oled_anim_finished = 0;
+uint8_t s_oled_needs_redrawn_idle = 0;
 uint8_t s_overhead_done;
 uint8_t s_befriend_failed = 0;
 uint8_t s_befriend_success = 0;
@@ -83,8 +83,8 @@ void poll_buttons();
 qc12conf my_conf = {0};
 
 const qc12conf default_conf = {
-        0,     // id
-        0,
+    0,     // id
+    0,
 };
 
 #pragma PERSISTENT(badge_seen_ticks)
@@ -107,13 +107,62 @@ uint8_t at_base = 0;
 // Mood:
 uint8_t mood_tick_minutes = MOOD_TICK_MINUTES;
 
-const char titles[][10] = {
-        "n00b",
-        "UBER",
-        "Spastic",
-        "Bored",
-        "Socialite",
+const char titles[NUM_ACHIEVEMENTS][10] = {
+        "newbie",
+        "nice",
+        "social",
+        "hip",
+        "sexy",
+        "friendly",
+        "cool",
+        "star",
+        "badger",
+        "fish",
+        "twin",
+        "twinsy!",
+        "chill",
+        "tease",
+        "punk'd",
+        "tired",
+        "sleepy",
+        "follower",
+        "elite",
+        "moody",
+        "Chief",
+        "Handler",
+        "Towel",
+        "Cheater",
+
 };
+
+const char title_descs[NUM_ACHIEVEMENTS][24] = {
+        "Turn it on.",
+        "Meet 20 badges",
+        "Meet 40 badges",
+        "Meet 60 badges",
+        "Be ... good friends",
+        "Make 5 friends",
+        "Make 15 friends",
+        "Make 30 friends",
+        "Go to the badge talk",
+        "Go to the pool party",
+        "Find your twin",
+        "Befriend your twin",
+        "Hang around the suite",
+        "Play a lot",
+        "Be played with lots",
+        "Be awake 24 hours",
+        "Sleep over 8 hours",
+        "Meet 10 QC ubers",
+        "Befriend 10 ubers",
+        "Be sad for 8 hours",
+        "\"Popular!\"",
+        "\"You found him!\"",
+        "\"No, you're a towel.\"",
+        "\"?????\"",
+
+};
+
 
 // In the "modal" sense:
 uint8_t op_mode = OP_MODE_IDLE;
@@ -122,14 +171,14 @@ uint8_t suppress_softkey = 0;
 uint16_t softkey_en = BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT6 | BIT7;
 
 const char sk_labels[SK_SEL_MAX+1][10] = {
-       "Play",
-       "ASL?",
-       "Befriend",
-       "Wave flag",
-       "Pick flag",
-       "RPS",
-       "Set name",
-       "Sleep"
+        "Play",
+        "ASL?",
+        "Befriend",
+        "Wave flag",
+        "Pick flag",
+        "RPS",
+        "Set name",
+        "Sleep"
 };
 
 void my_conf_write_crc() {
@@ -157,6 +206,27 @@ void mood_adjust_and_write_crc(int8_t change) {
     my_conf_write_crc();
 
     tlc_set_ambient(my_conf.mood);
+}
+
+void achievement_get(uint8_t achievement_id) {
+    if (achievement_id >= NUM_ACHIEVEMENTS) {
+        return;
+    }
+    uint8_t frame = achievement_id / 8;
+    uint8_t bit = 0x01 << (achievement_id % 8);
+
+    if (!(my_conf.achievements[frame] & bit)) {
+        // New achievement. woot.
+        my_conf.achievements[frame] |= bit;
+        my_conf.title_index = achievement_id;
+        if (TLC_IS_A_GO) { // If we've nothing better to do with the lights,
+            tlc_start_anim(&flag_ally, 0, 2, 1, 1);
+        }
+        s_oled_needs_redrawn_idle = 1;
+        mood_adjust_and_write_crc(MOOD_NEW_TITLE);
+    } else {
+        // Already got it. Boring.
+    }
 }
 
 void set_badge_seen(uint8_t id) {
@@ -856,8 +926,8 @@ void handle_character_actions() {
         }
     }
 
-    if (s_oled_anim_finished) {
-        s_oled_anim_finished = 0;
+    if (s_oled_needs_redrawn_idle) {
+        s_oled_needs_redrawn_idle = 0;
         if (my_conf.mood < MOOD_THRESH_SAD) {
             oled_anim_disp_frame(&bored_standing, 0);
         } else {
@@ -908,12 +978,8 @@ void handle_mode_name() {
 
     GrClearDisplay(&g_sContext);
     GrContextFontSet(&g_sContext, &SYS_FONT);
-    GrStringDraw(&g_sContext, "Enter a", -1, 0, 5, 1);
-    GrStringDraw(&g_sContext, "name.", -1, 0, 5+SYS_FONT_HEIGHT, 1);
-    GrStringDraw(&g_sContext, "Hold", -1, 0, 5+SYS_FONT_HEIGHT*3, 1);
-    GrStringDraw(&g_sContext, "middle", -1, 0, 5+SYS_FONT_HEIGHT*4, 1);
-    GrStringDraw(&g_sContext, "button", -1, 0, 5+SYS_FONT_HEIGHT*5, 1);
-    GrStringDraw(&g_sContext, "to finish.", -1, 0, 5+SYS_FONT_HEIGHT*6, 1);
+    oled_print(0, 5, "Enter a name.", 1, 0);
+    oled_print(0, 3+SYS_FONT_HEIGHT*3, "Hold middle button to finish.", 1, 0);
     GrFlush(&g_sContext);
 
     // Switch to the NAME font so it's the expected width.
@@ -1090,7 +1156,7 @@ void handle_mode_idle() {
 //    oled_draw_pane(idle_mode_softkey_sel);
     // Pick our current appearance...
     if (oled_anim_state == OLED_ANIM_DONE) {
-        s_oled_anim_finished = 1;
+        s_oled_needs_redrawn_idle = 1;
     }
     if (oled_overhead_type == OLED_OVERHEAD_OFF) {
         s_overhead_done = 1;
@@ -1313,6 +1379,7 @@ void asl_draw_page(uint8_t page) {
         break;
     default:
         // Achievement listing.
+        oled_print(0,0, title_descs[page-4], 1, 1);
         break;
 
     }
@@ -1326,7 +1393,7 @@ void handle_mode_asl() {
     static uint8_t page_num;
     page_num = 0;
     uint8_t s_redraw = 1;
-    uint8_t asl_pages = 4;
+    uint8_t asl_pages = 4 + NUM_ACHIEVEMENTS;
 
     GrClearDisplay(&g_sContext);
     GrFlush(&g_sContext);

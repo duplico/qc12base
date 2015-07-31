@@ -33,6 +33,7 @@ void oled_play_animation(const qc12_anim_t*, uint8_t);
 void oled_set_overhead_image(const tImage *image, uint8_t len);
 void oled_set_overhead_text(char *text, uint8_t len);
 void oled_set_overhead_off();
+void oled_print(uint8_t x, uint8_t y, char str[], uint8_t opaque, uint8_t centered);
 
 void oled_timestep();
 
