@@ -221,19 +221,20 @@ void set_badge_friend(uint8_t id) {
             // flag an animation
             if (id != my_conf.badge_id) {
                 s_new_uber_friend = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
-                // TODO: mood
+                mood_adjust_and_write_crc(MOOD_NEW_UBER_FRIEND);
             }
         } else {
             // flag a lamer animation
             if (id != my_conf.badge_id) {
                 s_new_friend = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
-                // TODO: mood
+                mood_adjust_and_write_crc(MOOD_NEW_FRIEND);
             }
         }
         my_conf_write_crc();
+        oled_play_animation(&wave_right, 10);
     } else {
-        // celebrate less.
-        // TODO: mood
+        oled_play_animation(&wave_right, 10);
+        mood_adjust_and_write_crc(MOOD_OLD_FRIEND);
     }
 
     if (oled_overhead_type == OLED_OVERHEAD_OFF) {
@@ -545,7 +546,7 @@ void befriend_proto_step(uint8_t from_radio, uint8_t received_flag, uint8_t from
             } else {
                 befriend_mode = 0;
                 s_befriend_success = 1;
-                oled_set_overhead_text(in_payload.handle, 40);
+                oled_set_overhead_text(in_payload.handle, 170);
                 set_badge_friend(befriend_candidate);
             }
         }
