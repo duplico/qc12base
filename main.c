@@ -590,6 +590,11 @@ void handle_infrastructure_services() {
         // It's a flag schedule:
         if (in_payload.flag_id && in_payload.from_addr < BADGES_IN_SYSTEM && in_payload.flag_from < BADGES_IN_SYSTEM && (in_payload.flag_id & 0b01111111) < FLAG_COUNT) {
             // Wave a flag.
+            if (!my_conf.flag_unlocks) {
+                // TODO: score.
+                my_conf.flag_unlocks = 1;
+                my_conf_write_crc();
+            }
             if (!flag_in_cooldown) {
                 flag_from = in_payload.flag_from;
                 flag_id = in_payload.flag_id & 0b01111111;
@@ -870,6 +875,9 @@ void handle_mode_name() {
 
     // For determining whether name entry is complete:
     uint8_t bs_down_loops = 0;
+    // For cheat mode:
+    uint8_t bl_down_loops = 0;
+    uint8_t cheat_mode = 0;
 
     while (1) {
         handle_infrastructure_services();
@@ -891,6 +899,7 @@ void handle_mode_name() {
                     char_entry_index--;
                     curr_char = name[char_entry_index];
                 }
+                bl_down_loops = 0;
                 f_bl = 0;
             }
             if (f_br == BUTTON_RELEASE) {
@@ -928,6 +937,9 @@ void handle_mode_name() {
                 // counting the number of time loops for which it is depressed.
                 bs_down_loops = 1;
                 f_bs = 0;
+            } else if (f_bl == BUTTON_PRESS) {
+                f_bl = 0;
+                bl_down_loops = 1;
             }
 
             // If we're counting the number of loops for which the softkey is
@@ -937,6 +949,14 @@ void handle_mode_name() {
                 bs_down_loops++;
             } else if (bs_down_loops) {
                 break;
+            }
+
+            if (bl_down_loops && bl_down_loops < NAME_COMMIT_LOOPS) {
+                bl_down_loops++;
+            } else if (my_conf.handle[0] && !cheat_mode && bl_down_loops) {
+                bl_down_loops = 0;
+                tlc_start_anim(&flag_ally, 2, 2, 1, 4);
+                cheat_mode = 1;
             }
 
             underchar_x = GrStringWidthGet(&g_sContext, name, char_entry_index);
@@ -962,9 +982,19 @@ void handle_mode_name() {
     while (name[name_len] && name[name_len] != ' ')
         name_len++;
     name[name_len] = 0; // null terminate.
-    strcpy(my_conf.handle, name);
-    my_conf_write_crc();
-    strcpy(out_payload.handle, name);
+
+    if (cheat_mode && !strcmp(name, "F")) {
+        my_conf.flag_unlocks = 1;
+        my_conf_write_crc();
+    } else if (cheat_mode && !strcmp(name, "T")) {
+        my_conf.titles_unlocked = 1;
+        my_conf_write_crc();
+    } else {
+        strcpy(my_conf.handle, name);
+        my_conf_write_crc();
+        strcpy(out_payload.handle, name);
+    }
+
     op_mode = OP_MODE_IDLE;
     suppress_softkey = 1; // And don't register the button release
 
@@ -974,6 +1004,10 @@ void handle_mode_name() {
 } // handle_mode_name
 
 uint8_t softkey_enabled(uint8_t index) {
+    if ((index == SK_SEL_FLAG || index == SK_SEL_SETFLAG) && !my_conf.flag_unlocks) {
+        return 0;
+    }
+
     if (index == SK_SEL_FLAG) {
         return !my_conf.flag_cooldown;
     }
