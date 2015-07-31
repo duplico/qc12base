@@ -602,10 +602,10 @@ void handle_infrastructure_services() {
         }
 
         // It's a play schedule:
-        if (in_payload.play_id && in_payload.from_addr < BADGES_IN_SYSTEM && (in_payload.play_id & 0b01111111) < PLAY_COUNT) {
+        if (in_payload.play_id && in_payload.from_addr < BADGES_IN_SYSTEM && (in_payload.play_id & 0b01111111) < play_anim_count) {
             if (my_conf.mood > MOOD_THRESH_SAD) {
                 // TODO: do the play.
-                mood_adjust_and_write_crc(play_anim_count);
+                mood_adjust_and_write_crc(MOOD_PLAY_RECV);
             }
         }
 
