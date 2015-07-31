@@ -42,6 +42,7 @@ uint8_t s_new_friend = 0;
 uint8_t s_oled_anim_finished = 0;
 uint8_t s_befriend_failed = 0;
 uint8_t s_befriend_success = 0;
+uint8_t s_new_checkin = 0;
 
 uint8_t disable_beacon_service = 0;
 uint8_t idle_mode_softkey_sel = 0;
@@ -56,6 +57,8 @@ uint8_t befriend_mode_secs = 0;
 uint8_t befriend_candidate = 0;
 char befriend_candidate_handle[NAME_MAX_LEN+1] = {0};
 uint8_t befriend_candidate_age = 0;
+
+#define START_BEFRIEND_TLC_ANIM tlc_start_anim(&flag_blue, 0, 30, 1, 0)
 
 #define BF_S_BEACON 1
 #define BF_S_OPEN   3
@@ -79,12 +82,6 @@ qc12conf my_conf = {0};
 
 const qc12conf default_conf = {
         1,     // id
-        0,    // mood
-        0,     // title
-        0,     // flag
-        0,     // flag_cooldown
-        0,     // exp
-        {0},   // achievements
         0,
 };
 
@@ -103,6 +100,7 @@ uint8_t skip_window = 1;
 uint8_t neighbor_count = 0;
 uint8_t window_seconds = RECEIVE_WINDOW_LENGTH_SECONDS;
 uint8_t neighbor_badges[BADGES_IN_SYSTEM] = {0};
+uint8_t at_base = 0;
 
 // Mood:
 uint8_t mood_tick_minutes = MOOD_TICK_MINUTES;
@@ -140,7 +138,7 @@ void my_conf_write_crc() {
     my_conf.crc16 = CRC_getResult(CRC_BASE);
 }
 
-void mood_adjust(int8_t change) {
+void mood_adjust_and_write_crc(int8_t change) {
     if (change < 0) {
         if (my_conf.mood < (-change)) {
             my_conf.mood = 0;
@@ -173,19 +171,34 @@ void set_badge_seen(uint8_t id) {
             // flag an animation
             if (id != my_conf.badge_id) {
                 s_new_uber_seen = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
-                mood_adjust(MOOD_NEW_UBER_SEEN);
+                mood_adjust_and_write_crc(MOOD_NEW_UBER_SEEN);
             }
         } else {
             // flag a lamer animation
             if (id != my_conf.badge_id) {
                 s_new_badge_seen = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
-                mood_adjust(MOOD_NEW_SEEN);
+                mood_adjust_and_write_crc(MOOD_NEW_SEEN);
             }
         }
         my_conf_write_crc();
         // No need to write a CRC here because adjust_mood takes care of that for us.
     }
 }
+
+void set_base_seen(uint8_t base) {
+    if (base >= BASES_IN_SYSTEM) {
+        return;
+    }
+
+    uint16_t base_mask = BIT0 << base;
+
+    if (!(base_mask & my_conf.bases_seen)) {
+        s_new_checkin = 1;
+        my_conf.bases_seen |= base_mask;
+        mood_adjust_and_write_crc(MOOD_EVENT_ARRIVE);
+    }
+}
+
 
 void set_badge_friend(uint8_t id) {
     if (!(id < BADGES_IN_SYSTEM)) {
@@ -236,7 +249,7 @@ void check_conf() {
     }
 
     // Set our mood lights.
-    mood_adjust(0);
+    mood_adjust_and_write_crc(0);
 }
 
 void tick_badge_seen(uint8_t id, char* handle) {
@@ -567,6 +580,13 @@ void handle_infrastructure_services() {
             tick_badge_seen(in_payload.from_addr, in_payload.handle);
         }
 
+        if (in_payload.base_id > 1) {
+            at_base = RECEIVE_WINDOW;
+            set_base_seen(in_payload.base_id - 2);
+        } else if (in_payload.base_id == 1) {
+            // TODO: puppy score.
+        }
+
         // It's a flag schedule:
         if (in_payload.flag_id && in_payload.from_addr < BADGES_IN_SYSTEM && in_payload.flag_from < BADGES_IN_SYSTEM && (in_payload.flag_id & 0b01111111) < FLAG_COUNT) {
             // Wave a flag.
@@ -652,6 +672,9 @@ void handle_infrastructure_services() {
         window_seconds--;
         if (!window_seconds) {
             window_seconds = RECEIVE_WINDOW_LENGTH_SECONDS;
+            if (at_base) {
+                at_base--;
+            }
             if (skip_window != window_position) {
                 s_need_rf_beacon = 1;
             }
@@ -680,7 +703,7 @@ void handle_infrastructure_services() {
 
         mood_tick_minutes--;
         if (!mood_tick_minutes) {
-            mood_adjust(MOOD_TICK_AMOUNT);
+            mood_adjust_and_write_crc(MOOD_TICK_AMOUNT);
             mood_tick_minutes = MOOD_TICK_MINUTES;
         }
     }
@@ -708,10 +731,16 @@ void handle_led_actions() {
 
     }
 
+    if (s_new_checkin && TLC_IS_A_GO) {
+        s_new_checkin = 0;
+        tlc_start_anim(&flag_rainbow, 0, 4, 1, 4);
+    }
+
     if (s_befriend_failed) {
         s_befriend_failed = 0;
         tlc_start_anim(&flag_red, 0, 3, 1, 2);
     }
+
     if (s_befriend_success) {
         s_befriend_success = 0;
         if (s_new_uber_friend || s_new_friend) {
@@ -723,12 +752,6 @@ void handle_led_actions() {
         }
     }
 
-    if (f_tlc_anim_done && s_flag_wave) {
-        tlc_start_anim(flags[my_conf.flag_id], 0, 3, 0, 3);
-        s_flag_wave = 0;
-        f_tlc_anim_done = 0;
-    }
-
     if ((s_new_uber_seen & SIGNAL_BIT_TLC || s_new_badge_seen & SIGNAL_BIT_TLC) && TLC_IS_A_GO) {
         // Big rainbow animation.
         tlc_start_anim(&flag_rainbow, 0, 4, 1, 4);
@@ -738,7 +761,14 @@ void handle_led_actions() {
 
     if (f_tlc_anim_done) {
         f_tlc_anim_done = 0;
-        tlc_display_ambient();
+        if (s_flag_wave) {
+            tlc_start_anim(flags[my_conf.flag_id], 0, 3, 0, 3);
+            s_flag_wave = 0;
+        } else if (befriend_mode) {
+            START_BEFRIEND_TLC_ANIM;
+        } else {
+            tlc_display_ambient();
+        }
     }
 }
 
@@ -1028,7 +1058,7 @@ void handle_mode_idle() {
                     befriend_mode_secs = BEFRIEND_TIMEOUT_SECONDS;
                     befriend_mode_ticks = BEFRIEND_RESEND_TRIES;
 
-                    tlc_start_anim(&flag_blue, 0, 30, 1, 2);
+                    START_BEFRIEND_TLC_ANIM;
 
                     if (befriend_candidate_age) { // We have a valid candidate:
                         // This will be from a beacon, so we'll be the client:

@@ -17,6 +17,7 @@
 
 // System configuration
 #define BADGES_IN_SYSTEM 175
+#define BASES_IN_SYSTEM 8
 #define UBERS_IN_SYSTEM 12
 #define SLEEP_BITS LPM1_bits // because we need SMCLK for the TLC.
 #define NUM_ACHIEVEMENTS 32
@@ -27,6 +28,7 @@
 #define FLAG_SEND_TRIES 3
 #define MOOD_TICK_MINUTES 10
 #define MOOD_TICK_AMOUNT -3
+#define MOOD_TICK_AMOUNT_UP 8
 #define BEFRIEND_TIMEOUT_SECONDS 3
 #define BEFRIEND_RESEND_TRIES 5
 #define BEFRIEND_LOOPS_TO_RESEND 10
@@ -182,6 +184,7 @@ typedef struct {
     uint8_t uber_seen_count;
     uint8_t friend_count;
     uint8_t uber_friend_count;
+    uint16_t bases_seen;
     uint8_t achievements[CEILING_DIV(NUM_ACHIEVEMENTS, 8)];
     uint8_t top_seen[3];
     char top_seen_handles[3][NAME_MAX_LEN+1];

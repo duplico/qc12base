@@ -34,7 +34,6 @@ const qc12_anim_t *anim_data;
 uint8_t oled_overhead_type = OLED_OVERHEAD_OFF;
 uint8_t oled_overhead_loops = 0;
 uint8_t oled_overhead_half_width = 0;
-
 tImage *oled_overhead_image;
 char oled_overhead_text[NAME_MAX_LEN+1] = "";
 
