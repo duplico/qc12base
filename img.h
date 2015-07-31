@@ -46,7 +46,7 @@ extern const qc12_anim_t wave_right;
 
 extern const qc12_anim_t *demo_anims[];
 extern const uint8_t demo_anim_count;
-
+extern const uint8_t play_anim_count
 
 extern const qc12_anim_t *idle_anims[];
 extern const qc12_anim_t *moody_idle_anims[];
