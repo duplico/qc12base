@@ -15,6 +15,12 @@
 #define OLED_ANIM_START 1
 #define OLED_ANIM_DONE  0
 
+#define OLED_OVERHEAD_OFF 0
+#define OLED_OVERHEAD_TXT 1
+#define OLED_OVERHEAD_IMG 2
+
+extern uint8_t oled_overhead_type;
+
 extern uint8_t oled_anim_state;
 
 tContext g_sContext;

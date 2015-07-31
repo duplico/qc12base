@@ -40,6 +40,7 @@ uint8_t s_new_badge_seen = 0;
 uint8_t s_new_uber_friend = 0;
 uint8_t s_new_friend = 0;
 uint8_t s_oled_anim_finished = 0;
+uint8_t s_overhead_done;
 uint8_t s_befriend_failed = 0;
 uint8_t s_befriend_success = 0;
 uint8_t s_new_checkin = 0;
@@ -81,7 +82,7 @@ void poll_buttons();
 qc12conf my_conf = {0};
 
 const qc12conf default_conf = {
-        1,     // id
+        0,     // id
         0,
 };
 
@@ -783,6 +784,16 @@ void handle_character_actions() {
 
     }
 
+    if (s_overhead_done) {
+        s_overhead_done = 0;
+        for (uint8_t i=0; i<FAVORITE_COUNT; i++) {
+            if (neighbor_badges[fav_badges_ids[i]]) {
+                // favorite nearby.
+                oled_set_overhead_image(&heart, 254);
+            }
+        }
+    }
+
     if (f_new_second) {
         // Determine whether we should do a random action.
         if (oled_anim_state == OLED_ANIM_DONE) {
@@ -983,8 +994,11 @@ void handle_mode_name() {
         name_len++;
     name[name_len] = 0; // null terminate.
 
-    if (cheat_mode && !strcmp(name, "F")) {
-        my_conf.flag_unlocks = 1;
+    if (cheat_mode && !strcmp(name, "FFF")) {
+        my_conf.flag_unlocks = 0xFF;
+        my_conf_write_crc();
+    } else if (cheat_mode && !strcmp(name, "FA")) {
+        my_conf.flag_unlocks = 0x01;
         my_conf_write_crc();
     } else if (cheat_mode && !strcmp(name, "T")) {
         my_conf.titles_unlocked = 1;
@@ -1027,6 +1041,10 @@ void handle_mode_idle() {
     if (oled_anim_state == OLED_ANIM_DONE) {
         s_oled_anim_finished = 1;
     }
+    if (oled_overhead_type == OLED_OVERHEAD_OFF) {
+        s_overhead_done = 1;
+    }
+
     oled_play_animation(&standing, 0);
     oled_anim_next_frame();
 
@@ -1077,8 +1095,10 @@ void handle_mode_idle() {
                     break;
                 case SK_SEL_FLAG:
                     tlc_start_anim(flags[my_conf.flag_id], 0, 3, 0, 5);
-                    my_conf.flag_cooldown = FLAG_OUT_COOLDOWN_MINUTES;
-                    my_conf_write_crc();
+                    if (my_conf.flag_unlocks != 0xFF) {
+                        my_conf.flag_cooldown = FLAG_OUT_COOLDOWN_MINUTES;
+                        my_conf_write_crc();
+                    }
                     flag_from = my_conf.badge_id;
                     flag_id = my_conf.flag_id;
                     s_flag_send = FLAG_SEND_TRIES;
