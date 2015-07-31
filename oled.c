@@ -27,10 +27,6 @@ uint8_t anim_loops = 0;
 uint8_t anim_frame_skip = 0;
 const qc12_anim_t *anim_data;
 
-#define OLED_OVERHEAD_OFF 0
-#define OLED_OVERHEAD_TXT 1
-#define OLED_OVERHEAD_IMG 2
-
 uint8_t oled_overhead_type = OLED_OVERHEAD_OFF;
 uint8_t oled_overhead_loops = 0;
 uint8_t oled_overhead_half_width = 0;
@@ -110,6 +106,7 @@ void oled_set_overhead_text(char *text, uint8_t loop_len) {
 }
 
 void oled_set_overhead_off() {
+    s_overhead_done = 1;
     oled_overhead_loops = 0;
     oled_overhead_type = OLED_OVERHEAD_OFF;
     if (oled_anim_state == OLED_ANIM_DONE) {
@@ -207,6 +204,7 @@ void oled_timestep() {
         }
         if (!oled_overhead_loops) {
             oled_overhead_type = OLED_OVERHEAD_OFF;
+            s_overhead_done = 1;
             if (!oled_anim_state) {
                 s_oled_anim_finished = 1;
             }
