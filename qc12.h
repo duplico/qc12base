@@ -35,7 +35,9 @@
 #define RECEIVE_WINDOW 8
 #define RECEIVE_WINDOW_LENGTH_SECONDS 10
 
-// Mood changes:
+// Mood changes
+#define MOOD_THRESH_SAD 30
+
 #define MOOD_NEW_UBER_SEEN 25
 #define MOOD_NEW_SEEN 10
 #define MOOD_TICK -3
