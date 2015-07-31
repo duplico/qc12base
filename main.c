@@ -601,6 +601,14 @@ void handle_infrastructure_services() {
             // TODO: puppy score.
         }
 
+        // It's a play schedule:
+        if (in_payload.play_id && in_payload.from_addr < BADGES_IN_SYSTEM && (in_payload.play_id & 0b01111111) < PLAY_COUNT) {
+            if (my_conf.mood > MOOD_THRESH_SAD) {
+                // TODO: do the play.
+                mood_adjust_and_write_crc(play_anim_count);
+            }
+        }
+
         // It's a flag schedule:
         if (in_payload.flag_id && in_payload.from_addr < BADGES_IN_SYSTEM && in_payload.flag_from < BADGES_IN_SYSTEM && (in_payload.flag_id & 0b01111111) < FLAG_COUNT) {
             // Wave a flag.

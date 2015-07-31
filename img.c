@@ -391,3 +391,5 @@ const qc12_anim_t *moody_idle_anims[] = {
         &bored_arms, &bored_crouch, &bored_wave, &bored_sad, &bored_yawn, &bored_talk_to_hand
 };
 const uint8_t moody_idle_anim_count = 6;
+
+const uint8_t play_anim_count = 0;
