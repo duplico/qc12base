@@ -822,16 +822,20 @@ void handle_character_actions() {
 
     if (s_overhead_done) {
         s_overhead_done = 0;
-        for (uint8_t i=0; i<FAVORITE_COUNT; i++) {
-            if (neighbor_badges[fav_badges_ids[i]]) {
-                // favorite nearby.
-                if ((BADGE_FRIEND_BIT & badges_seen[fav_badges_ids[i]])) {
-                    // Favorite friend nearby:
-                    oled_set_overhead_image(&heart, 100);
-                    break;
-                } else {
-                    // Favorite non-friend nearby:
-                    oled_set_overhead_image(&empty_heart, 100);
+        if (my_conf.mood < MOOD_THRESH_SAD) { // We don't really do anything if we're moody.
+            oled_set_overhead_image(&cloud, 100);
+        } else {
+            for (uint8_t i=0; i<FAVORITE_COUNT; i++) {
+                if (neighbor_badges[fav_badges_ids[i]]) {
+                    // favorite nearby.
+                    if ((BADGE_FRIEND_BIT & badges_seen[fav_badges_ids[i]])) {
+                        // Favorite friend nearby:
+                        oled_set_overhead_image(&heart, 100);
+                        break;
+                    } else {
+                        // Favorite non-friend nearby:
+                        oled_set_overhead_image(&empty_heart, 100);
+                    }
                 }
             }
         }
@@ -1287,7 +1291,14 @@ void asl_draw_page(uint8_t page) {
         GrStringDrawCentered(&g_sContext, "badges", neighbor_count == 1 ? 5 : 6, 32, 32, 0);
 
         // Mood:
-        GrStringDrawCentered(&g_sContext, "My mood:", -1, 32, 83, 0);
+        GrStringDrawCentered(&g_sContext, "My mood:", -1, 32, 68, 0);
+        if (my_conf.mood > MOOD_THRESH_HAPPY) {
+            GrStringDrawCentered(&g_sContext, "Happy!", -1, 32, 83, 0);
+        } else if (my_conf.mood < MOOD_THRESH_SAD) {
+            GrStringDrawCentered(&g_sContext, "Sad!", -1, 32, 83, 0);
+        } else {
+            GrStringDrawCentered(&g_sContext, "OK.", -1, 32, 83, 0);
+        }
         GrRectDraw(&g_sContext, &uber_rect);
         uber_rect.sXMax = 5 + 54 * my_conf.mood / 100;
 
