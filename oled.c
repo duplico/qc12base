@@ -63,7 +63,8 @@ void oled_draw_pane_and_flush(uint8_t softkey_sel) {
     GrStringDraw(&g_sContext, titles[my_conf.title_index], -1, 63 - title_width, NAME_FONT_HEIGHT, 0);
     GrLineDrawH(&g_sContext, 0, 64, 2*NAME_FONT_HEIGHT+1);
     GrContextFontSet(&g_sContext, &SOFTKEY_LABEL_FONT);
-    GrStringDrawCentered(&g_sContext, sk_labels[softkey_sel], -1, 32,  SPRITE_Y + 64 + SOFTKEY_FONT_HEIGHT/2, 0);
+    if (!idle_mode_softkey_dis)
+        GrStringDrawCentered(&g_sContext, sk_labels[softkey_sel], -1, 32,  SPRITE_Y + 64 + SOFTKEY_FONT_HEIGHT/2, 0);
     GrLineDrawH(&g_sContext, 0, 64, SPRITE_Y + 64);
     GrFlush(&g_sContext);
 }
