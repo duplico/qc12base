@@ -761,7 +761,11 @@ void handle_character_actions() {
 
     if (s_oled_anim_finished) {
         s_oled_anim_finished = 0;
-        oled_anim_disp_frame(&standing, 0);
+        if (my_conf.mood < MOOD_THRESH_SAD) {
+            oled_anim_disp_frame(&bored_standing, 0);
+        } else {
+            oled_anim_disp_frame(&standing, 0);
+        }
     }
 
     // Bail if we're not going to be able to start an animation, because that's
@@ -778,10 +782,16 @@ void handle_character_actions() {
     }
 
     if (s_need_idle_action) {
-        // Pick a random idle animation to do.
-        volatile uint8_t anim = rand() % idle_anim_count;
-        oled_play_animation(idle_anims[anim], rand() % 5);
         s_need_idle_action = 0;
+        // Pick a random idle animation to do.
+        static uint8_t anim;
+        if (my_conf.mood > MOOD_THRESH_SAD) {
+            anim = rand() % idle_anim_count;
+            oled_play_animation(idle_anims[anim], rand() % 5);
+        } else {
+            anim = rand() % moody_idle_anim_count;
+            oled_play_animation(moody_idle_anims[anim], rand() % 5);
+        }
     }
 
 }
@@ -950,6 +960,9 @@ void handle_mode_idle() {
     GrClearDisplay(&g_sContext);
 //    oled_draw_pane(idle_mode_softkey_sel);
     // Pick our current appearance...
+    if (oled_anim_state == OLED_ANIM_DONE) {
+        s_oled_anim_finished = 1;
+    }
     oled_play_animation(&standing, 0);
     oled_anim_next_frame();
 
