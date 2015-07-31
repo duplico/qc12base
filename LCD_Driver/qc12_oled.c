@@ -187,7 +187,7 @@ qc12_oledInit(void)
             0x40,		// Start line
             0x8d, 0x14, // Charge pump
             0xa1,		// Segment re-map
-            //		0xc8,		// COM output scan direction
+            0xc8,		// COM output scan direction
             0xda, 0x12,	// COM pins hardware configuration
             0x81, 0x10, // Contrast control
             0xD9, 0xF1, // Pre-charge period
@@ -307,130 +307,25 @@ qc12_oledPixelDrawMultiple(void *pvDisplayData, int16_t lX,
                                            const uint8_t *pucData,
                                            const uint16_t *pucPalette)
 {
-	uint16_t ulByte;
-
-    //
-    // Determine how to interpret the pixel data based on the number of bits
-    // per pixel.
-    //
-    switch(lBPP)
+    uint16_t ulByte;
+    // Loop while there are more pixels to draw
+    while(lCount > 0)
     {
-        // The pixel data is in 1 bit per pixel format
-        case 1:
-        {
-            // Loop while there are more pixels to draw
-            while(lCount > 0)
-            {
-                // Get the next byte of image data
-                ulByte = *pucData++;
+        // Get the next byte of image data
+        ulByte = *pucData++;
 
-                // Loop through the pixels in this byte of image data
-                for(; (lX0 < 8) && lCount; lX0++, lCount--)
-                {
-                    // Draw this pixel in the appropriate color
-                    if (((uint16_t *)pucPalette)[(ulByte >> (7 - lX0)) & 1]) {
-                        qc12_oledPixelDraw(pvDisplayData, lX, lY,
-                                ((uint16_t *)pucPalette)[(ulByte >> (7 - lX0)) & 1]);
-                    }
-                    lX++;
-                }
-                
-                // Start at the beginning of the next byte of image data
-                lX0 = 0;
+        // Loop through the pixels in this byte of image data
+        for(; (lX0 < 8) && lCount; lX0++, lCount--)
+        {
+            // Draw this pixel in the appropriate color
+            if (((uint16_t *)pucPalette)[(ulByte >> (7 - lX0)) & 1]) {
+                qc12_oledPixelDraw(pvDisplayData, lX, lY, 1);
             }
-            // The image data has been drawn
-            
-            break;
+            lX++;
         }
 
-		// The pixel data is in 2 bit per pixel format
-        case 2:
-        {
-            // Loop while there are more pixels to draw
-            while(lCount > 0)
-            {
-                // Get the next byte of image data
-                ulByte = *pucData++;
-
-                // Loop through the pixels in this byte of image data
-                for(; (lX0 < 4) && lCount; lX0++, lCount--)
-                {
-                    // Draw this pixel in the appropriate color
-					qc12_oledPixelDraw(pvDisplayData, lX++, lY, 
-											((uint16_t *)pucPalette)[(ulByte >> (6 - (lX0 << 1))) & 3]);
-                }
-                
-                // Start at the beginning of the next byte of image data
-                lX0 = 0;
-            }
-            // The image data has been drawn
-            
-            break;
-		}
-        // The pixel data is in 4 bit per pixel format
-        case 4:
-        {
-            // Loop while there are more pixels to draw.  "Duff's device" is
-            // used to jump into the middle of the loop if the first nibble of
-            // the pixel data should not be used.  Duff's device makes use of
-            // the fact that a case statement is legal anywhere within a
-            // sub-block of a switch statement.  See
-            // http://en.wikipedia.org/wiki/Duff's_device for detailed
-            // information about Duff's device.
-            switch(lX0 & 1)
-            {
-                case 0:
-                  
-                    while(lCount)
-                    {
-                        // Get the upper nibble of the next byte of pixel data
-                        // and extract the corresponding entry from the palette
-                        ulByte = (*pucData >> 4);    
-                        ulByte = (*(uint16_t *)(pucPalette + ulByte));
-                        // Write to LCD screen
-                        qc12_oledPixelDraw(pvDisplayData, lX++, lY, ulByte);
-                        
-                        // Decrement the count of pixels to draw
-                        lCount--;
-                        
-                        // See if there is another pixel to draw
-                        if(lCount)
-                        {
-                case 1:
-                            // Get the lower nibble of the next byte of pixel
-                            // data and extract the corresponding entry from
-                            // the palette
-                            ulByte = (*pucData++ & 15);
-                            ulByte = (*(uint16_t *)(pucPalette + ulByte));
-                            // Write to LCD screen
-                            qc12_oledPixelDraw(pvDisplayData, lX++, lY, ulByte);
-
-                            // Decrement the count of pixels to draw
-                            lCount--;
-                        }
-                    }
-            }
-            // The image data has been drawn.
-           
-            break;
-        }
-
-        // The pixel data is in 8 bit per pixel format
-        case 8:
-        {
-            // Loop while there are more pixels to draw
-            while(lCount--)
-            {
-                // Get the next byte of pixel data and extract the
-                // corresponding entry from the palette
-                ulByte = *pucData++;
-                ulByte = (*(uint16_t *)(pucPalette + ulByte));
-                // Write to LCD screen
-                qc12_oledPixelDraw(pvDisplayData, lX++, lY, ulByte);
-            }
-            // The image data has been drawn
-            break;
-        }
+        // Start at the beginning of the next byte of image data
+        lX0 = 0;
     }
 }
 
