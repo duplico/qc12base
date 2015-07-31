@@ -823,7 +823,11 @@ void handle_character_actions() {
     if (s_overhead_done) {
         s_overhead_done = 0;
         if (my_conf.mood < MOOD_THRESH_SAD) { // We don't really do anything if we're moody.
-            oled_set_overhead_image(&cloud, 100);
+            if (rand() % 2) {
+                oled_set_overhead_image(&lightning, 10);
+            } else {
+                oled_set_overhead_image(&cloud, 100);
+            }
         } else {
             for (uint8_t i=0; i<FAVORITE_COUNT; i++) {
                 if (neighbor_badges[fav_badges_ids[i]]) {
