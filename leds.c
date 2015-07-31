@@ -535,7 +535,7 @@ void tlc_set_ambient(uint8_t mood) {
     } else if (mood == 50) {
         // yellow
         memcpy(&tlc_ambient_colors, &mood_yellow, sizeof(rgbcolor_t));
-    } else if (mood == 0) {
+    } else if (mood < MOOD_THRESH_SAD ) {
         // red
         memcpy(&tlc_ambient_colors, &mood_red, sizeof(rgbcolor_t));
     } else if (mood > 50) {
