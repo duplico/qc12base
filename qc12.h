@@ -20,7 +20,7 @@
 #define BASES_IN_SYSTEM 8
 #define UBERS_IN_SYSTEM 12
 #define SLEEP_BITS LPM1_bits // because we need SMCLK for the TLC.
-#define NUM_ACHIEVEMENTS 32
+#define NUM_ACHIEVEMENTS 24
 #define FAVORITE_COUNT 3
 #define RADIO_TX_POWER_DB 4 // [-18 .. 13]
 #define FLAG_OUT_COOLDOWN_MINUTES 10
@@ -32,7 +32,10 @@
 #define BEFRIEND_TIMEOUT_SECONDS 3
 #define BEFRIEND_RESEND_TRIES 5
 #define BEFRIEND_LOOPS_TO_RESEND 10
+
 #define TITLE_CHEAT_CODE "MYTTL"
+#define FLAG_CHEAT_CODE "FFS"
+#define FLAG_NC_CHEAT_CODE "FFSAAA"
 
 #define RECEIVE_WINDOW 8
 #define RECEIVE_WINDOW_LENGTH_SECONDS 10
@@ -51,6 +54,7 @@
 #define MOOD_EVENT_ARRIVE 100
 #define MOOD_PLAY_SEND 20
 #define MOOD_PLAY_RECV -12
+#define MOOD_NEW_TITLE 25
 
 // Name entry configuration parameters:
 #define NAME_SEL_CHAR '*'
@@ -157,7 +161,7 @@ extern volatile uint8_t f_rfm_tx_done;
 extern volatile uint8_t f_tlc_anim_done;
 extern volatile uint8_t f_radio_fault;
 
-extern uint8_t s_oled_anim_finished;
+extern uint8_t s_oled_needs_redrawn_idle;
 extern uint8_t s_overhead_done;
 extern uint8_t s_flag_wave;
 

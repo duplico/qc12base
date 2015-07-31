@@ -89,7 +89,7 @@ void oled_set_overhead_image(const tImage *image, uint8_t loop_len) {
     oled_overhead_type = OLED_OVERHEAD_IMG;
     oled_overhead_image = image;
     if (oled_anim_state == OLED_ANIM_DONE) {
-        s_oled_anim_finished = 1;
+        s_oled_needs_redrawn_idle = 1;
     }
 }
 
@@ -102,7 +102,7 @@ void oled_set_overhead_text(char *text, uint8_t loop_len) {
     }
     strcpy(oled_overhead_text, text);
     if (oled_anim_state == OLED_ANIM_DONE) {
-        s_oled_anim_finished = 1;
+        s_oled_needs_redrawn_idle = 1;
     }
 }
 
@@ -111,7 +111,7 @@ void oled_set_overhead_off() {
     oled_overhead_loops = 0;
     oled_overhead_type = OLED_OVERHEAD_OFF;
     if (oled_anim_state == OLED_ANIM_DONE) {
-        s_oled_anim_finished = 1;
+        s_oled_needs_redrawn_idle = 1;
     }
 }
 
@@ -183,7 +183,7 @@ void oled_anim_next_frame() {
     }
 
     if (anim_index == anim_data->len) {
-        s_oled_anim_finished = 1;
+        s_oled_needs_redrawn_idle = 1;
         oled_anim_state = OLED_ANIM_DONE;
         oled_consider_walking_back();
     }
@@ -195,7 +195,48 @@ void oled_play_animation(const qc12_anim_t *anim, uint8_t loops) {
     anim_data = anim;
     anim_frame_skip = anim->speed;
     oled_anim_state = OLED_ANIM_START;
-    s_oled_anim_finished = 0;
+    s_oled_needs_redrawn_idle = 0;
+}
+
+void oled_print(uint8_t x, uint8_t y, char str[], uint8_t opaque, uint8_t centered) {
+    GrContextFontSet(&g_sContext, &SYS_FONT);
+    uint8_t curr_y = y;
+    uint8_t str_start = 0;
+    uint8_t str_end = 0;
+    uint8_t str_end_candidate = 0;
+    uint8_t str_len = strlen(str);
+    // Note: This could spin forever if we use long words.
+    while (str_end < str_len) {
+        // find the next space, call it str_end_candidate
+        while (str_end_candidate < str_len && str[str_end_candidate] != ' ') {
+            str_end_candidate++;
+        }
+        // If the string, from start to end, fits, we continue (find next space).
+        // str_end becomes str_end_candidate.
+        if (x + GrStringWidthGet(&g_sContext, &str[str_start], str_end_candidate - str_start) < 63) {
+            str_end = str_end_candidate;
+            str_end_candidate++; // Skip the space.
+        } else {
+            // If it doesn't fit, we use str_end. If str_end == str_start, then I don't know??? TODO.
+            if (centered) {
+                GrStringDrawCentered(&g_sContext, &str[str_start], str_end - str_start, (64+x)/2, curr_y+SYS_FONT_HEIGHT/2, opaque);
+            } else {
+                GrStringDraw(&g_sContext, &str[str_start], str_end - str_start, x, curr_y, opaque);
+            }
+            curr_y += SYS_FONT_HEIGHT+1;
+            str_start = str_end+1; // Skip the space.
+        }
+    }
+
+    // If there's still something to draw:
+    if (str_start < str_len) {
+        if (centered) {
+            GrStringDrawCentered(&g_sContext, &str[str_start], -1, (64+x)/2, curr_y+SYS_FONT_HEIGHT/2, opaque);
+        }
+        else {
+            GrStringDraw(&g_sContext, &str[str_start], -1, x, curr_y, opaque);
+        }
+    }
 }
 
 void oled_timestep() {
@@ -207,7 +248,7 @@ void oled_timestep() {
             oled_overhead_type = OLED_OVERHEAD_OFF;
             s_overhead_done = 1;
             if (!oled_anim_state) {
-                s_oled_anim_finished = 1;
+                s_oled_needs_redrawn_idle = 1;
             }
         }
     }
