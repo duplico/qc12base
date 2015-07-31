@@ -112,7 +112,7 @@
 #endif
 #ifdef PORTRAIT_FLIP
 #define MAPPED_X(x, y)  (y)
-#define MAPPED_Y(x, y)  (LCD_Y_SIZE - (x) - 1)
+#define MAPPED_Y(x, y)  (x)
 #endif
 #ifdef LANDSCAPE_FLIP
 #define MAPPED_X(x, y)  (LCD_X_SIZE - (x) - 1)
