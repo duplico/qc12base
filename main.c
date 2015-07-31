@@ -184,6 +184,10 @@ void set_badge_seen(uint8_t id) {
         my_conf_write_crc();
         // No need to write a CRC here because adjust_mood takes care of that for us.
     }
+
+    if (oled_overhead_type == OLED_OVERHEAD_OFF) {
+        s_overhead_done = 1;
+    }
 }
 
 void set_base_seen(uint8_t base) {
@@ -198,6 +202,8 @@ void set_base_seen(uint8_t base) {
         my_conf.bases_seen |= base_mask;
         mood_adjust_and_write_crc(MOOD_EVENT_ARRIVE);
     }
+
+    // TODO: lightbulb here?
 }
 
 
@@ -225,6 +231,10 @@ void set_badge_friend(uint8_t id) {
         my_conf_write_crc();
     } else {
         // celebrate less.
+    }
+
+    if (oled_overhead_type == OLED_OVERHEAD_OFF) {
+        s_overhead_done = 1;
     }
 }
 
@@ -352,7 +362,7 @@ void post() {
     EUSCI_A_SPI_enableInterrupt(EUSCI_A0_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
 
     // If we detected no errors, we're done here.
-    if (!(flash_error || led_error || crystal_error)) // TODO:
+    if (!(flash_error || led_error || crystal_error))
         return;
 
     // Otherwise, show those errors and then delay for a bit so we can
@@ -789,7 +799,14 @@ void handle_character_actions() {
         for (uint8_t i=0; i<FAVORITE_COUNT; i++) {
             if (neighbor_badges[fav_badges_ids[i]]) {
                 // favorite nearby.
-                oled_set_overhead_image(&heart, 254);
+                if ((BADGE_FRIEND_BIT & badges_seen[fav_badges_ids[i]])) {
+                    // Favorite friend nearby:
+                    oled_set_overhead_image(&heart, 100);
+                    break;
+                } else {
+                    // Favorite non-friend nearby:
+                    oled_set_overhead_image(&empty_heart, 100);
+                }
             }
         }
     }
