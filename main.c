@@ -232,7 +232,7 @@ void set_badge_friend(uint8_t id) {
             }
         }
         my_conf_write_crc();
-        oled_play_animation(&wave_right, 10);
+        oled_play_animation(&flap_arms, 10);
     } else {
         oled_play_animation(&wave_right, 10);
         mood_adjust_and_write_crc(MOOD_OLD_FRIEND);
