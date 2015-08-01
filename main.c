@@ -125,13 +125,13 @@ const char titles[NUM_ACHIEVEMENTS][10] = {
         "punk'd",
         "tired",
         "sleepy",
-        "follower",
+        "squire",
         "elite",
         "moody",
         "Chief",
         "Handler",
         "Towel",
-        "Cheater",
+        "Cheat",
 
 };
 
@@ -140,7 +140,7 @@ const char title_descs[NUM_ACHIEVEMENTS][24] = {
         "Meet 20 badges",
         "Meet 40 badges",
         "Meet 60 badges",
-        "Be ... good friends",
+        "Sleep with your fave",
         "Make 5 friends",
         "Make 15 friends",
         "Make 30 friends",
@@ -1291,6 +1291,7 @@ void handle_mode_idle() {
 }
 
 void asl_draw_page(uint8_t page) {
+    static uint8_t achievement_id;
     char buf[16] = "";
     tRectangle friends_rect = {5, 50, 59, 60};
     tRectangle uber_rect = {5, 93, 59, 103};
@@ -1394,7 +1395,6 @@ void asl_draw_page(uint8_t page) {
         break;
     default:
         // Achievement listing.
-        static uint8_t achievement_id;
         achievement_id = page-4;
         oled_print(0,0, "Title:", 1, 0);
         oled_print(0,12, titles[achievement_id], 1, 1);
@@ -1450,6 +1450,13 @@ void handle_mode_asl() {
 
             if (f_bs == BUTTON_RELEASE) {
                 f_bs = 0;
+
+                if (my_conf.titles_unlocked && page_num >= 4 && achievement_have(page_num-4)) {
+                    // This is your new title.
+                    my_conf.title_index = page_num-4;
+                    my_conf_write_crc();
+                }
+
                 // Select button
                 op_mode = OP_MODE_IDLE;
                 break;
@@ -1463,7 +1470,13 @@ void handle_mode_asl() {
 
             GrClearDisplay(&g_sContext);
             GrContextFontSet(&g_sContext, &SOFTKEY_LABEL_FONT);
-            GrStringDrawCentered(&g_sContext, "Close", -1, 32, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
+
+            if (my_conf.titles_unlocked && page_num >= 4 && achievement_have(page_num-4)) {
+                // This is your new title.
+                GrStringDrawCentered(&g_sContext, "Pick", -1, 32, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
+            } else {
+                GrStringDrawCentered(&g_sContext, "Close", -1, 32, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
+            }
             GrLineDraw(&g_sContext, 10, 118, 0, 123);
             GrLineDraw(&g_sContext, 10, 127, 0, 123);
             GrLineDraw(&g_sContext, 53, 118, 63, 123);
