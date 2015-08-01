@@ -408,7 +408,7 @@ static const uint8_t pixel_check1BPP_UNCOMP[] =
 0xff, 0xff, 0xff, 0xff
 };
 
-const tImage  check1BPP_UNCOMP=
+const tImage  check=
 {
     IMAGE_FMT_1BPP_UNCOMP,
     32,
@@ -446,7 +446,7 @@ static const uint8_t pixel_nocheck1BPP_UNCOMP[] =
 0xff, 0xff, 0xff, 0xff
 };
 
-const tImage  nocheck1BPP_UNCOMP=
+const tImage nocheck =
 {
     IMAGE_FMT_1BPP_UNCOMP,
     32,
