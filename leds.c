@@ -502,7 +502,7 @@ inline void tlc_load_colors() {
 
 inline void tlc_fade_colors() {
     if (ring_fade_steps && ring_fade_index == ring_fade_steps-1) {
-        // hit the destination: memcpy(&tlc_curr_colors[0], &tlc_curr_anim[tlc_light_offset], sizeof(rgbcolor_t));
+        // hit the destination:
         memcpy(&tlc_colors_curr[0], tlc_colors_next, sizeof(rgbcolor_t));
 
         if (tlc_anim_mode == TLC_ANIM_MODE_SHIFT) {
