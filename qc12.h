@@ -20,10 +20,10 @@
 
 // System configuration
 #define BADGES_IN_SYSTEM 175
-#define BASES_IN_SYSTEM 8
+#define BASES_IN_SYSTEM 5
 #define UBERS_IN_SYSTEM 12
 #define SLEEP_BITS LPM1_bits // because we need SMCLK for the TLC.
-#define NUM_ACHIEVEMENTS 25
+#define NUM_ACHIEVEMENTS 27
 #define FAVORITE_COUNT 3
 #define RADIO_TX_POWER_DB 4 // [-18 .. 13]
 #define FLAG_OUT_COOLDOWN_MINUTES 10
@@ -88,8 +88,6 @@
 // Softkey label font:
 #define SOFTKEY_LABEL_FONT SYS_FONT
 #define SOFTKEY_FONT_HEIGHT 12
-
-#define DEDICATED_BASE_ID 222
 
 //////////////////////////
 // Derived definitions ///
@@ -156,6 +154,12 @@ extern uint16_t softkey_en;
 
 // Radio bidness:
 #define NOT_A_BASE 0xFF
+#define DEDICATED_BASE_ID 222
+#define BASE_SUITE 0
+#define BASE_POOL  1
+#define BASE_KICKOFF 2
+#define BASE_MIXER 3
+#define BASE_TALK  4
 
 // Masks for managing flags/signals that are consumed by both the
 // OLED and the TLC systems:
@@ -212,6 +216,7 @@ typedef struct {
     uint16_t uptime;
     uint16_t waketime;
     uint16_t sleeptime;
+    uint8_t suite_minutes;
     uint8_t achievements[CEILING_DIV(NUM_ACHIEVEMENTS, 8)];
     uint8_t top_seen[FAVORITE_COUNT];
     char top_seen_handles[FAVORITE_COUNT][NAME_MAX_LEN+1];
