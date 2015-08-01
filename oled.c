@@ -59,8 +59,8 @@ void oled_draw_pane_and_flush(uint8_t softkey_sel) {
     GrStringDraw(&g_sContext, my_conf.handle, -1, 0, 0, 0);
     uint8_t title_width = GrStringWidthGet(&g_sContext, titles[my_conf.title_index], -1);
     uint8_t the_width = GrStringWidthGet(&g_sContext, "the", -1);
-    GrStringDraw(&g_sContext, "the", -1, 63 - title_width - the_width - 3, NAME_FONT_HEIGHT, 0);
-    GrStringDraw(&g_sContext, titles[my_conf.title_index], -1, 63 - title_width, NAME_FONT_HEIGHT, 0);
+    GrStringDraw(&g_sContext, "the", -1, 65 - title_width - the_width - 3, NAME_FONT_HEIGHT, 0);
+    GrStringDraw(&g_sContext, titles[my_conf.title_index], -1, 65 - title_width, NAME_FONT_HEIGHT, 0);
     GrLineDrawH(&g_sContext, 0, 64, 2*NAME_FONT_HEIGHT+1);
     GrContextFontSet(&g_sContext, &SOFTKEY_LABEL_FONT);
     if (!idle_mode_softkey_dis)
@@ -155,10 +155,20 @@ void oled_anim_disp_frame(const qc12_anim_t *animation_data, uint8_t frame_no) {
 
 void oled_consider_walking_back() {
     // Determine whether we need to walk back onto the screen after anim.
-    if (char_pos_x < -16) {
-        oled_play_animation(&walking, (uint8_t) (-char_pos_x/16) - 1);
-    } else if (char_pos_x > 16) {
-        oled_play_animation(&walking_left, (uint8_t) (char_pos_x/16) - 1);
+    if (my_conf.mood < MOOD_THRESH_SAD) {
+        // zombie walk back
+        if (char_pos_x < -12) {
+            oled_play_animation(&walking, (uint8_t) (-char_pos_x/12) - 1);
+        } else if (char_pos_x > 12) {
+            oled_play_animation(&walking_left, (uint8_t) (char_pos_x/12) - 1);
+        }
+    } else {
+        // happy walk back
+        if (char_pos_x < -16) {
+            oled_play_animation(&walking, (uint8_t) (-char_pos_x/16) - 1);
+        } else if (char_pos_x > 16) {
+            oled_play_animation(&walking_left, (uint8_t) (char_pos_x/16) - 1);
+        }
     }
 }
 
