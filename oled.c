@@ -20,6 +20,7 @@
 #include <qc12_oled.h>
 #include <qc12.h>
 #include <string.h>
+#include <stdlib.h>
 
 uint8_t oled_anim_state = OLED_ANIM_DONE;
 uint8_t anim_index = 0;
@@ -262,6 +263,33 @@ void oled_timestep() {
             }
         }
     }
+
+    if (s_overhead_done) {
+        s_overhead_done = 0;
+        if (my_conf.mood < MOOD_THRESH_SAD) { // We don't really do anything if we're moody.
+            if (rand() % 2) {
+                oled_set_overhead_image(&lightning, 10);
+            } else {
+                oled_set_overhead_image(&cloud, 100);
+            }
+        } else {
+            for (uint8_t i=0; i<FAVORITE_COUNT; i++) {
+                if (neighbor_badges[fav_badges_ids[i]]) {
+                    // favorite nearby.
+                    if ((BADGE_FRIEND_BIT & badges_seen[fav_badges_ids[i]])) {
+                        // Favorite friend nearby:
+                        oled_set_overhead_image(&heart, 100);
+                        break;
+                    } else {
+                        // Favorite non-friend nearby:
+                        oled_set_overhead_image(&empty_heart, 100);
+                    }
+                }
+            }
+        }
+    }
+
+
     if (oled_anim_state) {
         if (anim_frame_skip) {
             anim_frame_skip--;
