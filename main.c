@@ -70,6 +70,7 @@ uint8_t play_mode = 0;
 uint8_t play_id = 0;
 
 #define START_BEFRIEND_TLC_ANIM tlc_start_anim(&flag_blue, 0, 30*GLOBAL_TLC_SPEED_SCALE, 1, 0)
+#define LED_PULSE(colorflag) tlc_start_anim(&colorflag, 0, 3*GLOBAL_TLC_SPEED_SCALE, 1, 2);
 
 #define BF_S_BEACON 1
 #define BF_S_OPEN   3
@@ -117,7 +118,31 @@ uint8_t at_base = 0;
 // Mood:
 uint8_t mood_tick_minutes = MOOD_TICK_MINUTES;
 
+#define ACH_NEWBIE 0
+#define ACH_NICE 1
+#define ACH_SOCIAL 2
+#define ACH_HIP 3
+#define ACH_SEXY 4
+#define ACH_FRIENDLY 5
+#define ACH_COOL 6
+#define ACH_STAR 7
+#define ACH_BADGER 8
+#define ACH_FISH 9
+#define ACH_TWIN 10
+#define ACH_TWINSY 11
+#define ACH_CHILL 12
+#define ACH_TEASE 13
+#define ACH_PUNKD 14
+#define ACH_TIRED 15
+#define ACH_SLEEPY 16
+#define ACH_SQUIRE 17
+#define ACH_ELITE 18
+#define ACH_MOODY 19
+#define ACH_CHIEF 20
 #define ACH_PUPPY 21
+#define ACH_HANDLER 22
+#define ACH_TOWEL 23
+#define ACH_CHEATER 24
 
 const char titles[NUM_ACHIEVEMENTS][10] = {
         "newbie",
@@ -247,7 +272,7 @@ void achievement_get(uint8_t achievement_id, uint8_t animate) {
         if (!am_puppy || achievement_id == ACH_PUPPY)
             my_conf.title_index = achievement_id;
         if (animate && TLC_IS_A_GO) { // If we've nothing better to do with the lights,
-            tlc_start_anim(&flag_ally, 0, 2*GLOBAL_TLC_SPEED_SCALE, 1, 1);
+            tlc_start_anim(&flag_rainbow, 0, 2*GLOBAL_TLC_SPEED_SCALE, 0, 1);
         }
         s_oled_needs_redrawn_idle = 1;
         mood_adjust_and_write_crc(MOOD_NEW_TITLE);
@@ -810,7 +835,7 @@ void handle_infrastructure_services() {
     if (f_new_second) {
         if (f_radio_fault) {
             f_radio_fault = 0;
-            tlc_start_anim(&flag_red, 0, 0, 1, 5);
+            LED_PULSE(flag_red);
             init_radio();
         }
 
@@ -921,7 +946,7 @@ void handle_led_actions() {
 
     if (s_befriend_failed) {
         s_befriend_failed = 0;
-        tlc_start_anim(&flag_red, 0, 3*GLOBAL_TLC_SPEED_SCALE, 1, 2);
+        LED_PULSE(flag_red);
     }
 
     if (s_befriend_success) {
@@ -931,7 +956,7 @@ void handle_led_actions() {
             s_new_uber_friend = 0;
             s_new_friend = 0;
         } else {
-            tlc_start_anim(&flag_green, 0, 5*GLOBAL_TLC_SPEED_SCALE, 1, 2);
+            LED_PULSE(flag_green);
         }
     }
 
@@ -1047,7 +1072,10 @@ void handle_mode_name() {
     disable_beacon_service = 1;
     static uint8_t update_disp;
     update_disp = 1;
+    static uint8_t cheat_success;
+    static uint8_t cheat_fail_cnt=0;
 
+    cheat_success = 0;
     GrClearDisplay(&g_sContext);
     GrContextFontSet(&g_sContext, &SYS_FONT);
     oled_print(0, 5, "Enter a name.", 1, 0);
@@ -1199,35 +1227,58 @@ void handle_mode_name() {
 
     if (cheat_mode) {
         if (!strcmp(name, CHEAT_FLAG_NC)) {
+            cheat_success = 1;
             my_conf.flag_unlocks = 0xFF;
             my_conf_write_crc();
         } else if (!strcmp(name, CHEAT_FLAG)) {
+            cheat_success = 1;
             my_conf.flag_unlocks = 0x01;
             my_conf_write_crc();
         } else if (!strcmp(name, CHEAT_TITLE)) {
+            cheat_success = 1;
             my_conf.titles_unlocked = 1;
             my_conf_write_crc();
         } else if (!strcmp(name, CHEAT_HAPPY)) {
+            cheat_success = 1;
             mood_adjust_and_write_crc(100);
         } else if (!strcmp(name, CHEAT_SAD)) {
+            cheat_success = 1;
             mood_adjust_and_write_crc(-100);
         } else if (!strcmp(name, CHEAT_INFANT)) {
+            cheat_success = 1;
             // TODO
         } else if (!strcmp(name, CHEAT_INVERT)) {
-            tlc_start_anim(&flag_lblue, 0, 0, 1, 255);
+            cheat_success = 1;
             qc12_oledInit(1);
             tlc_stop_anim(0);
         } else if (!strcmp(name, CHEAT_UNINVERT)) {
-            tlc_start_anim(&flag_lblue, 0, 0, 1, 255);
+            cheat_success = 1;
             qc12_oledInit(0);
             tlc_stop_anim(0);
         } else if (!strcmp(name, CHEAT_PUPPY)) {
+            cheat_success = 1;
             am_puppy = 1;
             achievement_get(ACH_PUPPY, 0);
         } else if (!strcmp(name, CHEAT_MIRROR)) {
+            cheat_success = 1;
             qc12oled_WriteCommand(0xC0);
         } else if (!strcmp(name, CHEAT_UNMIRROR)) {
+            cheat_success = 1;
             qc12oled_WriteCommand(0xC8);
+        }
+
+        if (cheat_success) {
+            cheat_success = 0;
+            cheat_fail_cnt = 0;
+            LED_PULSE(flag_green);
+            achievement_get(ACH_CHEATER, 0);
+        }
+        else {
+            LED_PULSE(flag_red);
+            cheat_fail_cnt++;
+            if (cheat_fail_cnt == 3) {
+                achievement_get(ACH_TOWEL, 1);
+            }
         }
 
     } else {
