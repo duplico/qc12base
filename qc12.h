@@ -23,7 +23,7 @@
 #define BASES_IN_SYSTEM 8
 #define UBERS_IN_SYSTEM 12
 #define SLEEP_BITS LPM1_bits // because we need SMCLK for the TLC.
-#define NUM_ACHIEVEMENTS 24
+#define NUM_ACHIEVEMENTS 25
 #define FAVORITE_COUNT 3
 #define RADIO_TX_POWER_DB 4 // [-18 .. 13]
 #define FLAG_OUT_COOLDOWN_MINUTES 10
@@ -38,15 +38,15 @@
 #define BEFRIEND_LOOPS_TO_RESEND 20
 #define GLOBAL_TLC_SPEED_SCALE 2
 
-#define TITLE_CHEAT_CODE "TITULAR"
-#define FLAG_CHEAT_CODE "FFS"
-#define FLAG_NC_CHEAT_CODE "FFSAAA"
-#define PUPPY_CHEAT_CODE "WOOF"
-#define INVERT_CHEAT_CODE "BANDW" // TODO
-#define UNINVERT_CHEAT_CODE "WANDB" // TODO
-#define INFANT_CHEAT_CODE "BABY" // TODO
-#define HAPPY_CHEAT_CODE "HAPPY" // TODO
-#define SAD_CHEAT_CODE "HAPPY" // TODO
+#define CHEAT_TITLE "TITULAR"
+#define CHEAT_FLAG "FFS"
+#define CHEAT_FLAG_NC "FFSAAA"
+#define CHEAT_PUPPY "WOOF"
+#define CHEAT_INVERT "BANDW" // TODO
+#define CHEAT_UNINVERT "WANDB" // TODO
+#define CHEAT_INFANT "BABY" // TODO
+#define CHEAT_HAPPY "SMILE" // TODO
+#define CHEAT_SAD "FROWN" // TODO
 
 #define RECEIVE_WINDOW 6
 #define RECEIVE_WINDOW_LENGTH_SECONDS 10
@@ -66,6 +66,8 @@
 #define MOOD_PLAY_SEND 20
 #define MOOD_PLAY_RECV -8
 #define MOOD_NEW_TITLE 25
+#define MOOD_GOT_FLAG 50
+#define MOOD_FLAG 5
 
 // Name entry configuration parameters:
 #define NAME_SEL_CHAR '*'
@@ -218,7 +220,7 @@ extern const qc12conf default_conf;
 extern uint8_t idle_mode_softkey_sel;
 extern uint8_t idle_mode_softkey_dis;
 extern uint8_t op_mode;
-
+extern uint8_t am_puppy;
 
 extern uint8_t badges_seen[BADGES_IN_SYSTEM];
 extern uint8_t fav_badges_ids[FAVORITE_COUNT];

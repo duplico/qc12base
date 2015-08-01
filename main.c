@@ -43,6 +43,7 @@ uint8_t s_befriend_failed = 0;
 uint8_t s_befriend_success = 0;
 uint8_t s_new_checkin = 0;
 uint8_t s_send_play = 0;
+uint8_t s_send_puppy = 0;
 
 uint8_t disable_beacon_service = 0;
 uint8_t idle_mode_softkey_sel = 0;
@@ -79,6 +80,8 @@ uint8_t play_id = 0;
 
 uint8_t flag_id = 0;
 
+uint8_t am_puppy = 0;
+
 void poll_buttons();
 
 #pragma DATA_SECTION (my_conf, ".infoA");
@@ -114,6 +117,8 @@ uint8_t at_base = 0;
 // Mood:
 uint8_t mood_tick_minutes = MOOD_TICK_MINUTES;
 
+#define ACH_PUPPY 21
+
 const char titles[NUM_ACHIEVEMENTS][10] = {
         "newbie",
         "nice",
@@ -136,10 +141,10 @@ const char titles[NUM_ACHIEVEMENTS][10] = {
         "elite",
         "moody",
         "Chief",
+        "Puppy",
         "Handler",
         "Towel",
         "Cheat",
-
 };
 
 const char title_descs[NUM_ACHIEVEMENTS][24] = {
@@ -164,6 +169,7 @@ const char title_descs[NUM_ACHIEVEMENTS][24] = {
         "Befriend 10 ubers",
         "Be sad for 8 hours",
         "\"Popular!\"",
+        "\"Where is he?\"",
         "\"You found him!\"",
         "\"No, you're a towel.\"",
         "\"?????\"",
@@ -238,7 +244,8 @@ void achievement_get(uint8_t achievement_id, uint8_t animate) {
     if (!(my_conf.achievements[frame] & bit)) {
         // New achievement. woot.
         my_conf.achievements[frame] |= bit;
-        my_conf.title_index = achievement_id;
+        if (!am_puppy || achievement_id == ACH_PUPPY)
+            my_conf.title_index = achievement_id;
         if (animate && TLC_IS_A_GO) { // If we've nothing better to do with the lights,
             tlc_start_anim(&flag_ally, 0, 2*GLOBAL_TLC_SPEED_SCALE, 1, 1);
         }
@@ -531,6 +538,26 @@ void radio_send_play(uint8_t index) {
     radio_send_sync();
 }
 
+void radio_send_puppy() {
+    static uint8_t neighbor_index, neighbor_addr;
+    neighbor_index = 1 + rand() % neighbor_count;
+    for (neighbor_addr=0; neighbor_index && (neighbor_addr<BADGES_IN_SYSTEM); neighbor_addr++) {
+        if (neighbor_badges[neighbor_addr])
+            neighbor_index--;
+    }
+    neighbor_addr--;
+
+    out_payload.beacon = 0;
+    out_payload.flag_id = 0;
+    out_payload.friendship = 0;
+    out_payload.base_id = 1; // puppy base.
+    out_payload.play_id = 0;
+    out_payload.from_addr = my_conf.badge_id;
+    out_payload.to_addr = neighbor_addr;
+    radio_send_sync();
+    out_payload.base_id = NOT_A_BASE;
+}
+
 void set_befriend_failed() {
     oled_set_overhead_text("Okbai :(", 20);
     s_befriend_failed = 1;
@@ -677,7 +704,8 @@ void handle_infrastructure_services() {
         if (in_payload.base_id != NOT_A_BASE && (in_payload.from_addr < BADGES_IN_SYSTEM || in_payload.from_addr == DEDICATED_BASE_ID)) {
             if (in_payload.base_id == 1)
             {
-                // TODO: puppy score.
+                oled_set_overhead_image(&jakethedog, 254);
+                achievement_get(22, 1);
             }
             else
             {
@@ -714,7 +742,7 @@ void handle_infrastructure_services() {
                     //  is doing its cause animation.
                     oled_play_animation(&standing, play_cause[play_id]->len);
                     idle_mode_softkey_dis = 1;
-                    //                        oled_draw_pane_and_flush(idle_mode_softkey_sel); // TODO???
+                    oled_draw_pane_and_flush(idle_mode_softkey_sel);
                     if (TLC_IS_A_GO) {
                         tlc_start_anim(&flag_pink, 0, 5*GLOBAL_TLC_SPEED_SCALE, 1, 0); // POW PINK!
                     }
@@ -725,11 +753,11 @@ void handle_infrastructure_services() {
             if (in_payload.flag_id && (in_payload.flag_id & 0b01111111) < FLAG_COUNT) {
                 // Wave a flag.
                 if (!my_conf.flag_unlocks) {
-                    // TODO: score.
                     my_conf.flag_unlocks = 1;
-                    my_conf_write_crc();
+                    mood_adjust_and_write_crc(MOOD_GOT_FLAG);
                 }
                 if (!flag_in_cooldown) {
+                    mood_adjust_and_write_crc(MOOD_FLAG);
                     flag_id = in_payload.flag_id & 0b01111111;
                     radio_send_flag(flag_id | BIT7);
                     tlc_start_anim(flags[in_payload.flag_id & 0b01111111], 0, 3*GLOBAL_TLC_SPEED_SCALE, 0, 0);
@@ -835,6 +863,10 @@ void handle_infrastructure_services() {
             my_conf.flag_cooldown--;
             my_conf_write_crc();
         }
+        if (am_puppy) {
+            // Send it a few times:
+            s_send_puppy = 4; // TODO: make more random.
+        }
 
         mood_tick_minutes--;
         if (!mood_tick_minutes) {
@@ -858,6 +890,11 @@ void handle_infrastructure_services() {
     if (s_send_play && rfm_state == RFM_IDLE) {
         s_send_play--;
         radio_send_play(play_id);
+    }
+
+    if (s_send_puppy && rfm_state == RFM_IDLE) {
+        s_send_puppy--;
+        radio_send_puppy();
     }
 
     if (!disable_beacon_service && s_need_rf_beacon && rfm_state == RFM_IDLE) {
@@ -1119,12 +1156,18 @@ void handle_mode_name() {
                 break;
             }
 
+            // Check to see if we're ready to enter CHEAT MODE.
             if (bl_down_loops && bl_down_loops < NAME_COMMIT_LOOPS) {
                 bl_down_loops++;
             } else if (my_conf.handle[0] && !cheat_mode && bl_down_loops) {
                 bl_down_loops = 0;
                 tlc_start_anim(&flag_ally, 2, 2*GLOBAL_TLC_SPEED_SCALE, 1, 4);
+                GrClearDisplay(&g_sContext);
+                GrContextFontSet(&g_sContext, &SYS_FONT);
+                oled_print(0, 5, "Enter a cheat code, you wascally wabbit.", 1, 0);
+                GrFlush(&g_sContext);
                 cheat_mode = 1;
+                update_disp = 1;
             }
 
             if (update_disp) {
@@ -1154,15 +1197,31 @@ void handle_mode_name() {
         name_len++;
     name[name_len] = 0; // null terminate.
 
-    if (cheat_mode && !strcmp(name, "FFF")) {
-        my_conf.flag_unlocks = 0xFF;
-        my_conf_write_crc();
-    } else if (cheat_mode && !strcmp(name, "FA")) {
-        my_conf.flag_unlocks = 0x01;
-        my_conf_write_crc();
-    } else if (cheat_mode && !strcmp(name, "T")) {
-        my_conf.titles_unlocked = 1;
-        my_conf_write_crc();
+    if (cheat_mode) {
+        if (!strcmp(name, CHEAT_FLAG_NC)) {
+            my_conf.flag_unlocks = 0xFF;
+            my_conf_write_crc();
+        } else if (!strcmp(name, CHEAT_FLAG)) {
+            my_conf.flag_unlocks = 0x01;
+            my_conf_write_crc();
+        } else if (!strcmp(name, CHEAT_TITLE)) {
+            my_conf.titles_unlocked = 1;
+            my_conf_write_crc();
+        } else if (!strcmp(name, CHEAT_HAPPY)) {
+            mood_adjust_and_write_crc(100);
+        } else if (!strcmp(name, CHEAT_SAD)) {
+            mood_adjust_and_write_crc(-100);
+        } else if (!strcmp(name, CHEAT_INFANT)) {
+            // TODO
+        } else if (!strcmp(name, CHEAT_INVERT)) {
+            // TODO
+        } else if (!strcmp(name, CHEAT_UNINVERT)) {
+            // TODO
+        } else if (!strcmp(name, CHEAT_PUPPY)) {
+            am_puppy = 1;
+            achievement_get(ACH_PUPPY, 0);
+        }
+
     } else {
         strcpy(my_conf.handle, name);
         my_conf_write_crc();
