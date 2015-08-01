@@ -40,8 +40,8 @@ extern const tImage bodies[];
 extern const tImage legs[];
 
 extern const qc12_anim_t standing, bored_standing;
-extern const qc12_anim_t walking;
-extern const qc12_anim_t walking_left;
+extern const qc12_anim_t walking, zombie;
+extern const qc12_anim_t walking_left, zombie_left;
 extern const qc12_anim_t wave_right;
 extern const qc12_anim_t flap_arms;
 
