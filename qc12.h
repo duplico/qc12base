@@ -151,6 +151,7 @@ extern uint16_t softkey_en;
 // Badge count tracking:
 #define BADGE_SEEN_BIT BIT0
 #define BADGE_FRIEND_BIT BIT1
+#define BADGE_SEX_BIT BIT2
 
 // Radio bidness:
 #define NOT_A_BASE 0xFF
