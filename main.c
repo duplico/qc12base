@@ -208,18 +208,31 @@ void mood_adjust_and_write_crc(int8_t change) {
     tlc_set_ambient(my_conf.mood);
 }
 
-void achievement_get(uint8_t achievement_id) {
+uint8_t achievement_have(uint8_t achievement_id) {
     if (achievement_id >= NUM_ACHIEVEMENTS) {
-        return;
+        return 0;
     }
     uint8_t frame = achievement_id / 8;
     uint8_t bit = 0x01 << (achievement_id % 8);
+    if (my_conf.achievements[frame] & bit) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
 
+void achievement_get(uint8_t achievement_id, uint8_t animate) {
+    if (achievement_id >= NUM_ACHIEVEMENTS) {
+        return;
+    }
+
+    uint8_t frame = achievement_id / 8;
+    uint8_t bit = 0x01 << (achievement_id % 8);
     if (!(my_conf.achievements[frame] & bit)) {
         // New achievement. woot.
         my_conf.achievements[frame] |= bit;
         my_conf.title_index = achievement_id;
-        if (TLC_IS_A_GO) { // If we've nothing better to do with the lights,
+        if (animate && TLC_IS_A_GO) { // If we've nothing better to do with the lights,
             tlc_start_anim(&flag_ally, 0, 2, 1, 1);
         }
         s_oled_needs_redrawn_idle = 1;
@@ -1126,6 +1139,8 @@ void handle_mode_name() {
         strcpy(out_payload.handle, name);
     }
 
+    achievement_get(0, 0);
+
     op_mode = OP_MODE_IDLE;
     suppress_softkey = 1; // And don't register the button release
 
@@ -1379,7 +1394,20 @@ void asl_draw_page(uint8_t page) {
         break;
     default:
         // Achievement listing.
-        oled_print(0,0, title_descs[page-4], 1, 1);
+        static uint8_t achievement_id;
+        achievement_id = page-4;
+        oled_print(0,0, "Title:", 1, 0);
+        oled_print(0,12, titles[achievement_id], 1, 1);
+        GrLineDrawH(&g_sContext, 5, 58, 25);
+        if (achievement_have(achievement_id)) {
+            oled_print(0,28, "Unlocked!", 0, 1);
+            GrImageDraw(&g_sContext, &check, 16, 47);
+        } else {
+            oled_print(0,28, "LOCKED", 0, 1);
+            GrImageDraw(&g_sContext, &nocheck, 16, 47);
+        }
+        oled_print(0,72, title_descs[page-4], 0, 1);
+
         break;
 
     }
@@ -1435,7 +1463,7 @@ void handle_mode_asl() {
 
             GrClearDisplay(&g_sContext);
             GrContextFontSet(&g_sContext, &SOFTKEY_LABEL_FONT);
-            GrStringDrawCentered(&g_sContext, "OK", -1, 32, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
+            GrStringDrawCentered(&g_sContext, "Close", -1, 32, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
             GrLineDraw(&g_sContext, 10, 118, 0, 123);
             GrLineDraw(&g_sContext, 10, 127, 0, 123);
             GrLineDraw(&g_sContext, 53, 118, 63, 123);

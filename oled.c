@@ -198,7 +198,7 @@ void oled_play_animation(const qc12_anim_t *anim, uint8_t loops) {
     s_oled_needs_redrawn_idle = 0;
 }
 
-void oled_print(uint8_t x, uint8_t y, char str[], uint8_t opaque, uint8_t centered) {
+void oled_print(uint8_t x, uint8_t y, const char str[], uint8_t opaque, uint8_t centered) {
     GrContextFontSet(&g_sContext, &SYS_FONT);
     uint8_t curr_y = y;
     uint8_t str_start = 0;
