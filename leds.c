@@ -405,7 +405,8 @@ inline void tlc_set_gs() {
 }
 
 void tlc_set_fun() {
-    while (tlc_send_type != TLC_SEND_IDLE); // shouldn't ever actually have to block on this please.
+    while (tlc_send_type != TLC_SEND_IDLE)
+        __no_operation(); // shouldn't ever actually have to block on this.
     tlc_send_type = TLC_SEND_TYPE_FUN;
     tlc_tx_index = 0;
     EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, TLC_THISISFUN);
