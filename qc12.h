@@ -16,7 +16,7 @@
 // CONFIGURATION SETTINGS ///////////////////////////////////////////
 
 // System configuration
-#define BADGE_ID 3
+#define BADGE_ID 2
 #define BADGES_IN_SYSTEM 175
 #define BASES_IN_SYSTEM 8
 #define UBERS_IN_SYSTEM 12
@@ -31,8 +31,9 @@
 #define MOOD_TICK_AMOUNT -3
 #define MOOD_TICK_AMOUNT_UP 10
 #define BEFRIEND_TIMEOUT_SECONDS 3
-#define BEFRIEND_RESEND_TRIES 5
-#define BEFRIEND_LOOPS_TO_RESEND 10
+#define BEFRIEND_BCN_AGE_LOOPS 25
+#define BEFRIEND_RESEND_TRIES 4
+#define BEFRIEND_LOOPS_TO_RESEND 16
 
 #define TITLE_CHEAT_CODE "MYTTL"
 #define FLAG_CHEAT_CODE "FFS"
