@@ -207,6 +207,10 @@ extern uint8_t idle_mode_softkey_sel;
 extern uint8_t idle_mode_softkey_dis;
 extern uint8_t op_mode;
 
+
+extern uint8_t badges_seen[BADGES_IN_SYSTEM];
+extern uint8_t fav_badges_ids[FAVORITE_COUNT];
+extern uint8_t neighbor_badges[BADGES_IN_SYSTEM];
 extern uint8_t neighbor_count;
 
 #endif /* QC12_H_ */
