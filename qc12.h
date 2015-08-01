@@ -15,8 +15,10 @@
 
 // CONFIGURATION SETTINGS ///////////////////////////////////////////
 
+// From our hacked-together build script:
+#include "badgeconf.h"
+
 // System configuration
-#define BADGE_ID 2
 #define BADGES_IN_SYSTEM 175
 #define BASES_IN_SYSTEM 8
 #define UBERS_IN_SYSTEM 12
@@ -75,6 +77,8 @@
 // Softkey label font:
 #define SOFTKEY_LABEL_FONT SYS_FONT
 #define SOFTKEY_FONT_HEIGHT 12
+
+#define DEDICATED_BASE_ID 222
 
 //////////////////////////
 // Derived definitions ///
@@ -171,7 +175,6 @@ typedef struct {
     uint8_t to_addr, from_addr, base_id;
     uint8_t beacon;
     uint8_t friendship;
-    uint8_t flag_from;
     uint8_t flag_id;
     uint8_t play_id;
     char handle[NAME_MAX_LEN+1];
