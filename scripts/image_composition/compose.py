@@ -367,6 +367,7 @@ if (__name__ == '__main__'):
         with open(args.config) as configfile:
             for line in configfile:
                 filestring += line
+        filestring += "\n"
         with open(args.plays) as configfile:
             for line in configfile:
                 filestring += line
@@ -413,6 +414,17 @@ if (__name__ == '__main__'):
     print "// Head size: %d, leg size: %d" % (head_clip, legs_clip)
     if args.id < 15:
         print "// This is %s" % uber_dirs[args.id]
+        
+        
+    if args.id < 15:
+        sprite_id = args.id
+    else:
+        sprite_id = args.id - 15
+        sprite_id = sprite_id % len(list(itertools.product(human_dirs, repeat=3)))
+        sprite_id = sprite_id + 15
+        
+    print "const uint8_t my_sprite_id = %d;" % sprite_id
     
     if args.fixini:
-        os.remove(use_file)
+        #os.remove(use_file)
+        pass
