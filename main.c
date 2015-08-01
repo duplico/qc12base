@@ -52,6 +52,8 @@ uint8_t idle_mode_softkey_dis = 0;
 uint8_t s_need_idle_action = 0;
 uint8_t idle_action_seconds = 10;
 
+uint8_t minute_secs = 60;
+
 uint8_t befriend_mode = 0;
 uint8_t befriend_mode_loops_to_tick = 0;
 uint8_t befriend_mode_ticks = 0;
@@ -698,7 +700,6 @@ void befriend_proto_step(uint8_t from_radio, uint8_t received_flag, uint8_t from
 }
 
 void handle_infrastructure_services() {
-    static uint8_t minute_secs = 60;
     static uint8_t flag_in_cooldown = 0;
 
     // Handle inbound and outbound background radio functionality, and buttons.
@@ -904,6 +905,16 @@ void handle_infrastructure_services() {
             }
             mood_tick_minutes = MOOD_TICK_MINUTES;
         }
+
+        // General timing stuff:
+        my_conf.waketime++;
+        if (my_conf.waketime > 1440) { // 24 hours
+            achievement_get(ACH_TIRED, 1);
+        }
+        if (my_conf.uptime < 8000) {
+            my_conf.uptime++;
+        }
+        my_conf_write_crc();
     }
 
     if (s_flag_send && rfm_state == RFM_IDLE) {
@@ -1665,6 +1676,10 @@ void handle_mode_sleep() {
     write_single_register(0x3b, RFM_AUTOMODE_OFF);
     f_rfm_rx_done = f_rfm_tx_done = 0;
 
+    my_conf.waketime = 0;
+    my_conf.sleeptime = 0;
+    my_conf_write_crc();
+
 
     // Kill the LEDs.
     tlc_stop_anim(1);
@@ -1695,9 +1710,37 @@ void handle_mode_sleep() {
             GrStringDraw(&g_sContext, "Zzz...", zzz_index, 10, 100, 1);
             GrFlush(&g_sContext);
             zzz_index = (zzz_index+1) % 7;
+
+            minute_secs--;
+            if (!minute_secs) {
+                minute_secs = 60;
+                s_new_minute = 1;
+            }
+
+            if (s_new_minute) {
+                s_new_minute = 0;
+                if (my_conf.flag_cooldown) {
+                    my_conf.flag_cooldown--;
+                }
+
+                my_conf.sleeptime++;
+
+                if (my_conf.uptime < 8000) {
+                    my_conf.uptime++;
+                }
+                mood_adjust_and_write_crc(MOOD_TICK_AMOUNT_UP);
+            }
         }
+
         try_to_sleep(); // This one needs to be different...
     }
+
+    if (my_conf.sleeptime > 480) {
+        achievement_get(ACH_SLEEPY, 0);
+    }
+
+    my_conf.sleeptime = 0;
+    mood_adjust_and_write_crc(10);
 
     init_radio();
     op_mode = OP_MODE_IDLE;
