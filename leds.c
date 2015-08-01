@@ -660,9 +660,9 @@ __interrupt void EUSCI_A0_ISR(void)
     case 4: // Vector 4 - TXIFG : I just sent a byte.
         if (tlc_send_type == TLC_SEND_TYPE_GS) {
             if (tlc_tx_index == 0) { // txl, msb
-                EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, (uint8_t) (rfm_state ? 0xFF : 0x00));
+                EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, (uint8_t) (rfm_state ? 0x88 : 0x00));
             } else if (tlc_tx_index == 1) { // txl, lsb
-                EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, (uint8_t) (rfm_state ? 0xFF : 0x00));
+                EUSCI_A_SPI_transmitData(EUSCI_A0_BASE, (uint8_t) (rfm_state ? 0x88 : 0x00));
                 rgb_element_index = 0;
                 tlc_color_index = 0;
             } else if (tlc_tx_index == 32) { // done
