@@ -69,7 +69,7 @@ uint8_t befriend_candidate_age = 0;
 uint8_t play_mode = 0;
 uint8_t play_id = 0;
 
-#define START_BEFRIEND_TLC_ANIM tlc_start_anim(&flag_blue, 0, 30, 1, 0)
+#define START_BEFRIEND_TLC_ANIM tlc_start_anim(&flag_blue, 0, 30*GLOBAL_TLC_SPEED_SCALE, 1, 0)
 
 #define BF_S_BEACON 1
 #define BF_S_OPEN   3
@@ -241,7 +241,7 @@ void achievement_get(uint8_t achievement_id, uint8_t animate) {
         my_conf.achievements[frame] |= bit;
         my_conf.title_index = achievement_id;
         if (animate && TLC_IS_A_GO) { // If we've nothing better to do with the lights,
-            tlc_start_anim(&flag_ally, 0, 2, 1, 1);
+            tlc_start_anim(&flag_ally, 0, 2*GLOBAL_TLC_SPEED_SCALE, 1, 1);
         }
         s_oled_needs_redrawn_idle = 1;
         mood_adjust_and_write_crc(MOOD_NEW_TITLE);
@@ -728,7 +728,7 @@ void handle_infrastructure_services() {
                     idle_mode_softkey_dis = 1;
                     //                        oled_draw_pane_and_flush(idle_mode_softkey_sel); // TODO???
                     if (TLC_IS_A_GO) {
-                        tlc_start_anim(&flag_pink, 0, 5, 1, 0); // POW PINK!
+                        tlc_start_anim(&flag_pink, 0, 5*GLOBAL_TLC_SPEED_SCALE, 1, 0); // POW PINK!
                     }
                 }
             }
@@ -744,7 +744,7 @@ void handle_infrastructure_services() {
                 if (!flag_in_cooldown) {
                     flag_id = in_payload.flag_id & 0b01111111;
                     radio_send_flag(flag_id | BIT7);
-                    tlc_start_anim(flags[in_payload.flag_id & 0b01111111], 0, 3, 0, 0);
+                    tlc_start_anim(flags[in_payload.flag_id & 0b01111111], 0, 5*GLOBAL_TLC_SPEED_SCALE, 0, 0);
                     s_flag_wave = 1;
                     s_flag_send = 1;
                 } // Otherwise, ignore it.
@@ -891,28 +891,28 @@ void handle_led_actions() {
 
     if (s_new_checkin && TLC_IS_A_GO) {
         s_new_checkin = 0;
-        tlc_start_anim(&flag_rainbow, 0, 4, 1, 4);
+        tlc_start_anim(&flag_rainbow, 0, 5*GLOBAL_TLC_SPEED_SCALE, 1, 4);
     }
 
     if (s_befriend_failed) {
         s_befriend_failed = 0;
-        tlc_start_anim(&flag_red, 0, 3, 1, 2);
+        tlc_start_anim(&flag_red, 0, 3*GLOBAL_TLC_SPEED_SCALE, 1, 2);
     }
 
     if (s_befriend_success) {
         s_befriend_success = 0;
         if (s_new_uber_friend || s_new_friend) {
-            tlc_start_anim(&flag_rainbow, 0, 3, 1, 2);
+            tlc_start_anim(&flag_rainbow, 0, 3, 1, 4);
             s_new_uber_friend = 0;
             s_new_friend = 0;
         } else {
-            tlc_start_anim(&flag_green, 0, 3, 1, 2);
+            tlc_start_anim(&flag_green, 0, 5*GLOBAL_TLC_SPEED_SCALE, 1, 2);
         }
     }
 
     if ((s_new_uber_seen & SIGNAL_BIT_TLC || s_new_badge_seen & SIGNAL_BIT_TLC) && TLC_IS_A_GO) {
         // Big rainbow animation.
-        tlc_start_anim(&flag_rainbow, 0, 4, 1, 4);
+        tlc_start_anim(&flag_rainbow, 0, 4*GLOBAL_TLC_SPEED_SCALE, 1, 4);
         s_new_badge_seen &= ~SIGNAL_BIT_TLC;
         s_new_uber_seen &= ~SIGNAL_BIT_TLC;
     }
@@ -920,7 +920,7 @@ void handle_led_actions() {
     if (f_tlc_anim_done) {
         f_tlc_anim_done = 0;
         if (s_flag_wave) {
-            tlc_start_anim(flags[my_conf.flag_id], 0, 3, 0, 3);
+            tlc_start_anim(flags[my_conf.flag_id], 0, 5*GLOBAL_TLC_SPEED_SCALE, 0, 3);
             s_flag_wave = 0;
         } else if (befriend_mode) {
             START_BEFRIEND_TLC_ANIM;
@@ -1135,7 +1135,7 @@ void handle_mode_name() {
                 bl_down_loops++;
             } else if (my_conf.handle[0] && !cheat_mode && bl_down_loops) {
                 bl_down_loops = 0;
-                tlc_start_anim(&flag_ally, 2, 2, 1, 4);
+                tlc_start_anim(&flag_ally, 2, 2*GLOBAL_TLC_SPEED_SCALE, 1, 4);
                 cheat_mode = 1;
             }
 
@@ -1274,10 +1274,10 @@ void handle_mode_idle() {
                         // If I see other people, 50/50 chance of group play.
                         s_send_play = 1;
                         play_mode = PLAY_MODE_CAUSE;
-                        tlc_start_anim(&flag_pink, 0, 5, 1, 0); // POW PINK!
+                        tlc_start_anim(&flag_pink, 0, 5*GLOBAL_TLC_SPEED_SCALE, 1, 0); // POW PINK!
                     } else {
                         play_mode = PLAY_MODE_CAUSE_ALONE;
-                        tlc_start_anim(&flag_yellow, 0, 5, 1, 0); // BRRP YELLOW!
+                        tlc_start_anim(&flag_yellow, 0, 5*GLOBAL_TLC_SPEED_SCALE, 1, 0); // BRRP YELLOW!
                     }
                     play_id = rand() % play_anim_count;
                     oled_play_animation(play_cause[play_id], 0);
@@ -1286,7 +1286,7 @@ void handle_mode_idle() {
                     mood_adjust_and_write_crc(MOOD_PLAY_SEND);
                     break;
                 case SK_SEL_FLAG:
-                    tlc_start_anim(flags[my_conf.flag_id], 0, 3, 0, 5);
+                    tlc_start_anim(flags[my_conf.flag_id], 0, 5*GLOBAL_TLC_SPEED_SCALE, 0, 5);
                     if (my_conf.flag_unlocks != 0xFF) {
                         my_conf.flag_cooldown = FLAG_OUT_COOLDOWN_MINUTES;
                         my_conf_write_crc();
@@ -1635,7 +1635,7 @@ void handle_mode_setflag() {
                 my_conf.flag_id = softkey_sel;
                 my_conf_write_crc();
                 op_mode = OP_MODE_IDLE;
-                tlc_start_anim(flags[softkey_sel], 0, 0, 0, 0);
+                tlc_start_anim(flags[softkey_sel], 0, 1*GLOBAL_TLC_SPEED_SCALE, 0, 0);
                 break;
             }
             f_bs = 0;
