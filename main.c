@@ -411,7 +411,7 @@ void tick_badge_seen(uint8_t id, char* handle) {
 }
 
 void init_rtc() {
-    RTC_B_definePrescaleEvent(RTC_B_BASE, RTC_B_PRESCALE_1, RTC_B_PSEVENTDIVIDER_4); // 4 => 32 Hz
+    RTC_B_definePrescaleEvent(RTC_B_BASE, RTC_B_PRESCALE_1, RTC_B_PSEVENTDIVIDER_2); // 4 => 32 Hz; 2 => 64 Hz
     RTC_B_clearInterrupt(RTC_B_BASE, RTC_B_CLOCK_READ_READY_INTERRUPT + RTC_B_TIME_EVENT_INTERRUPT + RTC_B_CLOCK_ALARM_INTERRUPT + RTC_B_PRESCALE_TIMER1_INTERRUPT);
     RTC_B_enableInterrupt(RTC_B_BASE, RTC_B_CLOCK_READ_READY_INTERRUPT + RTC_B_TIME_EVENT_INTERRUPT + RTC_B_CLOCK_ALARM_INTERRUPT + RTC_B_PRESCALE_TIMER1_INTERRUPT);
 }
@@ -1576,8 +1576,6 @@ void handle_mode_sleep() {
             poll_buttons();
             WDT_A_resetTimer(WDT_A_BASE); // pat pat pat
 
-            /* Clear watchdog timer counter */
-
             if (f_bs == BUTTON_RELEASE) {
                 f_bs = 0;
                 break;
@@ -1781,7 +1779,7 @@ void RTC_A_ISR(void) {
     case 8: break;  //RT0PSIFG
     case 10:		// Rollover of prescale counter
         f_time_loop = 1; // We know what it does! It's a TIME LOOP MACHINE.
-        // ...who would build a device that loops time every 32 milliseconds?
+        // ...who would build a device that loops time every 16 milliseconds?
         // WHO KNOWS. But that's what it does.
         tlc_timestep();
         __bic_SR_register_on_exit(SLEEP_BITS);
