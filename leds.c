@@ -297,13 +297,12 @@ uint8_t ring_fade_index = 0;
 uint8_t ring_fade_steps = 0;
 
 const rgbcolor_t color_off = {0, 0, 0};
-const rgbcolor_t mood_green = { 0x0000, 0x1500, 0x0000};
-const rgbcolor_t mood_yellow   = { 0x1000, 0x1000, 0x0000}; // To account for roundoff error.
-const rgbcolor_t mood_red   = { 0x1500, 0x0000, 0x0000};
+const rgbcolor_t mood_green = { 0x0000, 0x3000, 0x0000};
+const rgbcolor_t mood_red   = { 0x3000, 0x0000, 0x0000};
 const rgbdelta_t mood_step = {
-        (-0x2000) / 80,
-        (0x2000) / 80,
-        (0x0000) / 100
+        (-0x3000) / 75,
+        (0x3000) / 75,
+        (0x0000)
 };
 
 rgbcolor_t tlc_ambient_colors = { 0x0000, 0x0000, 0x0000};
