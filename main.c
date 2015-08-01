@@ -305,6 +305,11 @@ inline void set_badge_seen(uint8_t id) {
             if (id != my_conf.badge_id) {
                 s_new_uber_seen = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
                 mood_adjust_and_write_crc(MOOD_NEW_UBER_SEEN);
+
+                // SQUIRE: seen 10 ubers, but not uber:
+                if (my_conf.uber_seen_count >= 10 && my_conf.badge_id < UBERS_IN_SYSTEM) {
+                    achievement_get(ACH_SQUIRE, 0);
+                }
             }
         } else {
             // flag a lamer animation
