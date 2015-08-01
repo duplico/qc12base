@@ -16,6 +16,7 @@
 // CONFIGURATION SETTINGS ///////////////////////////////////////////
 
 // System configuration
+#define BADGE_ID 7
 #define BADGES_IN_SYSTEM 175
 #define BASES_IN_SYSTEM 8
 #define UBERS_IN_SYSTEM 12

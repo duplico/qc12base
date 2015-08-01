@@ -83,8 +83,8 @@ void poll_buttons();
 qc12conf my_conf = {0};
 
 const qc12conf default_conf = {
-    0,     // id
-    0,
+    BADGE_ID,  // id
+    50,  // mood
 };
 
 #pragma PERSISTENT(badge_seen_ticks)
