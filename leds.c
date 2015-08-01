@@ -546,11 +546,11 @@ void tlc_display_ambient() {
     if (tlc_anim_mode != TLC_ANIM_MODE_IDLE)
         return;
 
-    uint8_t speed = 35;
+    uint8_t speed = 85;
     if (neighbor_count > 7) {
-        speed = 2;
+        speed = 12;
     } else {
-        speed = speed - speed * (neighbor_count / 7);
+        speed = speed - speed * neighbor_count / 7;
     }
 
     tlc_start_anim(&flag_ambient, 0, speed, 0, 0);

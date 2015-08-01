@@ -64,7 +64,7 @@
 #define NAME_SEL_CHAR '*'
 #define NAME_MAX_LEN 14
 // this will break everything if it's 1 or possibly 2:
-#define NAME_COMMIT_LOOPS 80
+#define NAME_COMMIT_LOOPS 120
 
 // Character name & title font:
 #define NAME_FONT_HEIGHT 14
