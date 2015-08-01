@@ -200,8 +200,8 @@ typedef struct {
     uint8_t flag_unlocks;
     uint8_t titles_unlocked;
     uint8_t achievements[CEILING_DIV(NUM_ACHIEVEMENTS, 8)];
-    uint8_t top_seen[3];
-    char top_seen_handles[3][NAME_MAX_LEN+1];
+    uint8_t top_seen[FAVORITE_COUNT];
+    char top_seen_handles[FAVORITE_COUNT][NAME_MAX_LEN+1];
     char handle[NAME_MAX_LEN+1];
     uint16_t crc16;
 } qc12conf;
