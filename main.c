@@ -110,7 +110,7 @@ uint8_t fav_badges_ids[FAVORITE_COUNT] = {0};
 char fav_badges_handles[FAVORITE_COUNT][NAME_MAX_LEN+1] = {0};
 
 // Gaydar:
-uint8_t window_position = 0; // Currently only used for restarting radio & skipping windows.
+uint8_t window_position = 0; // only used for skipping windows.
 uint8_t skip_window = 1;
 uint8_t neighbor_count = 0;
 uint8_t window_seconds = RECEIVE_WINDOW_LENGTH_SECONDS;
@@ -548,12 +548,12 @@ void intro() {
     GrFlush(&g_sContext);
 }
 
-void radio_send_beacon() {
-    out_payload.beacon = 1;
+void radio_send_beacon(uint8_t address, uint8_t beacons) {
+    out_payload.beacon = beacons;
     out_payload.flag_id = 0;
     out_payload.friendship = 0;
     out_payload.from_addr = my_conf.badge_id;
-    out_payload.to_addr = RFM_BROADCAST;
+    out_payload.to_addr = address;
     out_payload.play_id = 0;
     radio_send_sync();
 }
@@ -592,9 +592,8 @@ void radio_send_play(uint8_t index) {
     radio_send_sync();
 }
 
-void radio_send_puppy() {
-    static uint8_t neighbor_index, neighbor_addr;
-    neighbor_index = 1 + rand() % neighbor_count;
+void radio_send_puppy(uint8_t neighbor_index) {
+    static uint8_t neighbor_addr;
     for (neighbor_addr=0; neighbor_index && (neighbor_addr<BADGES_IN_SYSTEM); neighbor_addr++) {
         if (neighbor_badges[neighbor_addr])
             neighbor_index--;
@@ -758,7 +757,7 @@ void handle_infrastructure_services() {
             if (in_payload.base_id == 1)
             {
                 oled_set_overhead_image(&jakethedog, 254);
-                achievement_get(22, 1);
+                achievement_get(ACH_HANDLER, 1);
             }
             else if (in_payload.base_id == BASE_SUITE) {
                 at_base = RECEIVE_WINDOW;
@@ -779,7 +778,7 @@ void handle_infrastructure_services() {
                 // It's a beacon (one per cycle).
                 // Update the TTL of the neighbor_badges record for the
                 //  source badge.
-                neighbor_badges[in_payload.from_addr] = RECEIVE_WINDOW;
+                neighbor_badges[in_payload.from_addr] = RECEIVE_WINDOW * in_payload.beacon;
                 // Mark it seen:
                 set_badge_seen(in_payload.from_addr);
                 tick_badge_seen(in_payload.from_addr, in_payload.handle);
@@ -921,10 +920,6 @@ void handle_infrastructure_services() {
             my_conf.flag_cooldown--;
             my_conf_write_crc();
         }
-        if (am_puppy) {
-            // Send it a few times:
-            s_send_puppy = 4; // TODO: make more random.
-        }
 
         mood_tick_minutes--;
         if (!mood_tick_minutes) {
@@ -936,6 +931,12 @@ void handle_infrastructure_services() {
                 mood_adjust_and_write_crc(MOOD_TICK_AMOUNT);
             }
             mood_tick_minutes = MOOD_TICK_MINUTES;
+
+            if (am_puppy) {
+                // Send it a few times:
+                s_send_puppy = 4;
+            }
+
         }
 
         if (at_base && at_suite_base && my_conf.suite_minutes < 200) {
@@ -969,7 +970,7 @@ void handle_infrastructure_services() {
 
     if (s_send_puppy && rfm_state == RFM_IDLE) {
         s_send_puppy--;
-        radio_send_puppy();
+        radio_send_puppy(1 + rand() % neighbor_count);
     }
 
     if (!disable_beacon_service && s_need_rf_beacon && rfm_state == RFM_IDLE) {
@@ -980,7 +981,7 @@ void handle_infrastructure_services() {
         // receiving something or are in our receive intermediate state.)
         // I'm not sure it added any robustness.
         s_need_rf_beacon = 0;
-        radio_send_beacon();
+        radio_send_beacon(RFM_BROADCAST, 1);
     }
 }
 
@@ -1710,6 +1711,30 @@ void handle_mode_asl() {
 }
 
 void handle_mode_sleep() {
+    // Clear the screen.
+    GrClearDisplay(&g_sContext);
+    GrFlush(&g_sContext);
+
+    // Let our faves know we're going to sleep (so they remember us).
+    // A beacon normally has a staying power of about 60*10 seconds (1min)
+    // Let's give nearby badges a 10-minute grace period to sleep with us
+    // as well. Sex can be one-way in this system, which is, in a somewhat
+    // poetic sense, quite realistic.
+    for (uint8_t t=4; t; t--) { // Do this a few times to try to get through.
+        for (uint8_t i=0; i<FAVORITE_COUNT; i++) {
+            if (badge_seen_ticks[fav_badges_ids[i]]) {
+                radio_send_beacon(fav_badges_ids[i], 10);
+                while (rfm_state != RFM_IDLE);
+                WDT_A_resetTimer(WDT_A_BASE);
+                delay(100);
+            }
+        }
+    }
+
+    // Wait for the radio to quiesce.
+    while (rfm_state != RFM_IDLE)
+        __no_operation();
+
     // Sleep the radio.
     mode_sync(RFM_MODE_SL); // Going to sleep... mode...
     write_single_register(0x3b, RFM_AUTOMODE_OFF);
@@ -1723,9 +1748,6 @@ void handle_mode_sleep() {
     // Kill the LEDs.
     tlc_stop_anim(1);
 
-    // Clear the screen.
-    GrClearDisplay(&g_sContext);
-    GrFlush(&g_sContext);
 
     // Set up our Zzz animation.
     static uint8_t zzz_index = 0;
@@ -1776,6 +1798,18 @@ void handle_mode_sleep() {
 
     if (my_conf.sleeptime > 480) {
         achievement_get(ACH_SLEEPY, 0);
+    }
+
+    if (1 || my_conf.sleeptime > 30) { // TODO
+        // If we were asleep for more than 30 minutes,
+        // check to see if any of our favorites were around us when we
+        // fell asleep. If so, we "slept with them."
+        for (uint8_t id=0; id<FAVORITE_COUNT; id++) {
+            if (neighbor_badges[fav_badges_ids[id]] && (badges_seen[fav_badges_ids[id]] & BADGE_FRIEND_BIT)) {
+                badges_seen[fav_badges_ids[id]] |= BADGE_SEX_BIT;
+                achievement_get(ACH_SEXY, 0);
+            }
+        }
     }
 
     my_conf.sleeptime = 0;
