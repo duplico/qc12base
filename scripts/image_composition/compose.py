@@ -135,11 +135,11 @@ def get_tops(head_path, body_path, legs_path, heights):
 animations = []
 
 def make_thumbs(thumb_id, head_files, body_files, legs_files, heights):
-    head_img, head_mask = adjust_image(Image.open(head_files[9]))
-    body_img, body_mask = adjust_image(Image.open(body_files[13]))
-    legs_img, legs_mask = adjust_image(Image.open(legs_files[8]))
+    head_img, head_mask = adjust_image(Image.open(head_files[0]))
+    body_img, body_mask = adjust_image(Image.open(body_files[0]))
+    legs_img, legs_mask = adjust_image(Image.open(legs_files[0]))
     
-    hy,by,ly = get_tops(head_files[9], body_files[13], legs_files[8], heights)
+    hy,by,ly = get_tops(head_files[0], body_files[0], legs_files[0], heights)
     
     sprite = Image.new('RGBA', (SPRITE_WIDTH, SPRITE_HEIGHT), (0,0,0,0))
     sprite.paste(head_img, (0,hy), head_mask)
@@ -153,7 +153,7 @@ def make_thumbs(thumb_id, head_files, body_files, legs_files, heights):
     #td.text((0,54), " twelve", font=f, fill=(0,0,0))
     
     sprite_image, sprite_mask = adjust_image(sprite)
-    sprite_image.save(os.path.join("thumbs", "%03d.png") % thumb_id)
+    sprite_image.save(os.path.join("thumbs", "%03d_f.png") % thumb_id)
     thumbnail = Image.new('RGBA', (SPRITE_WIDTH, SPRITE_HEIGHT+20), (0,0,0,0))
     f = ImageFont.truetype(font="Consolas.ttf", size=20)
     td = ImageDraw.Draw(thumbnail)
@@ -161,7 +161,7 @@ def make_thumbs(thumb_id, head_files, body_files, legs_files, heights):
     thumbnail.paste(text_image.rotate(-90), (0,0))
     thumbnail.paste(adjust_image(sprite)[0], (0,0), sprite_mask)
     td.text(((64-width)/2,68), str(thumb_id), font=f, fill=(0,0,0))
-    thumbnail.save(os.path.join("thumbs", "label_%03d.png") % thumb_id)
+    #thumbnail.save(os.path.join("thumbs", "label_%03d.png") % thumb_id)
     
 
 def main(inifile, head_dir, body_dir, legs_dir, show, thumb_id=False):
@@ -195,7 +195,7 @@ def main(inifile, head_dir, body_dir, legs_dir, show, thumb_id=False):
     
     make_outputs(head_files, body_files, legs_files) # Prints directly.
     
-    if thumb_id:
+    if thumb_id or thumb_id==0:
         make_thumbs(thumb_id, head_files, body_files, legs_files, heights)
     
     index_offset = 0
@@ -344,6 +344,8 @@ if (__name__ == '__main__'):
                         " format of the ini file.")
     parser.add_argument('config', help='Path to config file specifying the'
                                        'animations to make')
+    parser.add_argument('plays', help='Path to config file specifying the'
+                                       'play animations to make')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-i', '--id', help="Generate from badge ID", type=int)
     parts = group.add_argument_group("Body parts")
@@ -363,6 +365,9 @@ if (__name__ == '__main__'):
     if args.fixini:
         filestring = ""
         with open(args.config) as configfile:
+            for line in configfile:
+                filestring += line
+        with open(args.plays) as configfile:
             for line in configfile:
                 filestring += line
         left_num = 0
@@ -388,7 +393,7 @@ if (__name__ == '__main__'):
     uber_dirs = ["bender", "uber_astronaut", "uber_blackhat", "uber_human", "uber_minion", "uber_shark", "uber_stig"]
     human_dirs = ["alien", "bear", "human", "lizard", "octopus", "robot"]
     
-    if args.id:
+    if 'id' in args:
         if (args.id >= 15):
             l = list(itertools.product(human_dirs, repeat=3))
             head, body, legs = l[(args.id-15) % len(l)]
