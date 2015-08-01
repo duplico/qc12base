@@ -8,6 +8,6 @@
 #ifndef BADGECONF_H_
 #define BADGECONF_H_
 
-#define BADGE_ID 1
+#define BADGE_ID 3
 
 #endif /* BADGECONF_H_ */

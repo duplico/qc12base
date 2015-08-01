@@ -684,9 +684,11 @@ void handle_infrastructure_services() {
         in_payload.handle[NAME_MAX_LEN] = 0; // Make sure it's definitely null-terminated.
 
         // BASE SERVICES:
-        // Base services are a sort of overlay - the in_payload.id must be either in
-        //  range for a badge (for overlay services); or the DEDICATED_BASE_ID
-        if (in_payload.base_id && in_payload.from_addr < BADGES_IN_SYSTEM || in_payload.from_addr == DEDICATED_BASE_ID) {
+        // Base services are a sort of overlay - The incoming payload is going to tell us
+        //  either that it's NOT A BASE (in which case we skip), OR it's going to give us
+        //  a valid base ID and be either a badge (from_addr < BADGES_IN_SYSTEM) or be an
+        //  actual base station (from_addr == DEDICATED_BASE_ID).
+        if (in_payload.base_id != NOT_A_BASE && (in_payload.from_addr < BADGES_IN_SYSTEM || in_payload.from_addr == DEDICATED_BASE_ID)) {
             if (in_payload.base_id == 1)
             {
                 // TODO: puppy score.
@@ -744,7 +746,7 @@ void handle_infrastructure_services() {
                 if (!flag_in_cooldown) {
                     flag_id = in_payload.flag_id & 0b01111111;
                     radio_send_flag(flag_id | BIT7);
-                    tlc_start_anim(flags[in_payload.flag_id & 0b01111111], 0, 5*GLOBAL_TLC_SPEED_SCALE, 0, 0);
+                    tlc_start_anim(flags[in_payload.flag_id & 0b01111111], 0, 3*GLOBAL_TLC_SPEED_SCALE, 0, 0);
                     s_flag_wave = 1;
                     s_flag_send = 1;
                 } // Otherwise, ignore it.
@@ -920,7 +922,7 @@ void handle_led_actions() {
     if (f_tlc_anim_done) {
         f_tlc_anim_done = 0;
         if (s_flag_wave) {
-            tlc_start_anim(flags[my_conf.flag_id], 0, 5*GLOBAL_TLC_SPEED_SCALE, 0, 3);
+            tlc_start_anim(flags[my_conf.flag_id], 0, 3*GLOBAL_TLC_SPEED_SCALE, 0, 3);
             s_flag_wave = 0;
         } else if (befriend_mode) {
             START_BEFRIEND_TLC_ANIM;
@@ -1286,7 +1288,7 @@ void handle_mode_idle() {
                     mood_adjust_and_write_crc(MOOD_PLAY_SEND);
                     break;
                 case SK_SEL_FLAG:
-                    tlc_start_anim(flags[my_conf.flag_id], 0, 5*GLOBAL_TLC_SPEED_SCALE, 0, 5);
+                    tlc_start_anim(flags[my_conf.flag_id], 0, 3*GLOBAL_TLC_SPEED_SCALE, 0, 5);
                     if (my_conf.flag_unlocks != 0xFF) {
                         my_conf.flag_cooldown = FLAG_OUT_COOLDOWN_MINUTES;
                         my_conf_write_crc();
