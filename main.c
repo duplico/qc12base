@@ -368,6 +368,12 @@ void set_badge_friend(uint8_t id) {
                 s_new_uber_friend = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
                 mood_adjust_and_write_crc(MOOD_NEW_UBER_FRIEND);
             }
+
+            // ELITE: seen 10 ubers:
+            if (my_conf.uber_friend_count >= 10) {
+                achievement_get(ACH_ELITE, 0);
+            }
+
         } else {
             // flag a lamer animation
             if (id != my_conf.badge_id) {
