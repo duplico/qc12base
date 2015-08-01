@@ -112,8 +112,8 @@ uint8_t oled_memory[LCD_X_SIZE*PAGES];
 uint8_t ok_to_send = 1;
 
 // Writes a command to the LCD controller
-static void
-WriteCommand(uint8_t ucCommand)
+void
+qc12oled_WriteCommand(uint8_t ucCommand)
 {
 	while (!ok_to_send);
     THISISCMD;
@@ -138,7 +138,7 @@ const uint8_t zero_address_cmds[] = {
 void ZeroAddress()
 {
     for (uint8_t i=0; i<8; i++) {
-        WriteCommand(zero_address_cmds[i]);
+        qc12oled_WriteCommand(zero_address_cmds[i]);
     }
 }
 
@@ -175,11 +175,11 @@ InitLCDDisplayBuffer(void *pvDisplayData, uint16_t ulValue)
 // This function initializes the LCD controller
 // TemplateDisplayFix
 void
-qc12_oledInit(void)
+qc12_oledInit(uint8_t invert)
 {
     InitLCDDisplayBuffer(0, 0);
 
-    const char SSD1306_init[] = {
+    char SSD1306_init[] = {
             0xAE, 		// Display off
             0xD5, 0x80, // Clock divide / oscillator
             0xA8, 0x3F, // Multiplex ratio
@@ -199,6 +199,12 @@ qc12_oledInit(void)
             0xAF,		// Display ON!
     };
 
+    if (invert) {
+        SSD1306_init[21] = 0xA7;
+    } else {
+        SSD1306_init[21] = 0xA6;
+    }
+
     EUSCI_A_SPI_clearInterrupt(EUSCI_A1_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
     EUSCI_A_SPI_enableInterrupt(EUSCI_A1_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT);
 
@@ -213,10 +219,10 @@ qc12_oledInit(void)
     THISISDATA;
 
     for (uint8_t i=0; i<sizeof SSD1306_init; i++) {
-        WriteCommand(SSD1306_init[i]);
+        qc12oled_WriteCommand(SSD1306_init[i]);
     }
 
-    while (EUSCI_A_SPI_isBusy(EUSCI_A1_BASE));
+    while (!ok_to_send);
 }
 
 

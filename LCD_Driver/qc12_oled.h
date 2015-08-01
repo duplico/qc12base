@@ -159,7 +159,8 @@ and could also include Set_Address(), Write_Data(), etc. */
 // Prototypes for the globals exported by this driver.
 //
 //*****************************************************************************
-extern void qc12_oledInit(void);
+extern void qc12_oledInit(uint8_t invert);
+extern void qc12oled_WriteCommand(uint8_t ucCommand);
 extern const tDisplay g_sqc12_oled;
 extern uint8_t oled_memory[];
 

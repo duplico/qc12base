@@ -1214,12 +1214,20 @@ void handle_mode_name() {
         } else if (!strcmp(name, CHEAT_INFANT)) {
             // TODO
         } else if (!strcmp(name, CHEAT_INVERT)) {
-            // TODO
+            tlc_start_anim(&flag_lblue, 0, 0, 1, 255);
+            qc12_oledInit(1);
+            tlc_stop_anim(0);
         } else if (!strcmp(name, CHEAT_UNINVERT)) {
-            // TODO
+            tlc_start_anim(&flag_lblue, 0, 0, 1, 255);
+            qc12_oledInit(0);
+            tlc_stop_anim(0);
         } else if (!strcmp(name, CHEAT_PUPPY)) {
             am_puppy = 1;
             achievement_get(ACH_PUPPY, 0);
+        } else if (!strcmp(name, CHEAT_MIRROR)) {
+            qc12oled_WriteCommand(0xC0);
+        } else if (!strcmp(name, CHEAT_UNMIRROR)) {
+            qc12oled_WriteCommand(0xC8);
         }
 
     } else {

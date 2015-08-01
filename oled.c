@@ -38,7 +38,7 @@ int8_t char_pos_x = 0;
 int8_t char_pos_y = 0;
 
 void init_oled() {
-    qc12_oledInit();
+    qc12_oledInit(0);
     GrContextInit(&g_sContext, &g_sqc12_oled);
     GrContextBackgroundSet(&g_sContext, ClrBlack);
     GrContextForegroundSet(&g_sContext, ClrWhite);
