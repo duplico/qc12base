@@ -44,6 +44,7 @@ uint8_t s_overhead_done;
 uint8_t s_befriend_failed = 0;
 uint8_t s_befriend_success = 0;
 uint8_t s_new_checkin = 0;
+uint8_t s_send_play = 0;
 
 uint8_t disable_beacon_service = 0;
 uint8_t idle_mode_softkey_sel = 0;
@@ -59,6 +60,15 @@ uint8_t befriend_mode_secs = 0;
 uint8_t befriend_candidate = 0;
 char befriend_candidate_handle[NAME_MAX_LEN+1] = {0};
 uint8_t befriend_candidate_age = 0;
+
+#define PLAY_MODE_CAUSE 1
+#define PLAY_MODE_OBSERVE 2
+#define PLAY_MODE_RECV 3
+#define PLAY_MODE_EFFECT 4
+#define PLAY_MODE_CAUSE_ALONE 5
+
+uint8_t play_mode = 0;
+uint8_t play_id = 0;
 
 #define START_BEFRIEND_TLC_ANIM tlc_start_anim(&flag_blue, 0, 30, 1, 0)
 
@@ -502,6 +512,7 @@ void radio_send_beacon() {
     out_payload.friendship = 0;
     out_payload.from_addr = my_conf.badge_id;
     out_payload.to_addr = RFM_BROADCAST;
+    out_payload.play_id = 0;
     radio_send_sync();
 }
 
@@ -511,6 +522,7 @@ void radio_send_befriend(uint8_t mode) {
     out_payload.flag_id = 0;
     out_payload.friendship = mode;
     out_payload.from_addr = my_conf.badge_id;
+    out_payload.play_id = 0;
     if (befriend_mode > 1) {
         out_payload.to_addr = befriend_candidate;
     } else {
@@ -524,6 +536,18 @@ void radio_send_flag(uint8_t from, uint8_t flag) {
     out_payload.flag_from = from;
     out_payload.flag_id = flag;
     out_payload.friendship = 0;
+    out_payload.from_addr = my_conf.badge_id;
+    out_payload.to_addr = RFM_BROADCAST;
+    out_payload.play_id = 0;
+    radio_send_sync();
+}
+
+void radio_send_play(uint8_t index) {
+    out_payload.beacon = 0;
+    out_payload.flag_from = BADGES_IN_SYSTEM;
+    out_payload.flag_id = 0;
+    out_payload.friendship = 0;
+    out_payload.play_id = BIT7 | index;
     out_payload.from_addr = my_conf.badge_id;
     out_payload.to_addr = RFM_BROADCAST;
     radio_send_sync();
@@ -693,10 +717,17 @@ void handle_infrastructure_services() {
             // TODO: puppy score.
         }
 
-        // It's a play schedule:
-        if (in_payload.play_id && in_payload.from_addr < BADGES_IN_SYSTEM && (in_payload.play_id & 0b01111111) < play_anim_count) {
+        // It's a play schedule: (don't do it while befriending).
+        if (op_mode == OP_MODE_IDLE && in_payload.play_id && in_payload.from_addr < BADGES_IN_SYSTEM && (in_payload.play_id & 0b01111111) < play_anim_count && !play_mode && !befriend_mode) {
             if (my_conf.mood > MOOD_THRESH_SAD) {
-                // TODO: do the play.
+                play_id = in_payload.play_id & 0b01111111;
+                play_mode = PLAY_MODE_RECV;
+                oled_play_animation(&standing, play_cause[play_id]->len);
+                idle_mode_softkey_dis = 1; // TODO: is this right?
+                oled_draw_pane_and_flush(idle_mode_softkey_sel);
+                if (TLC_IS_A_GO) {
+                    tlc_start_anim(&flag_pink, 0, 5, 1, 0); // POW PINK!
+                }
                 mood_adjust_and_write_crc(MOOD_PLAY_RECV);
             }
         }
@@ -763,7 +794,7 @@ void handle_infrastructure_services() {
     if (f_new_second) {
         if (f_radio_fault) {
             f_radio_fault = 0;
-            tlc_start_anim(&flag_pink, 0, 0, 1, 3);
+            tlc_start_anim(&flag_red, 0, 0, 1, 5);
             init_radio();
         }
 
@@ -837,6 +868,11 @@ void handle_infrastructure_services() {
         s_flag_send--;
         flag_in_cooldown = FLAG_IN_COOLDOWN_SECONDS;
         radio_send_flag(flag_from, flag_id | BIT7);
+    }
+
+    if (s_send_play && rfm_state == RFM_IDLE) {
+        s_send_play--;
+        radio_send_play(play_id);
     }
 
     if (!disable_beacon_service && s_need_rf_beacon && rfm_state == RFM_IDLE) {
@@ -916,9 +952,32 @@ void handle_character_actions() {
 
     if (s_oled_needs_redrawn_idle) {
         s_oled_needs_redrawn_idle = 0;
-        if (my_conf.mood < MOOD_THRESH_SAD) {
+        if (play_mode == PLAY_MODE_RECV || play_mode == PLAY_MODE_CAUSE_ALONE) {
+            // We just finished standing still for receiving a play.
+            //  (or causing something to happen to ourself)
+            // Time to act!
+            play_mode = PLAY_MODE_EFFECT;
+            oled_play_animation(play_effect[play_id], 0);
+        } else if (play_mode == PLAY_MODE_EFFECT || play_mode == PLAY_MODE_OBSERVE) {
+            // We just finished receiving a play.
+            //  (or watching one)
+            // Time to go back to normal.
+            play_mode = 0;
+            idle_mode_softkey_dis = 0;
+            oled_draw_pane_and_flush(idle_mode_softkey_sel);
+        } else if (play_mode == PLAY_MODE_CAUSE) {
+            // Just finished causing a play. Time to stand back
+            //  and observe.
+            play_mode = PLAY_MODE_OBSERVE;
+            idle_mode_softkey_dis = 0;
+            oled_play_animation(play_observe[play_id], 0);
+            oled_draw_pane_and_flush(idle_mode_softkey_sel);
+        }
+
+
+        if (!play_mode && my_conf.mood < MOOD_THRESH_SAD) {
             oled_anim_disp_frame(&bored_standing, 0);
-        } else {
+        } else if (!play_mode) {
             oled_anim_disp_frame(&standing, 0);
         }
     }
@@ -1203,6 +1262,19 @@ void handle_mode_idle() {
                     op_mode = OP_MODE_NAME;
                     break;
                 case SK_SEL_PLAY:
+                    if (neighbor_count && rand() % 3) {
+                        // If I see other people, 50/50 chance of group play.
+                        s_send_play = 1;
+                        play_mode = PLAY_MODE_CAUSE;
+                        tlc_start_anim(&flag_pink, 0, 5, 1, 0); // POW PINK!
+                    } else {
+                        play_mode = PLAY_MODE_CAUSE_ALONE;
+                    }
+                    play_id = rand() % play_anim_count;
+                    oled_play_animation(play_cause[play_id], 0);
+                    idle_mode_softkey_dis = 1;
+                    oled_draw_pane_and_flush(idle_mode_softkey_sel);
+                    mood_adjust_and_write_crc(MOOD_PLAY_SEND);
                     break;
                 case SK_SEL_FLAG:
                     tlc_start_anim(flags[my_conf.flag_id], 0, 3, 0, 5);
