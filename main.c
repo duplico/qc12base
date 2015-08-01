@@ -78,7 +78,6 @@ uint8_t play_id = 0;
 #define BF_C_CLOSING 4
 #define BF_C_WAIT   6
 
-uint8_t flag_from = BADGES_IN_SYSTEM;
 uint8_t flag_id = 0;
 
 void poll_buttons();
@@ -251,7 +250,7 @@ void achievement_get(uint8_t achievement_id, uint8_t animate) {
     }
 }
 
-void set_badge_seen(uint8_t id) {
+inline void set_badge_seen(uint8_t id) {
     if (id >= BADGES_IN_SYSTEM) {
         __no_operation();
         return;
@@ -353,7 +352,7 @@ void check_conf() {
         memset(fav_badges_handles, 0, sizeof(char) * FAVORITE_COUNT * (NAME_MAX_LEN+1));
         s_default_conf_loaded = 1;
         out_payload.handle[0] = 0;
-        set_badge_seen(my_conf.badge_id);
+        set_badge_seen(my_conf.badge_id); // TODO: consider changing these two.
         set_badge_friend(my_conf.badge_id);
         my_conf_write_crc();
         // Suppress any flags set from these so we don't do the animation:
@@ -420,7 +419,6 @@ void init_rtc() {
 void init_payload() {
     out_payload.base_id = NOT_A_BASE;
     out_payload.beacon = 0;
-    out_payload.flag_from = BADGES_IN_SYSTEM;
     out_payload.flag_id = 0;
     out_payload.play_id = 0;
     out_payload.friendship = 0;
@@ -505,7 +503,6 @@ void intro() {
 
 void radio_send_beacon() {
     out_payload.beacon = 1;
-    out_payload.flag_from = BADGES_IN_SYSTEM;
     out_payload.flag_id = 0;
     out_payload.friendship = 0;
     out_payload.from_addr = my_conf.badge_id;
@@ -516,7 +513,6 @@ void radio_send_beacon() {
 
 void radio_send_befriend(uint8_t mode) {
     out_payload.beacon = 0;
-    out_payload.flag_from = BADGES_IN_SYSTEM;
     out_payload.flag_id = 0;
     out_payload.friendship = mode;
     out_payload.from_addr = my_conf.badge_id;
@@ -529,9 +525,8 @@ void radio_send_befriend(uint8_t mode) {
     radio_send_sync();
 }
 
-void radio_send_flag(uint8_t from, uint8_t flag) {
+void radio_send_flag(uint8_t flag) {
     out_payload.beacon = 0;
-    out_payload.flag_from = from;
     out_payload.flag_id = flag;
     out_payload.friendship = 0;
     out_payload.from_addr = my_conf.badge_id;
@@ -542,7 +537,6 @@ void radio_send_flag(uint8_t from, uint8_t flag) {
 
 void radio_send_play(uint8_t index) {
     out_payload.beacon = 0;
-    out_payload.flag_from = BADGES_IN_SYSTEM;
     out_payload.flag_id = 0;
     out_payload.friendship = 0;
     out_payload.play_id = BIT7 | index;
@@ -667,6 +661,7 @@ void befriend_proto_step(uint8_t from_radio, uint8_t received_flag, uint8_t from
 
 void handle_infrastructure_services() {
     static uint8_t minute_secs = 60;
+    static uint8_t flag_in_cooldown = 0;
 
     // Handle inbound and outbound background radio functionality, and buttons.
     if (f_rfm_tx_done) {
@@ -678,15 +673,7 @@ void handle_infrastructure_services() {
     }
 
     // Radio RX tasks:
-    //    Badge count incrementing
-    //    Friendship requests
-    //    Base check-ins
-    //    Handle sharing (only for our top-3)
-    //    Flag scheduling
-    //    Animation (OLED play) scheduling
-    //    Clock sync???
 
-    static uint8_t flag_in_cooldown = 0;
     if (f_rfm_rx_done) {
         radio_recv();
     }
@@ -696,79 +683,91 @@ void handle_infrastructure_services() {
         f_rfm_rx_done = 0;
         in_payload.handle[NAME_MAX_LEN] = 0; // Make sure it's definitely null-terminated.
 
-        // It's a standard beacon:
-        // Increment the badge count if needed:
-        if (!disable_beacon_service && in_payload.beacon && in_payload.from_addr < BADGES_IN_SYSTEM) {
-            // It's a beacon (one per cycle).
-            // Increment our beacon count in the current position in our
-            // sliding window.
-            neighbor_badges[in_payload.from_addr] = RECEIVE_WINDOW;
-            set_badge_seen(in_payload.from_addr);
-            tick_badge_seen(in_payload.from_addr, in_payload.handle);
+        // BASE SERVICES:
+        // Base services are a sort of overlay - the in_payload.id must be either in
+        //  range for a badge (for overlay services); or the DEDICATED_BASE_ID
+        if (in_payload.base_id && in_payload.from_addr < BADGES_IN_SYSTEM || in_payload.from_addr == DEDICATED_BASE_ID) {
+            if (in_payload.base_id == 1)
+            {
+                // TODO: puppy score.
+            }
+            else
+            {
+                at_base = RECEIVE_WINDOW;
+                set_base_seen(in_payload.base_id - 2);
+            }
         }
 
-        if (in_payload.base_id > 1) {
-            at_base = RECEIVE_WINDOW;
-            set_base_seen(in_payload.base_id - 2);
-        } else if (in_payload.base_id == 1) {
-            // TODO: puppy score.
-        }
+        // BEACON SERVICES:
+        // "Beacon services" refers to BADGE TO BADGE COMMUNICATION.
+        if (!disable_beacon_service && in_payload.from_addr < BADGES_IN_SYSTEM) {
 
-        // It's a play schedule: (don't do it while befriending).
-        if (op_mode == OP_MODE_IDLE && in_payload.play_id && in_payload.from_addr < BADGES_IN_SYSTEM && (in_payload.play_id & 0b01111111) < play_anim_count && !play_mode && !befriend_mode) {
-            if (my_conf.mood > MOOD_THRESH_SAD) {
-                play_id = in_payload.play_id & 0b01111111;
-                play_mode = PLAY_MODE_RECV;
-                oled_play_animation(&standing, play_cause[play_id]->len);
-                idle_mode_softkey_dis = 1;
-                oled_draw_pane_and_flush(idle_mode_softkey_sel);
-                if (TLC_IS_A_GO) {
-                    tlc_start_anim(&flag_pink, 0, 5, 1, 0); // POW PINK!
+            // It's a standard beacon:
+            // Increment the badge count if needed:
+            if (in_payload.beacon) {
+                // It's a beacon (one per cycle).
+                // Update the TTL of the neighbor_badges record for the
+                //  source badge.
+                neighbor_badges[in_payload.from_addr] = RECEIVE_WINDOW;
+                // Mark it seen:
+                set_badge_seen(in_payload.from_addr);
+                tick_badge_seen(in_payload.from_addr, in_payload.handle);
+            }
+
+
+            // Play schedule. We only care about this if we're in IDLE mode,
+            //  and if we're not busy. (We use the enabledness of the softkey as
+            //  a surrogate for that ill-defined "business").
+            if (in_payload.play_id && op_mode == OP_MODE_IDLE && !idle_mode_softkey_dis && (in_payload.play_id & 0b01111111) < play_anim_count) {
+                if (my_conf.mood > MOOD_THRESH_SAD) {
+                    play_id = in_payload.play_id & 0b01111111;
+                    play_mode = PLAY_MODE_RECV;
+                    // Just stand there for the length of time the causing badge
+                    //  is doing its cause animation.
+                    oled_play_animation(&standing, play_cause[play_id]->len);
+                    idle_mode_softkey_dis = 1;
+                    //                        oled_draw_pane_and_flush(idle_mode_softkey_sel); // TODO???
+                    if (TLC_IS_A_GO) {
+                        tlc_start_anim(&flag_pink, 0, 5, 1, 0); // POW PINK!
+                    }
                 }
-                mood_adjust_and_write_crc(MOOD_PLAY_RECV);
+            }
+
+            // It's a flag schedule:
+            if (in_payload.flag_id && (in_payload.flag_id & 0b01111111) < FLAG_COUNT) {
+                // Wave a flag.
+                if (!my_conf.flag_unlocks) {
+                    // TODO: score.
+                    my_conf.flag_unlocks = 1;
+                    my_conf_write_crc();
+                }
+                if (!flag_in_cooldown) {
+                    flag_id = in_payload.flag_id & 0b01111111;
+                    radio_send_flag(flag_id | BIT7);
+                    tlc_start_anim(flags[in_payload.flag_id & 0b01111111], 0, 3, 0, 0);
+                    s_flag_wave = 1;
+                    s_flag_send = 1;
+                } // Otherwise, ignore it.
+            }
+
+            // Resolve inbound or completed friendship requests:
+            if (in_payload.friendship) {
+                if (befriend_mode && befriend_candidate != in_payload.from_addr) {
+                    // Check our befriend partner:
+                    set_befriend_failed();
+                    befriend_mode = 0;
+                } else if (befriend_mode) {
+                    // We're currently somewhere in the befriend process,
+                    //  so the protocol function will handle managing
+                    //  befriend_candidate for us.
+                    befriend_proto_step(1, in_payload.friendship, in_payload.from_addr);
+                } else if (in_payload.friendship == BF_S_BEACON) {
+                    // Only track beacons in this way.
+                    befriend_candidate = in_payload.from_addr;
+                    befriend_candidate_age = BEFRIEND_BCN_AGE_LOOPS;
+                }
             }
         }
-
-        // It's a flag schedule:
-        if (in_payload.flag_id && in_payload.from_addr < BADGES_IN_SYSTEM && in_payload.flag_from < BADGES_IN_SYSTEM && (in_payload.flag_id & 0b01111111) < FLAG_COUNT) {
-            // Wave a flag.
-            if (!my_conf.flag_unlocks) {
-                // TODO: score.
-                my_conf.flag_unlocks = 1;
-                my_conf_write_crc();
-            }
-            if (!flag_in_cooldown) {
-                flag_from = in_payload.flag_from;
-                flag_id = in_payload.flag_id & 0b01111111;
-                radio_send_flag(flag_from, flag_id | BIT7);
-                tlc_start_anim(flags[in_payload.flag_id & 0b01111111], 0, 3, 0, 0);
-                s_flag_wave = 1;
-                s_flag_send = 1;
-            } // Otherwise, ignore it.
-        }
-
-        // Resolve inbound or completed friendship requests:
-        if (in_payload.friendship) {
-            if (befriend_mode && befriend_candidate != in_payload.from_addr) {
-                // Check our befriend partner:
-                set_befriend_failed();
-                befriend_mode = 0;
-            } else if (befriend_mode) {
-                // We're currently somewhere in the befriend process,
-                //  so the protocol function will handle managing
-                //  befriend_candidate for us.
-                befriend_proto_step(1, in_payload.friendship, in_payload.from_addr);
-            } else if (in_payload.friendship == BF_S_BEACON) {
-                // Only track beacons in this way.
-                befriend_candidate = in_payload.from_addr;
-                befriend_candidate_age = BEFRIEND_BCN_AGE_LOOPS;
-            }
-        }
-        // Do base check-ins and related tasks:
-
-        // Schedule OLED play animations:
-
-        // Clock stuff???
 
     } else if (f_rfm_rx_done) {
         // Ignore messages from our own ID, because what even is that anyway?
@@ -865,7 +864,7 @@ void handle_infrastructure_services() {
     if (s_flag_send && rfm_state == RFM_IDLE) {
         s_flag_send--;
         flag_in_cooldown = FLAG_IN_COOLDOWN_SECONDS;
-        radio_send_flag(flag_from, flag_id | BIT7);
+        radio_send_flag(flag_id | BIT7);
     }
 
     if (s_send_play && rfm_state == RFM_IDLE) {
@@ -956,6 +955,8 @@ void handle_character_actions() {
             // Time to act!
             play_mode = PLAY_MODE_EFFECT;
             oled_play_animation(play_effect[play_id], 0);
+            // This displeases us:
+            mood_adjust_and_write_crc(MOOD_PLAY_RECV);
         } else if (play_mode == PLAY_MODE_EFFECT || play_mode == PLAY_MODE_OBSERVE) {
             // We just finished receiving a play.
             //  (or watching one)
@@ -1019,6 +1020,8 @@ void handle_mode_name() {
     // Clear the screen and display the instructions.
     static tRectangle name_erase_rect = {0, NAME_Y_OFFSET, 63, NAME_Y_OFFSET + NAME_FONT_HEIGHT + SYS_FONT_HEIGHT};
     disable_beacon_service = 1;
+    static uint8_t update_disp;
+    update_disp = 1;
 
     GrClearDisplay(&g_sContext);
     GrContextFontSet(&g_sContext, &SYS_FONT);
@@ -1050,6 +1053,7 @@ void handle_mode_name() {
     // For cheat mode:
     uint8_t bl_down_loops = 0;
     uint8_t cheat_mode = 0;
+    text_width = GrStringWidthGet(&g_sContext, name, last_char_index+1);
 
     while (1) {
         handle_infrastructure_services();
@@ -1062,7 +1066,6 @@ void handle_mode_name() {
         if (f_time_loop) {
             f_time_loop = 0;
             // Check for left/right buttons to change character slot
-            text_width = GrStringWidthGet(&g_sContext, name, last_char_index+1);
             if (f_bl == BUTTON_RELEASE) {
                 if (char_entry_index > 0) {
                     // check for deletion:
@@ -1070,6 +1073,8 @@ void handle_mode_name() {
                         last_char_index--;
                     char_entry_index--;
                     curr_char = name[char_entry_index];
+                    update_disp = 1;
+                    text_width = GrStringWidthGet(&g_sContext, name, last_char_index+1);
                 }
                 bl_down_loops = 0;
                 f_bl = 0;
@@ -1082,6 +1087,8 @@ void handle_mode_name() {
                     curr_char = name[char_entry_index];
                     if (char_entry_index > last_char_index)
                         last_char_index = char_entry_index;
+                    update_disp = 1;
+                    text_width = GrStringWidthGet(&g_sContext, name, last_char_index+1);
                 }
                 f_br = 0;
             }
@@ -1100,6 +1107,7 @@ void handle_mode_name() {
                 else
                     curr_char++;
                 name[char_entry_index] = curr_char;
+                update_disp = 1;
                 f_bs = 0;
                 // Since it's released, clear the depressed loop count.
                 bs_down_loops = 0;
@@ -1131,18 +1139,21 @@ void handle_mode_name() {
                 cheat_mode = 1;
             }
 
-            underchar_x = GrStringWidthGet(&g_sContext, name, char_entry_index);
+            if (update_disp) {
+                update_disp = 0;
+                underchar_x = GrStringWidthGet(&g_sContext, name, char_entry_index);
 
-            // Clear the area:
-            GrContextForegroundSet(&g_sContext, ClrBlack);
-            GrRectFill(&g_sContext, &name_erase_rect);
-            GrContextForegroundSet(&g_sContext, ClrWhite);
+                // Clear the area:
+                GrContextForegroundSet(&g_sContext, ClrBlack);
+                GrRectFill(&g_sContext, &name_erase_rect);
+                GrContextForegroundSet(&g_sContext, ClrWhite);
 
-            // Rewrite it:
-            GrStringDraw(&g_sContext, name, -1, 0, NAME_Y_OFFSET, 1);
-            GrLineDrawH(&g_sContext, 0, text_width, NAME_Y_OFFSET+12);
-            GrStringDraw(&g_sContext, undername, -1, underchar_x, NAME_Y_OFFSET+13, 1);
-            GrFlush(&g_sContext);
+                // Rewrite it:
+                GrStringDraw(&g_sContext, name, -1, 0, NAME_Y_OFFSET, 1);
+                GrLineDrawH(&g_sContext, 0, text_width, NAME_Y_OFFSET+12);
+                GrStringDraw(&g_sContext, undername, -1, underchar_x, NAME_Y_OFFSET+13, 1);
+                GrFlush(&g_sContext);
+            }
         } // end if (f_time_loop)
 
         try_to_sleep();
@@ -1280,7 +1291,6 @@ void handle_mode_idle() {
                         my_conf.flag_cooldown = FLAG_OUT_COOLDOWN_MINUTES;
                         my_conf_write_crc();
                     }
-                    flag_from = my_conf.badge_id;
                     flag_id = my_conf.flag_id;
                     s_flag_send = FLAG_SEND_TRIES;
                     idle_mode_softkey_sel = 0;
