@@ -164,9 +164,9 @@ void oled_consider_walking_back() {
     if (my_conf.mood < MOOD_THRESH_SAD) {
         // zombie walk back
         if (char_pos_x < -12) {
-            oled_play_animation(&walking, (uint8_t) (-char_pos_x/12) - 1);
+            oled_play_animation(&zombie, (uint8_t) (-char_pos_x/12) - 1);
         } else if (char_pos_x > 12) {
-            oled_play_animation(&walking_left, (uint8_t) (char_pos_x/12) - 1);
+            oled_play_animation(&zombie_left, (uint8_t) (char_pos_x/12) - 1);
         }
     } else {
         // happy walk back
