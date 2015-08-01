@@ -723,7 +723,7 @@ void handle_infrastructure_services() {
                 play_id = in_payload.play_id & 0b01111111;
                 play_mode = PLAY_MODE_RECV;
                 oled_play_animation(&standing, play_cause[play_id]->len);
-                idle_mode_softkey_dis = 1; // TODO: is this right?
+                idle_mode_softkey_dis = 1;
                 oled_draw_pane_and_flush(idle_mode_softkey_sel);
                 if (TLC_IS_A_GO) {
                     tlc_start_anim(&flag_pink, 0, 5, 1, 0); // POW PINK!
@@ -969,7 +969,6 @@ void handle_character_actions() {
             // Just finished causing a play. Time to stand back
             //  and observe.
             play_mode = PLAY_MODE_OBSERVE;
-            idle_mode_softkey_dis = 0;
             oled_play_animation(play_observe[play_id], 0);
             oled_draw_pane_and_flush(idle_mode_softkey_sel);
         }
