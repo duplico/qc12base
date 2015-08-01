@@ -28,9 +28,9 @@ is_a_number = re.compile("[0-9]+")
 def get_bits(paths):
     segs = []
     for path in paths:
-        head_in, head_mask = adjust_image(Image.open(path))
+        img, mask = adjust_image(Image.open(path))
         seg = Image.new('RGBA', (SPRITE_WIDTH, SPRITE_HEIGHT), (0,0,0,0))
-        seg.paste(head_in, (0, 0), head_mask)
+        seg.paste(img, (0, 0), mask)
         
         out_str = "{0b"
         index = 0
@@ -134,6 +134,36 @@ def get_tops(head_path, body_path, legs_path, heights):
 
 animations = []
 
+def make_thumbs(thumb_id, head_files, body_files, legs_files, heights):
+    head_img, head_mask = adjust_image(Image.open(head_files[9]))
+    body_img, body_mask = adjust_image(Image.open(body_files[13]))
+    legs_img, legs_mask = adjust_image(Image.open(legs_files[8]))
+    
+    hy,by,ly = get_tops(head_files[9], body_files[13], legs_files[8], heights)
+    
+    sprite = Image.new('RGBA', (SPRITE_WIDTH, SPRITE_HEIGHT), (0,0,0,0))
+    sprite.paste(head_img, (0,hy), head_mask)
+    sprite.paste(body_img, (0,by), body_mask)
+    sprite.paste(legs_img, (0,ly), legs_mask)
+    
+    text_image = Image.new('RGBA', (SPRITE_HEIGHT+20, SPRITE_WIDTH), (255,255,255,0))
+    f = ImageFont.truetype(font="Consolas.ttf", size=10)
+    td = ImageDraw.Draw(text_image)
+    #td.text((0,0), "queercon", font=f, fill=(0,0,0))
+    #td.text((0,54), " twelve", font=f, fill=(0,0,0))
+    
+    sprite_image, sprite_mask = adjust_image(sprite)
+    sprite_image.save(os.path.join("thumbs", "%03d.png") % thumb_id)
+    thumbnail = Image.new('RGBA', (SPRITE_WIDTH, SPRITE_HEIGHT+20), (0,0,0,0))
+    f = ImageFont.truetype(font="Consolas.ttf", size=20)
+    td = ImageDraw.Draw(thumbnail)
+    width = td.textsize(str(thumb_id), font=f)[0]
+    thumbnail.paste(text_image.rotate(-90), (0,0))
+    thumbnail.paste(adjust_image(sprite)[0], (0,0), sprite_mask)
+    td.text(((64-width)/2,68), str(thumb_id), font=f, fill=(0,0,0))
+    thumbnail.save(os.path.join("thumbs", "label_%03d.png") % thumb_id)
+    
+
 def main(inifile, head_dir, body_dir, legs_dir, show, thumb_id=False):
     parser = ConfigParser()
     parser.read(inifile)
@@ -165,6 +195,8 @@ def main(inifile, head_dir, body_dir, legs_dir, show, thumb_id=False):
     
     make_outputs(head_files, body_files, legs_files) # Prints directly.
     
+    if thumb_id:
+        make_thumbs(thumb_id, head_files, body_files, legs_files, heights)
     
     index_offset = 0
     index = 0
@@ -353,13 +385,17 @@ if (__name__ == '__main__'):
             configfile.write(filestring)
         use_file = args.config + '.tmp'
     
-    if args.id:
-        assert args.id >= 15 # ubers are done manually.
-        c = ["alien", "bear", "human", "lizard", "octopus", "robot"]
-        l = list(itertools.product(c, repeat=3))
-        head, body, legs = l[(args.id-15) % len(l)]
+    uber_dirs = ["bender", "uber_astronaut", "uber_blackhat", "uber_human", "uber_minion", "uber_shark", "uber_stig"]
+    human_dirs = ["alien", "bear", "human", "lizard", "octopus", "robot"]
     
-    all_dirs = ["alien", "bear", "bender", "human", "lizard", "octopus", "robot", "uber_astronaut", "uber_blackhat", "uber_human", "uber_minion", "uber_shark", "uber_stig"]
+    if args.id:
+        if (args.id >= 15):
+            l = list(itertools.product(human_dirs, repeat=3))
+            head, body, legs = l[(args.id-15) % len(l)]
+        else:
+            head = body = legs = uber_dirs[args.id]
+       
+    all_dirs = uber_dirs + human_dirs
 
     head_clip, legs_clip = get_clipping_areas(all_dirs)
     
@@ -367,6 +403,11 @@ if (__name__ == '__main__'):
     print
     
     main(use_file, args.head or head, args.body or body, args.legs or legs, args.show, thumb_id=args.id)
+    
+    print
+    print "// Head size: %d, leg size: %d" % (head_clip, legs_clip)
+    if args.id < 15:
+        print "// This is %s" % uber_dirs[args.id]
     
     if args.fixini:
         os.remove(use_file)

@@ -2642,9 +2642,9 @@ const int8_t bored_talk_to_hand_body_tops[6] = { 0, 0, 0, 0, 0, 0 };
 const int8_t bored_talk_to_hand_head_tops[6] = { 0, 0, 0, 0, 0, 0 };
 const int8_t bored_talk_to_hand_legs_tops[6] = { 0, 0, 0, 0, 0, 0 };
 const qc12_anim_t bored_talk_to_hand = {
-	0, // Looped?
-	0, // Loop start index
-	6, // Loop end index
+	1, // Looped?
+	2, // Loop start index
+	5, // Loop end index
 	6, // Length
 	3, // Speed
 	bored_talk_to_hand_heads, //heads
