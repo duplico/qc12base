@@ -116,6 +116,7 @@ uint8_t neighbor_count = 0;
 uint8_t window_seconds = RECEIVE_WINDOW_LENGTH_SECONDS;
 uint8_t neighbor_badges[BADGES_IN_SYSTEM] = {0};
 uint8_t at_base = 0;
+uint8_t at_suite_base = 0;
 
 // Mood:
 uint8_t mood_tick_minutes = MOOD_TICK_MINUTES;
@@ -140,11 +141,13 @@ uint8_t mood_tick_minutes = MOOD_TICK_MINUTES;
 #define ACH_SQUIRE 17
 #define ACH_ELITE 18
 #define ACH_MOODY 19
-#define ACH_CHIEF 20
-#define ACH_PUPPY 21
-#define ACH_HANDLER 22
-#define ACH_TOWEL 23
-#define ACH_CHEATER 24
+#define ACH_MIXER 20
+#define ACH_KICKOFF 21
+#define ACH_CHIEF 22
+#define ACH_PUPPY 23
+#define ACH_HANDLER 24
+#define ACH_TOWEL 25
+#define ACH_CHEATER 26
 
 const char titles[NUM_ACHIEVEMENTS][10] = {
         "newbie",
@@ -167,6 +170,8 @@ const char titles[NUM_ACHIEVEMENTS][10] = {
         "squire",
         "elite",
         "moody",
+        "queer",
+        "early",
         "Chief",
         "Puppy",
         "Handler",
@@ -174,17 +179,17 @@ const char titles[NUM_ACHIEVEMENTS][10] = {
         "Cheat",
 };
 
-const char title_descs[NUM_ACHIEVEMENTS][24] = {
+const char title_descs[NUM_ACHIEVEMENTS][42] = {
         "Turn it on.",
-        "Meet 20 badges",
-        "Meet 40 badges",
-        "Meet 60 badges",
+        "Meet 20 qcbadges",
+        "Meet 40 qcbadges",
+        "Meet 60 qcbadges",
         "Sleep with your fave",
         "Make 5 friends",
         "Make 15 friends",
         "Make 30 friends",
-        "Go to the badge talk",
-        "Go to the pool party",
+        "qcbadge talk: 12p Fri, qcsuite",
+        "Go to QC pool party: 9p Fri Bally's",
         "Find your twin",
         "Befriend your twin",
         "Hang around the suite",
@@ -192,9 +197,11 @@ const char title_descs[NUM_ACHIEVEMENTS][24] = {
         "Be played with lots",
         "Be awake 24 hours",
         "Sleep over 8 hours",
-        "Meet 10 QC ubers",
-        "Befriend 10 ubers",
+        "Meet 10 qc ubers",
+        "Befriend 10 qc ubers",
         "Be sad for 8 hours",
+        "Go to a QC mixer: 4p daily, qcsuite",
+        "Attend QC12 Thurs kickoff",
         "\"Popular!\"",
         "\"Where is he?\"",
         "\"You found him!\"",
@@ -324,11 +331,20 @@ void set_base_seen(uint8_t base) {
 
     if (!(base_mask & my_conf.bases_seen)) {
         s_new_checkin = 1;
+
+        if (base == BASE_KICKOFF) {
+            achievement_get(ACH_KICKOFF, 1);
+        } else if (base == BASE_POOL) {
+            achievement_get(ACH_FISH, 1);
+        } else if (base == BASE_TALK) {
+            achievement_get(ACH_BADGER, 1);
+        } else if (base == BASE_MIXER) {
+            achievement_get(ACH_MIXER, 1);
+        }
+
         my_conf.bases_seen |= base_mask;
         mood_adjust_and_write_crc(MOOD_EVENT_ARRIVE);
     }
-
-    // TODO: lightbulb here?
 }
 
 
@@ -733,8 +749,10 @@ void handle_infrastructure_services() {
                 oled_set_overhead_image(&jakethedog, 254);
                 achievement_get(22, 1);
             }
-            else
-            {
+            else if (in_payload.base_id == BASE_SUITE) {
+                at_base = RECEIVE_WINDOW;
+                at_suite_base = 1;
+            } else {
                 at_base = RECEIVE_WINDOW;
                 set_base_seen(in_payload.base_id - 2);
             }
@@ -863,6 +881,9 @@ void handle_infrastructure_services() {
             window_seconds = RECEIVE_WINDOW_LENGTH_SECONDS;
             if (at_base) {
                 at_base--;
+                if (!at_base) {
+                    at_suite_base = 0;
+                }
             }
             if (skip_window != window_position) {
                 s_need_rf_beacon = 1;
@@ -904,6 +925,13 @@ void handle_infrastructure_services() {
                 mood_adjust_and_write_crc(MOOD_TICK_AMOUNT);
             }
             mood_tick_minutes = MOOD_TICK_MINUTES;
+        }
+
+        if (at_base && at_suite_base && my_conf.suite_minutes < 200) {
+            my_conf.suite_minutes++;
+        }
+        if (my_conf.suite_minutes >= 200) {
+            achievement_get(ACH_CHILL, 1);
         }
 
         // General timing stuff:
@@ -1569,16 +1597,16 @@ void asl_draw_page(uint8_t page) {
         // Achievement listing.
         achievement_id = page-4;
         oled_print(0,0, "Title:", 1, 0);
-        oled_print(0,12, titles[achievement_id], 1, 1);
-        GrLineDrawH(&g_sContext, 5, 58, 25);
+        oled_print(0,11, titles[achievement_id], 1, 1);
+        GrLineDrawH(&g_sContext, 5, 58, 24);
         if (achievement_have(achievement_id)) {
-            oled_print(0,28, "Unlocked!", 0, 1);
-            GrImageDraw(&g_sContext, &check, 16, 47);
+            oled_print(0,25, "Unlocked!", 0, 1);
+            GrImageDraw(&g_sContext, &check, 16, 40);
         } else {
-            oled_print(0,28, "LOCKED", 0, 1);
-            GrImageDraw(&g_sContext, &nocheck, 16, 47);
+            oled_print(0,25, "LOCKED", 0, 1);
+            GrImageDraw(&g_sContext, &nocheck, 16, 40);
         }
-        oled_print(0,72, title_descs[page-4], 0, 1);
+        oled_print(0,62, title_descs[page-4], 0, 1);
 
         break;
 
