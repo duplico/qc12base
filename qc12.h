@@ -16,7 +16,7 @@
 // CONFIGURATION SETTINGS ///////////////////////////////////////////
 
 // System configuration
-#define BADGE_ID 7
+#define BADGE_ID 3
 #define BADGES_IN_SYSTEM 175
 #define BASES_IN_SYSTEM 8
 #define UBERS_IN_SYSTEM 12
@@ -54,7 +54,7 @@
 #define MOOD_OLD_UBER_FRIEND 6
 #define MOOD_EVENT_ARRIVE 100
 #define MOOD_PLAY_SEND 20
-#define MOOD_PLAY_RECV -12
+#define MOOD_PLAY_RECV -8
 #define MOOD_NEW_TITLE 25
 
 // Name entry configuration parameters:

@@ -301,8 +301,8 @@ const rgbcolor_t mood_green = { 0x0000, 0x1500, 0x0000};
 const rgbcolor_t mood_yellow   = { 0x1000, 0x1000, 0x0000}; // To account for roundoff error.
 const rgbcolor_t mood_red   = { 0x1500, 0x0000, 0x0000};
 const rgbdelta_t mood_step = {
-        (-0x2000) / 100,
-        (0x2000) / 100,
+        (-0x2000) / 80,
+        (0x2000) / 80,
         (0x0000) / 100
 };
 
@@ -529,24 +529,16 @@ void tlc_fade_colors() {
 }
 
 void tlc_set_ambient(uint8_t mood) {
-    if (mood == 100) {
+    if (mood >= 90) {
         // green
         memcpy(&tlc_ambient_colors, &mood_green, sizeof(rgbcolor_t));
-    } else if (mood == 50) {
-        // yellow
-        memcpy(&tlc_ambient_colors, &mood_yellow, sizeof(rgbcolor_t));
     } else if (mood < MOOD_THRESH_SAD ) {
         // red
         memcpy(&tlc_ambient_colors, &mood_red, sizeof(rgbcolor_t));
-    } else if (mood > 50) {
+    } else {
         // go from green
         tlc_ambient_colors.red = mood_green.red - mood_step.red * (100-mood);
         tlc_ambient_colors.green = mood_green.green - mood_step.green * (100-mood);
-        tlc_ambient_colors.blue = 0x0000;
-    } else if (mood < 50) {
-        // go from red
-        tlc_ambient_colors.red = mood_red.red + mood_step.red * mood;
-        tlc_ambient_colors.green = mood_red.green + mood_step.green * mood;
         tlc_ambient_colors.blue = 0x0000;
     }
 }
@@ -562,7 +554,7 @@ void tlc_display_ambient() {
         speed = speed - speed * (neighbor_count / 7);
     }
 
-    tlc_start_anim(&flag_ambient, 0, speed, 0, 3);
+    tlc_start_anim(&flag_ambient, 0, speed, 0, 0);
     tlc_is_ambient = 1;
 }
 

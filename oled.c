@@ -155,6 +155,11 @@ void oled_anim_disp_frame(const qc12_anim_t *animation_data, uint8_t frame_no) {
 }
 
 void oled_consider_walking_back() {
+    if (char_pos_y != 0) {
+        char_pos_x = 64;
+        char_pos_y = 0;
+    }
+
     // Determine whether we need to walk back onto the screen after anim.
     if (my_conf.mood < MOOD_THRESH_SAD) {
         // zombie walk back
