@@ -1269,6 +1269,7 @@ void handle_mode_idle() {
                         tlc_start_anim(&flag_pink, 0, 5, 1, 0); // POW PINK!
                     } else {
                         play_mode = PLAY_MODE_CAUSE_ALONE;
+                        tlc_start_anim(&flag_yellow, 0, 5, 1, 0); // BRRP YELLOW!
                     }
                     play_id = rand() % play_anim_count;
                     oled_play_animation(play_cause[play_id], 0);
