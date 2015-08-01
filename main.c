@@ -32,7 +32,6 @@ volatile uint8_t f_radio_fault = 0;
 // Non-interrupt signal flags (no need to avoid optimization):
 uint8_t s_default_conf_loaded = 0;
 uint8_t s_need_rf_beacon = 0;
-uint8_t s_newly_met = 0;
 uint8_t s_flag_wave = 0;
 uint8_t s_flag_send = 0;
 uint8_t s_new_uber_seen = 0;
@@ -254,11 +253,11 @@ void achievement_get(uint8_t achievement_id, uint8_t animate) {
 
 void set_badge_seen(uint8_t id) {
     if (id >= BADGES_IN_SYSTEM) {
+        __no_operation();
         return;
     }
 
     if (!(BADGE_SEEN_BIT & badges_seen[id])) {
-        s_newly_met = 1;
         badges_seen[id] |= BADGE_SEEN_BIT;
         my_conf.seen_count++;
         if (id < UBERS_IN_SYSTEM) {
@@ -307,7 +306,6 @@ void set_badge_friend(uint8_t id) {
     }
 
     if (!(BADGE_FRIEND_BIT & badges_seen[id])) {
-        s_newly_met = 1;
         badges_seen[id] |= BADGE_FRIEND_BIT;
         my_conf.friend_count++;
         if (id < UBERS_IN_SYSTEM) {
@@ -553,7 +551,7 @@ void radio_send_play(uint8_t index) {
     radio_send_sync();
 }
 
-inline void set_befriend_failed() {
+void set_befriend_failed() {
     oled_set_overhead_text("Okbai :(", 20);
     s_befriend_failed = 1;
     befriend_mode = 0;
@@ -587,7 +585,6 @@ void befriend_proto_step(uint8_t from_radio, uint8_t received_flag, uint8_t from
             // If we are a beaconing server, we use the incoming
             //  sender to set our befriend_candidate.
             befriend_candidate = from_id;
-            befriend_candidate_age = BEFRIEND_TIMEOUT_SECONDS;
         } else if (from_id != befriend_candidate) {
             // Otherwise, we need to reject anything that's not
             //  from our befriend_candidate.
@@ -764,7 +761,7 @@ void handle_infrastructure_services() {
             } else if (in_payload.friendship == BF_S_BEACON) {
                 // Only track beacons in this way.
                 befriend_candidate = in_payload.from_addr;
-                befriend_candidate_age = BEFRIEND_TIMEOUT_SECONDS;
+                befriend_candidate_age = BEFRIEND_BCN_AGE_LOOPS;
             }
         }
         // Do base check-ins and related tasks:
@@ -789,6 +786,10 @@ void handle_infrastructure_services() {
         } else if (befriend_mode && befriend_mode_loops_to_tick) {
             befriend_mode_loops_to_tick--;
         }
+
+        if (befriend_candidate_age) {
+            befriend_candidate_age--;
+        }
     }
 
     if (f_new_second) {
@@ -798,9 +799,6 @@ void handle_infrastructure_services() {
             init_radio();
         }
 
-        if (befriend_candidate_age) {
-            befriend_candidate_age--;
-        }
         if (befriend_mode == 1 || befriend_mode == 2) {
             if (befriend_mode_secs) {
                 befriend_mode_secs--;
