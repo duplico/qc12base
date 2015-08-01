@@ -396,7 +396,7 @@ uint8_t fun_base[] = {
         0x7F, // tx
 };
 
-void tlc_set_gs() {
+inline void tlc_set_gs() {
     if (tlc_send_type != TLC_SEND_IDLE)
         return;
     tlc_send_type = TLC_SEND_TYPE_GS;
@@ -412,7 +412,7 @@ void tlc_set_fun() {
 }
 
 // Stage the blank bit:
-void tlc_stage_blank(uint8_t blank) {
+inline void tlc_stage_blank(uint8_t blank) {
     if (blank) {
         fun_base[17] |= BIT7;
         fun_base[16] &= ~BIT1;
@@ -476,7 +476,7 @@ void stage_color(rgbcolor_t *dest_color_frame, uint8_t anim_index) {
     }
 }
 
-void tlc_load_colors() {
+inline void tlc_load_colors() {
     if (tlc_anim_mode == TLC_ANIM_MODE_SAME) {
         // Stage in current color:
         stage_color(&tlc_colors_curr[0], tlc_anim_index);
@@ -500,7 +500,7 @@ void tlc_load_colors() {
     }
 }
 
-void tlc_fade_colors() {
+inline void tlc_fade_colors() {
     if (ring_fade_steps && ring_fade_index == ring_fade_steps-1) {
         // hit the destination: memcpy(&tlc_curr_colors[0], &tlc_curr_anim[tlc_light_offset], sizeof(rgbcolor_t));
         memcpy(&tlc_colors_curr[0], tlc_colors_next, sizeof(rgbcolor_t));

@@ -131,7 +131,8 @@ void flash_read_data(uint32_t address, uint32_t len_bytes, uint8_t* buffer) {
     usci_a0_send_sync((address & 0x0000FF00) >> 8); // Middle byte of address
     usci_a0_send_sync((address & 0x000000FF)); // LSByte of address
     // TODO: should be done with DMA, probably.
-    for (uint32_t i = 0; i < len_bytes; i++) {
+
+    for (uint32_t i = len_bytes; i; i--) {
         buffer[i] = usci_a0_recv_sync(0xff);
     }
     flash_end();
