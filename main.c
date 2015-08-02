@@ -733,7 +733,7 @@ void befriend_proto_step(uint8_t from_radio, uint8_t received_flag, uint8_t from
             } else {
                 befriend_mode = 0;
                 s_befriend_success = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
-                oled_set_overhead_text(in_payload.handle, 180);
+                oled_set_overhead_text(befriend_candidate_handle, 180);
                 set_badge_friend(befriend_candidate);
             }
         }
@@ -845,6 +845,9 @@ void handle_infrastructure_services() {
                     // We're currently somewhere in the befriend process,
                     //  so the protocol function will handle managing
                     //  befriend_candidate for us.
+                    if (in_payload.from_addr == befriend_candidate) {
+                        strcpy(befriend_candidate_handle, in_payload.handle);
+                    }
                     befriend_proto_step(1, in_payload.friendship, in_payload.from_addr);
                 } else if (in_payload.friendship == BF_S_BEACON) {
                     // Only track beacons in this way.
