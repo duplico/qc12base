@@ -293,7 +293,7 @@ void oled_timestep() {
                 oled_set_overhead_image(&cloud, 100);
             }
         } else if (am_puppy) {
-            oled_set_overhead_image(&jakethedog, 100);
+            oled_set_overhead_image(&puppy, 100);
         } else {
             for (uint8_t i=0; i<FAVORITE_COUNT; i++) {
                 if (neighbor_badges[fav_badges_ids[i]]) {

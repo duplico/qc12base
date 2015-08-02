@@ -30,7 +30,7 @@ extern const uint8_t legs_clip_offset;
 extern const tImage  fingerprint_1BPP_UNCOMP;
 extern const tImage flag1;
 
-extern const tImage cloud, heart, empty_heart, idea, lightning, check, nocheck, jakethedog, bed;
+extern const tImage cloud, heart, empty_heart, idea, lightning, check, nocheck, jakethedog, puppy, bed;
 
 extern const uint8_t persistent_sprite_bank_pixels[][];
 extern const uint8_t flash_sprite_bank_pixels[][];
