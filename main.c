@@ -756,7 +756,7 @@ void handle_infrastructure_services() {
         if (in_payload.base_id != NOT_A_BASE && (in_payload.from_addr < BADGES_IN_SYSTEM || in_payload.from_addr == DEDICATED_BASE_ID)) {
             if (in_payload.base_id == 1)
             {
-                oled_set_overhead_image(&jakethedog, 254);
+                oled_set_overhead_image(&puppy, 254);
                 achievement_get(ACH_HANDLER, 1);
             }
             else if (in_payload.base_id == BASE_SUITE) {
