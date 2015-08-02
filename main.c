@@ -190,7 +190,7 @@ const char title_descs[NUM_ACHIEVEMENTS][36] = {
         "Sleep with your fave",
         "Make 5 friends",
         "Make 15 friends",
-        "Make 30 friends",
+        "Make 50 friends",
         "qcbadge talk: 12p Fri, qcsuite",
         "Go to QC pool party: 9p Fri Bally's",
         "Find your twin",
@@ -300,6 +300,17 @@ inline void set_badge_seen(uint8_t id) {
     if (!(BADGE_SEEN_BIT & badges_seen[id])) {
         badges_seen[id] |= BADGE_SEEN_BIT;
         my_conf.seen_count++;
+
+        if (my_conf.seen_count >= 120) {
+            achievement_get(ACH_CHIEF, 1);
+        } else if (my_conf.seen_count >= 60) {
+            achievement_get(ACH_HIP, 1);
+        } else if (my_conf.seen_count >= 40) {
+            achievement_get(ACH_SOCIAL, 1);
+        } else if (my_conf.seen_count >=20) {
+           achievement_get(ACH_NICE, 1);
+        }
+
         if (id < UBERS_IN_SYSTEM) {
             my_conf.uber_seen_count++;
             // flag an animation
@@ -353,7 +364,6 @@ void set_base_seen(uint8_t base) {
     }
 }
 
-
 void set_badge_friend(uint8_t id) {
     if (!(id < BADGES_IN_SYSTEM)) {
         return;
@@ -362,6 +372,15 @@ void set_badge_friend(uint8_t id) {
     if (!(BADGE_FRIEND_BIT & badges_seen[id])) {
         badges_seen[id] |= BADGE_FRIEND_BIT;
         my_conf.friend_count++;
+
+        if (my_conf.friend_count >= 50) {
+            achievement_get(ACH_STAR, 1);
+        } else if (my_conf.friend_count >= 15) {
+            achievement_get(ACH_COOL, 1);
+        } else if (my_conf.friend_count >=5) {
+           achievement_get(ACH_FRIENDLY, 1);
+        }
+
         if (id < UBERS_IN_SYSTEM) {
             my_conf.uber_friend_count++;
             // flag an animation
