@@ -1,4 +1,4 @@
-import os, sys, argparse, re, itertools
+import os, sys, argparse, re, itertools, base64
 
 from collections import OrderedDict
 
@@ -166,6 +166,35 @@ def get_tops(head_path, body_path, legs_path, heights):
 
 animations = []
 
+done_combos = []
+
+combo_image = Image.new('RGBA', (SPRITE_WIDTH*7, SPRITE_HEIGHT*10), (0,0,0,255))
+
+def show_char(head_files, body_files, legs_files, heights, indices, thumb_id):
+    if indices not in done_combos and head_files[indices[0]] and body_files[indices[1]] and legs_files[indices[2]]:
+        head_img, head_mask = adjust_image(Image.open(head_files[indices[0]]))
+        body_img, body_mask = adjust_image(Image.open(body_files[indices[1]]))
+        legs_img, legs_mask = adjust_image(Image.open(legs_files[indices[2]]))
+        
+        hy,by,ly = get_tops(head_files[indices[0]], body_files[indices[1]], legs_files[indices[2]], heights)
+        
+        sprite = Image.new('RGBA', (SPRITE_WIDTH, SPRITE_HEIGHT), (0,0,0,0))
+        sprite.paste(head_img, (0,hy), head_mask)
+        sprite.paste(body_img, (0,by), body_mask)
+        sprite.paste(legs_img, (0,ly), legs_mask)
+        
+        combo_image.paste(head_img, (SPRITE_WIDTH*(len(done_combos)%7), SPRITE_HEIGHT*(len(done_combos)/7) + hy), head_mask)
+        combo_image.paste(body_img, (SPRITE_WIDTH*(len(done_combos)%7), SPRITE_HEIGHT*(len(done_combos)/7) + by), body_mask)
+        combo_image.paste(legs_img, (SPRITE_WIDTH*(len(done_combos)%7), SPRITE_HEIGHT*(len(done_combos)/7) + ly), legs_mask)
+        
+        sprite_image, sprite_mask = adjust_image(sprite)
+        done_combos.append(indices)
+        if len(done_combos) == 66:
+            if thumb_id or thumb_id==0:
+                combo_image.save(os.path.join("thumbs", "spritesheets", "all_%03d.png") % thumb_id)
+            else:
+                combo_image.show()
+
 def make_thumbs(thumb_id, head_files, body_files, legs_files, heights):
     head_img, head_mask = adjust_image(Image.open(head_files[0]))
     body_img, body_mask = adjust_image(Image.open(body_files[0]))
@@ -181,8 +210,6 @@ def make_thumbs(thumb_id, head_files, body_files, legs_files, heights):
     text_image = Image.new('RGBA', (SPRITE_HEIGHT+20, SPRITE_WIDTH), (255,255,255,0))
     f = ImageFont.truetype(font="Consolas.ttf", size=10)
     td = ImageDraw.Draw(text_image)
-    #td.text((0,0), "queercon", font=f, fill=(0,0,0))
-    #td.text((0,54), " twelve", font=f, fill=(0,0,0))
     
     sprite_image, sprite_mask = adjust_image(sprite)
     sprite_image.save(os.path.join("thumbs", "%03d_f.png") % thumb_id)
@@ -193,7 +220,45 @@ def make_thumbs(thumb_id, head_files, body_files, legs_files, heights):
     thumbnail.paste(text_image.rotate(-90), (0,0))
     thumbnail.paste(adjust_image(sprite)[0], (0,0), sprite_mask)
     td.text(((64-width)/2,68), str(thumb_id), font=f, fill=(0,0,0))
-    #thumbnail.save(os.path.join("thumbs", "label_%03d.png") % thumb_id)
+    thumbnail.save(os.path.join("thumbs", "label_%03d.png") % thumb_id)
+    
+    b64label = ""
+    with open(os.path.join("thumbs", "label_%03d.png") % thumb_id, "rb") as im:
+        b64label = base64.b64encode(im.read())
+    
+    label_str = """<?xml version="1.0" encoding="utf-8"?>
+        <DieCutLabel Version="8.0" Units="twips">
+        <PaperOrientation>Portrait</PaperOrientation>
+        <Id>Small30332</Id>
+        <PaperName>30332 1 in x 1 in</PaperName>
+        <DrawCommands>
+        <RoundRectangle X="0" Y="0" Width="1440" Height="1440" Rx="180" Ry="180" />
+        </DrawCommands>
+        <ObjectInfo>
+        <ImageObject>
+        <Name>GRAPHIC</Name>
+        <ForeColor Alpha="255" Red="0" Green="0" Blue="0" />
+        <BackColor Alpha="0" Red="255" Green="255" Blue="255" />
+        <LinkedObjectName></LinkedObjectName>
+        <Rotation>Rotation0</Rotation>
+        <IsMirrored>False</IsMirrored>
+        <IsVariable>False</IsVariable>
+        <Image>"""
+    label_str += b64label
+    label_str += """</Image>
+        <ScaleMode>Uniform</ScaleMode>
+        <BorderWidth>0</BorderWidth>
+        <BorderColor Alpha="255" Red="0" Green="0" Blue="0" />
+        <HorizontalAlignment>Center</HorizontalAlignment>
+        <VerticalAlignment>Center</VerticalAlignment>
+        </ImageObject>
+        <Bounds X="82" Y="144" Width="1301" Height="1210" />
+        </ObjectInfo>
+        </DieCutLabel>
+        """
+    
+    with open(os.path.join("thumbs", "labels", "label%03d.label" % thumb_id), 'w') as lf:
+        lf.write(label_str)
     
 
 def main(inifile, head_dir, body_dir, legs_dir, show, thumb_id=False):
@@ -227,7 +292,7 @@ def main(inifile, head_dir, body_dir, legs_dir, show, thumb_id=False):
     
     make_outputs(head_files, body_files, legs_files) # Prints directly.
     
-    if thumb_id or thumb_id==0:
+    if thumb_id or thumb_id==0 or show:
         make_thumbs(thumb_id, head_files, body_files, legs_files, heights)
     
     index_offset = 0
@@ -265,6 +330,9 @@ def main(inifile, head_dir, body_dir, legs_dir, show, thumb_id=False):
                 anim['parts']['heads'].append(head_index-1)
                 anim['parts']['bodies'].append(body_index-1)
                 anim['parts']['legs'].append(legs_index-1)
+                
+                if show:
+                    show_char(head_files, body_files, legs_files, heights, (head_index-1, body_index-1, legs_index-1), thumb_id)
                 
                 h,b,t = get_tops(head_files[head_index-1], body_files[body_index-1], legs_files[legs_index-1], heights)
                 
@@ -429,7 +497,7 @@ if (__name__ == '__main__'):
             configfile.write(filestring)
         use_file = args.config + '.tmp'
     
-    uber_dirs = ["bender", "uber_astronaut", "uber_blackhat", "uber_human", "uber_minion", "uber_shark", "uber_stig", "uber_minecraft"]
+    uber_dirs = ["uber_astronaut", "uber_bender", "uber_blackhat", "uber_demon", "uber_human", "uber_minecraft", "uber_minion", "uber_shark", "uber_stig"]
     human_dirs = ["alien", "bear", "human", "lizard", "octopus", "robot"]
     
     if 'id' in args:
@@ -464,5 +532,5 @@ if (__name__ == '__main__'):
     print "const uint8_t my_sprite_id = %d;" % sprite_id
     
     if args.fixini:
-        #os.remove(use_file)
+        os.remove(use_file)
         pass
