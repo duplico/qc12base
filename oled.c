@@ -70,7 +70,7 @@ void oled_draw_pane_and_flush(uint8_t softkey_sel) {
         if (softkey_sel == SK_SEL_SLEEP) {
             if (!my_conf.seen_sleep && (softkey_sel == SK_SEL_SLEEP)) {
                 need_light_bulb = 1;
-            } else {
+            } else if (my_conf.seen_sleep == 1) { // 1: seen sleep but not "sleep".
                 for (uint8_t i=0; i<FAVORITE_COUNT; i++) {
                     if (neighbor_badges[fav_badges_ids[i]]) {
                         // favorite nearby.
@@ -99,6 +99,12 @@ void oled_draw_pane_and_flush(uint8_t softkey_sel) {
         } else {
             GrStringDrawCentered(&g_sContext, sk_labels[softkey_sel], -2, 32,  SPRITE_Y + 64 + SOFTKEY_FONT_HEIGHT/2, 0);
         }
+    } else if (befriend_mode){
+        GrStringDrawCentered(&g_sContext, "LOOKING", -2, 32,  SPRITE_Y + 64 + SOFTKEY_FONT_HEIGHT/2, 0);
+    } else if (play_mode) {
+        GrStringDrawCentered(&g_sContext, "PLAYING!", -2, 32,  SPRITE_Y + 64 + SOFTKEY_FONT_HEIGHT/2, 0);
+    } else if (my_conf.time_to_hatch) {
+        GrStringDrawCentered(&g_sContext, "GROWING!", -2, 32,  SPRITE_Y + 64 + SOFTKEY_FONT_HEIGHT/2, 0);
     }
     GrLineDrawH(&g_sContext, 0, 64, SPRITE_Y + 64);
     GrFlush(&g_sContext);
@@ -184,7 +190,7 @@ void oled_anim_disp_frame(const qc12_anim_t *animation_data, uint8_t frame_no) {
     GrImageDraw(&g_sContext, &legs[animation_data->legs_indices[frame_no]], char_pos_x, legs_clip_offset + animation_data->legs_tops[frame_no] + SPRITE_Y - char_pos_y);
     GrImageDraw(&g_sContext, &bodies[animation_data->bodies_indices[frame_no]], char_pos_x, animation_data->body_tops[frame_no] + SPRITE_Y - char_pos_y);
     GrImageDraw(&g_sContext, &heads[animation_data->heads_indices[frame_no]], char_pos_x, animation_data->head_tops[frame_no] + SPRITE_Y - char_pos_y);
-    if (my_conf.adult)
+    if (my_conf.adult || my_conf.time_to_hatch)
         draw_overhead();
     oled_draw_pane_and_flush(idle_mode_softkey_sel); // This flushes.
 }

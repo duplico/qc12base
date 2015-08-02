@@ -196,6 +196,9 @@ extern uint8_t s_oled_needs_redrawn_idle;
 extern uint8_t s_overhead_done;
 extern uint8_t s_flag_wave;
 
+extern uint8_t befriend_mode;
+extern uint8_t play_mode;
+
 typedef struct {
     uint8_t to_addr, from_addr, base_id;
     uint8_t beacon;
