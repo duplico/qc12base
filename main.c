@@ -949,11 +949,6 @@ void handle_infrastructure_services() {
             }
             mood_tick_minutes = MOOD_TICK_MINUTES;
 
-            if (am_puppy) {
-                // Send it a few times:
-                s_send_puppy = 4;
-            }
-
         }
 
         if (at_base && at_suite_base && my_conf.suite_minutes < 200) {
@@ -968,8 +963,12 @@ void handle_infrastructure_services() {
         if (my_conf.waketime > 1440) { // 24 hours
             achievement_get(ACH_TIRED, 1);
         }
-        if (my_conf.uptime < 8000) {
+        if (my_conf.uptime < 65534) { // TODO: Might be OK to let this roll over.
             my_conf.uptime++;
+        }
+        if (am_puppy && (my_conf.uptime % 60)) {
+            // Send it a few times:
+            s_send_puppy = 4;
         }
 
         // Figure out if it's time to grow up.
