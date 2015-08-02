@@ -25,7 +25,7 @@
 #define SLEEP_BITS LPM1_bits // because we need SMCLK for the TLC.
 #define NUM_ACHIEVEMENTS 28
 #define FAVORITE_COUNT 3
-#define RADIO_TX_POWER_DB 4 // [-18 .. 13]
+#define RADIO_TX_POWER_DB 6 // [-18 .. 13]
 #define FLAG_OUT_COOLDOWN_MINUTES 10
 #define FLAG_IN_COOLDOWN_SECONDS 10
 #define FLAG_SEND_TRIES 3
