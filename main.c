@@ -225,7 +225,7 @@ const char sk_labels[SK_SEL_MAX+1][10] = {
         "Befriend",
         "Use flag",
         "Set flag",
-        "Grow!",
+        "Grow up!",
         "Set name",
         "Sleep"
 };
@@ -280,8 +280,7 @@ void achievement_get(uint8_t achievement_id, uint8_t animate) {
     if (!(my_conf.achievements[frame] & bit) || achievement_id == ACH_SEXY) {
         // New achievement. woot.
         my_conf.achievements[frame] |= bit;
-        if (!am_puppy || achievement_id == ACH_PUPPY)
-            my_conf.title_index = achievement_id;
+        my_conf.title_index = achievement_id;
         if (animate && TLC_IS_A_GO) { // If we've nothing better to do with the lights,
             tlc_start_anim(&flag_rainbow, 0, 2*GLOBAL_TLC_SPEED_SCALE, 0, 1);
         }
@@ -419,7 +418,6 @@ void check_conf() {
         s_new_uber_seen = s_new_badge_seen = s_new_uber_friend = s_new_friend = 0;
     }
 
-    my_conf.adult = 0;
     if (!my_conf.adult) { // Base child softkeys:
         softkey_en = SK_BIT_ASL | SK_BIT_NAME | SK_BIT_PLAY;
 
@@ -1073,18 +1071,20 @@ void handle_character_actions() {
     if (f_new_second) {
         // Determine whether we should do a random action.
         if (idle_action_seconds && oled_anim_state == OLED_ANIM_DONE) {
+            if (my_conf.adult && my_conf.mood > MOOD_THRESH_SAD && (idle_action_seconds & BIT0)) {
+                oled_play_animation(&standing, (idle_action_seconds & BIT1) >> 1);
+            }
             idle_action_seconds--;
         }
         if (!idle_action_seconds) {
             s_need_idle_action = 1;
             if (my_conf.adult) {
-                idle_action_seconds = 1 + rand() % 8;
+                idle_action_seconds = 2 + rand() % 7;
             }
             else {
-                idle_action_seconds = 1 + rand() % 2;
+                idle_action_seconds = 1 + rand() % 3;
             }
         } else {
-            // blink
         }
     }
 
@@ -1364,7 +1364,9 @@ void handle_mode_name() {
             mood_adjust_and_write_crc(-100);
         } else if (!strcmp(name, CHEAT_INFANT)) {
             cheat_success = 1;
-            // TODO
+            my_conf.adult = 0; // TODO: test
+            my_conf_write_crc();
+            check_conf();
         } else if (!strcmp(name, CHEAT_INVERT)) {
             cheat_success = 1;
             qc12_oledInit(1);
@@ -1530,8 +1532,8 @@ void handle_mode_idle() {
                     break;
                 case SK_SEL_HATCH:
                     // Grow up!
-                    tlc_start_anim(&flag_ally, 2, 10, 1, 10);
-                    achievement_get(ACH_NEWBIE, 0);;
+                    tlc_start_anim(&flag_ally, 2, 10, 1, 15);
+                    achievement_get(ACH_NEWBIE, 0);
                     oled_play_animation(&infant_grow, 15);
                     my_conf.adult = 1;
                     my_conf.time_to_hatch = 0;

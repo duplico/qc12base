@@ -68,14 +68,17 @@ void oled_draw_pane_and_flush(uint8_t softkey_sel) {
     GrContextFontSet(&g_sContext, &SOFTKEY_LABEL_FONT);
     if (!idle_mode_softkey_dis) {
         if (softkey_sel == SK_SEL_SLEEP) {
-            for (uint8_t i=0; i<FAVORITE_COUNT; i++) {
-                if (neighbor_badges[fav_badges_ids[i]]) {
-                    // favorite nearby.
-                    if ((BADGE_FRIEND_BIT & badges_seen[fav_badges_ids[i]]) && !(BADGE_SEX_BIT & badges_seen[fav_badges_ids[i]])) {
-                        // Favorite friend nearby:
-                        need_light_bulb = 1;
-                        break;
-                    } else {
+            if (!my_conf.seen_sleep && (softkey_sel == SK_SEL_SLEEP)) {
+                need_light_bulb = 1;
+            } else {
+                for (uint8_t i=0; i<FAVORITE_COUNT; i++) {
+                    if (neighbor_badges[fav_badges_ids[i]]) {
+                        // favorite nearby.
+                        if ((BADGE_FRIEND_BIT & badges_seen[fav_badges_ids[i]]) && !(BADGE_SEX_BIT & badges_seen[fav_badges_ids[i]])) {
+                            // Favorite friend nearby:
+                            need_light_bulb = 1;
+                            break;
+                        }
                     }
                 }
             }
@@ -84,8 +87,6 @@ void oled_draw_pane_and_flush(uint8_t softkey_sel) {
         } else if (!my_conf.seen_flags && (softkey_sel == SK_SEL_FLAG || softkey_sel == SK_SEL_SETFLAG)) {
             need_light_bulb = 1;
         } else if (my_conf.adult && !my_conf.seen_titles && (softkey_sel == SK_SEL_ASL)) {
-            need_light_bulb = 1;
-        } else if (!my_conf.seen_sleep && (softkey_sel == SK_SEL_SLEEP)) {
             need_light_bulb = 1;
         } else if (!my_conf.seen_befriend && (softkey_sel == SK_SEL_FRIEND)) {
             need_light_bulb = 1;
