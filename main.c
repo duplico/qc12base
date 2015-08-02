@@ -1531,6 +1531,7 @@ void handle_mode_idle() {
                 case SK_SEL_HATCH:
                     // Grow up!
                     tlc_start_anim(&flag_ally, 2, 10, 1, 10);
+                    achievement_get(ACH_NEWBIE, 0);;
                     oled_play_animation(&infant_grow, 15);
                     my_conf.adult = 1;
                     my_conf.time_to_hatch = 0;
@@ -1812,7 +1813,7 @@ void handle_mode_asl() {
             }
 
             if (my_conf.adult && !my_conf.seen_titles) {
-                GrImageDraw(&g_sContext, &idea, 50, 105); // To mark a NEW IDEA!
+                GrImageDraw(&g_sContext, &idea, 45, 109); // To mark a NEW IDEA!
             }
 
             // Arrows:
