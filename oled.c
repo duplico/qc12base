@@ -51,7 +51,6 @@ void oled_draw_pane_and_flush(uint8_t softkey_sel) {
     static tRectangle erase_rect_top = {0, 0, 64, 2*NAME_FONT_HEIGHT+1};
     static tRectangle erase_rect_btm = {0, SPRITE_Y + 64, 64, 127};
     static uint8_t need_light_bulb;
-    static uint8_t sk_width;
     need_light_bulb = 0;
 
     GrContextForegroundSet(&g_sContext, ClrBlack);
@@ -94,7 +93,6 @@ void oled_draw_pane_and_flush(uint8_t softkey_sel) {
 
         if (need_light_bulb) {
             GrImageDraw(&g_sContext, &idea, -5, 105); // To mark a NEW IDEA!
-            sk_width = GrStringWidthGet(&g_sContext, sk_labels[softkey_sel], -1);
 //            GrStringDraw(&g_sContext, sk_labels[softkey_sel], -2, 64 - sk_width,  SPRITE_Y + 64, 0);
             GrStringDrawCentered(&g_sContext, sk_labels[softkey_sel], -2, 39,  SPRITE_Y + 64 + SOFTKEY_FONT_HEIGHT/2, 0);
         } else {
