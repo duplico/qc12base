@@ -1367,6 +1367,9 @@ void handle_mode_name() {
         name_len++;
     name[name_len] = 0; // null terminate.
 
+    static uint8_t need_puppy;
+    need_puppy = 0;
+
     if (cheat_mode) {
         if (!strcmp(name, CHEAT_FLAG_NC)) {
             cheat_success = 1;
@@ -1401,7 +1404,7 @@ void handle_mode_name() {
             tlc_stop_anim(0);
         } else if (!strcmp(name, CHEAT_PUPPY)) {
             cheat_success = 1;
-            am_puppy = 1;
+            need_puppy = 1;
             achievement_get(ACH_PUPPY, 1);
         } else if (!strcmp(name, CHEAT_MIRROR)) {
             cheat_success = 1;
@@ -1416,14 +1419,20 @@ void handle_mode_name() {
             cheat_fail_cnt = 0;
             LED_PULSE(flag_green);
             achievement_get(ACH_CHEATER, 1);
+            if (need_puppy) {
+                am_puppy = 1;
+                need_puppy = 0;
+                achievement_get(ACH_PUPPY, 1);
+            }
         }
         else {
             LED_PULSE(flag_red);
             cheat_fail_cnt++;
-            if (cheat_fail_cnt == 3) {
+            if (cheat_fail_cnt == 5) {
                 achievement_get(ACH_TOWEL, 1);
             }
         }
+
 
     } else {
         strcpy(my_conf.handle, name);
