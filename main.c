@@ -150,14 +150,14 @@ uint8_t mood_tick_minutes = MOOD_TICK_MINUTES;
 #define ACH_TOWEL   26
 #define ACH_CHEATER 27
 
-const char titles[NUM_ACHIEVEMENTS][10] = {
+const char titles[NUM_ACHIEVEMENTS][8] = {
         "baby",
         "newbie",
         "nice",
         "social",
         "hip",
         "sexy",
-        "friendly",
+        "friend",
         "cool",
         "star",
         "badger",
@@ -181,7 +181,7 @@ const char titles[NUM_ACHIEVEMENTS][10] = {
         "Cheat",
 };
 
-const char title_descs[NUM_ACHIEVEMENTS][42] = {
+const char title_descs[NUM_ACHIEVEMENTS][36] = {
         "Turn it on.",
         "You're all growed up",
         "Meet 20 qcbadges",
@@ -208,9 +208,8 @@ const char title_descs[NUM_ACHIEVEMENTS][42] = {
         "\"Popular!\"",
         "\"Where is he?\"",
         "\"You found him!\"",
-        "\"No, you're a towel.\"",
+        "\"No, you're a towel.\" Funkytown!",
         "\"?????\"",
-
 };
 
 
@@ -976,7 +975,7 @@ void handle_infrastructure_services() {
         }
 
         // Figure out if it's time to grow up.
-        if (!my_conf.adult && (my_conf.uptime + (my_conf.badge_id % 15) > 90)) {
+        if (!my_conf.adult && (my_conf.uptime + (my_conf.badge_id % 15) > 0)) {
             // Time to grow up!
             my_conf.time_to_hatch = 1;
             my_conf_write_crc();
@@ -1515,11 +1514,11 @@ void handle_mode_idle() {
                     mood_adjust_and_write_crc(MOOD_PLAY_SEND);
                     break;
                 case SK_SEL_FLAG:
-                    tlc_start_anim(flags[my_conf.flag_id], 0, 3*GLOBAL_TLC_SPEED_SCALE, 0, 5);
                     if (!my_conf.seen_flags) {
-                        my_conf.seen_flags;
+                        my_conf.seen_flags = 1;
                         my_conf_write_crc();
                     }
+                    tlc_start_anim(flags[my_conf.flag_id], 0, 3*GLOBAL_TLC_SPEED_SCALE, 0, 5);
                     if (my_conf.flag_unlocks != 0xFF) {
                         my_conf.flag_cooldown = FLAG_OUT_COOLDOWN_MINUTES;
                         my_conf_write_crc();
@@ -1541,6 +1540,10 @@ void handle_mode_idle() {
                     my_conf_write_crc();
                     break;
                 case SK_SEL_FRIEND:
+                    if (!my_conf.seen_befriend) {
+                        my_conf.seen_befriend = 1;
+                        my_conf_write_crc();
+                    }
                     idle_mode_softkey_dis = 1;
                     oled_draw_pane_and_flush(idle_mode_softkey_sel);
                     befriend_mode_loops_to_tick = BEFRIEND_LOOPS_TO_RESEND;
@@ -1560,6 +1563,10 @@ void handle_mode_idle() {
                     }
                     break;
                 case SK_SEL_SLEEP:
+                    if (!my_conf.seen_sleep) {
+                        my_conf.seen_sleep = 1;
+                        my_conf_write_crc();
+                    }
                     op_mode = OP_MODE_SLEEP;
                     break;
                 default:
@@ -1692,7 +1699,7 @@ void asl_draw_page(uint8_t page) {
         // Badges visible:
         sprintf(buf, "%d", neighbor_count);
         GrStringDrawCentered(&g_sContext, buf, -1, 32, 20, 0);
-        GrStringDrawCentered(&g_sContext, "badges", neighbor_count == 1 ? 5 : 6, 32, 32, 0);
+        GrStringDrawCentered(&g_sContext, "qcbadges", neighbor_count == 1 ? 7 : 8, 32, 32, 0);
 
         // Mood:
         GrStringDrawCentered(&g_sContext, "My mood:", -1, 32, 68, 0);
