@@ -1092,6 +1092,7 @@ void handle_character_actions() {
     }
 
     if (s_befriend_success & SIGNAL_BIT_OLED) {
+        s_befriend_success &= ~SIGNAL_BIT_OLED;
         if (s_new_friend & SIGNAL_BIT_OLED || s_new_uber_friend & SIGNAL_BIT_OLED) {
             s_new_friend &= ~SIGNAL_BIT_OLED;
             s_new_uber_friend &= ~SIGNAL_BIT_OLED;
