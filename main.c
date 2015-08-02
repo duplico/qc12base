@@ -688,7 +688,7 @@ void befriend_proto_step(uint8_t from_radio, uint8_t received_flag, uint8_t from
 
             // So if we're in one of those states, don't send anything.
             if (befriend_mode != BF_S_WAIT && befriend_mode != BF_C_WAIT) {
-                oled_set_overhead_text("Hello!", 20);
+                oled_set_overhead_text("Hello!", 50);
                 radio_send_befriend(befriend_mode);
             }
         } else {
@@ -719,7 +719,7 @@ void befriend_proto_step(uint8_t from_radio, uint8_t received_flag, uint8_t from
                 // still some retries left.
                 befriend_mode_ticks--;
                 // Do re-send our message.
-                oled_set_overhead_text("Hello?", 20);
+                oled_set_overhead_text("Hello?", 50);
                 radio_send_befriend(befriend_mode);
             } else {
                 set_befriend_failed();
