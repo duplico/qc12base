@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+        <DieCutLabel Version="8.0" Units="twips">
+        <PaperOrientation>Portrait</PaperOrientation>
+        <Id>Small30332</Id>
+        <PaperName>30332 1 in x 1 in</PaperName>
+        <DrawCommands>
+        <RoundRectangle X="0" Y="0" Width="1440" Height="1440" Rx="180" Ry="180" />
+        </DrawCommands>
+        <ObjectInfo>
+        <ImageObject>
+        <Name>GRAPHIC</Name>
+        <ForeColor Alpha="255" Red="0" Green="0" Blue="0" />
+        <BackColor Alpha="0" Red="255" Green="255" Blue="255" />
+        <LinkedObjectName></LinkedObjectName>
+        <Rotation>Rotation0</Rotation>
+        <IsMirrored>False</IsMirrored>
+        <IsVariable>False</IsVariable>
+        <Image>iVBORw0KGgoAAAANSUhEUgAAAEAAAABUCAYAAAAyLjFTAAACwElEQVR4nO1bO44aQRCtXjnYxJLz8QFY4ZgLQOBwOcBqD2Bihw7IyM0BEAcgJNkTOGUlfACcIxGQUU52Vq3R/GCq3+vV9JNGQoOYqn7Vr6q6e3CqKn3GHdO4c06dc9QI0AjwB84kgUaAqrqyz2hQJRADek+AY1SBKs0zpPAJbdA5p1UDrfsuFKASaBqgqjp0Reh9Dug9AZQcgLZZB1gVyAfu54C290KCIgF/kPlAWTODQoA/aHTEi4A2Qm2jjCQDngSbBoeWApwAkbhaYfpymLkUFolgQ4TdF1AkwI66j953gjACrlnqIpfFkBxw7YCQy+LgBNwaTRQJQQmwGEBoEsxzgO9wMYq3tMLFZ1jnBlMC/Ol+a7fX9DvrBGkmAWR5s7RlQkAeldCJK4SdIEkwBAmhiO1MQB6VYqKyipIf9Tqbt8JsBuQOWR96llWEKJNgFzDfEzApg12dvzai0VWBokZDw9JeFBJgIgoJMO0lCVg85CMDLoHYlsgmBLQ937OatpbniUkCFg/5yFUAIgFrgiwl0Ol0uGxhUrVYKe4W1f2uzTOa7LWF2YYIekfIyh70ZKjJacaKEFoFmjo4dEcp0pGA4gZF6CMtfxfIanME/pZYjrJkVvd9KCQJII3FiFQFkMaSBCJEkgDSWJJAhEgSQBhpej2e+fp88Fa46V9iItVtL+J1uZQDEEZi1P67beQfJmJE7yWQCGA7wEYigO0AGxQCLpfL3Xq9fhqNRn8mk8kLw4d3qCr02mw2j8Ph8FVEVEQ0y7ID2gf/gs6A+Xz+azqdbk6n0+fVavWMtF0JJNu73e7bYrH4eT6f798aMPoMoHaCzjnNsuzf4XD4yvIhVQG2A2wkAtgOsJEIYDvABnRXeL/fPyyXyx/+vePx+GU2m/0WERkMBn/zzzAgm47tdvtd3lrgsms8Hr/0qhGKAf8B67EBQ+vcB+QAAAAASUVORK5CYII=</Image>
+        <ScaleMode>Uniform</ScaleMode>
+        <BorderWidth>0</BorderWidth>
+        <BorderColor Alpha="255" Red="0" Green="0" Blue="0" />
+        <HorizontalAlignment>Center</HorizontalAlignment>
+        <VerticalAlignment>Center</VerticalAlignment>
+        </ImageObject>
+        <Bounds X="82" Y="144" Width="1301" Height="1210" />
+        </ObjectInfo>
+        </DieCutLabel>
+        

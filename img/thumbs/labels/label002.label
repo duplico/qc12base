@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+        <DieCutLabel Version="8.0" Units="twips">
+        <PaperOrientation>Portrait</PaperOrientation>
+        <Id>Small30332</Id>
+        <PaperName>30332 1 in x 1 in</PaperName>
+        <DrawCommands>
+        <RoundRectangle X="0" Y="0" Width="1440" Height="1440" Rx="180" Ry="180" />
+        </DrawCommands>
+        <ObjectInfo>
+        <ImageObject>
+        <Name>GRAPHIC</Name>
+        <ForeColor Alpha="255" Red="0" Green="0" Blue="0" />
+        <BackColor Alpha="0" Red="255" Green="255" Blue="255" />
+        <LinkedObjectName></LinkedObjectName>
+        <Rotation>Rotation0</Rotation>
+        <IsMirrored>False</IsMirrored>
+        <IsVariable>False</IsVariable>
+        <Image>iVBORw0KGgoAAAANSUhEUgAAAEAAAABUCAYAAAAyLjFTAAAClUlEQVR4nO2av4oaURTGz102gmBERSRCIEk1j6B5AMHOtBZiK6MwkoiQKnYSyJCF/GtDitSmCvgAso+QNIpYCCEJiYFAGPSkcnHFXXTZOd9l5/zgNiqc7373u5e5ZzTMTFHmCC0AjRqAFoAm8gYcSxUyxhx82jKzCUPLJpFPQOQNMGE/B1wl+tuEuRVCN+BcMWN4n8ns+7vrIPJbQMyAQ1aVmc11bJ190ASgBaBRA9AC0KgBUoUOOdn1OUAQUQP2SYHk6hMBEnCZCdKTJxK+C5wrvMME6ckTAQ04EwBY9U30EEQLQAM1YH0OSN38dqEJQAtAAzNg8/SXbIBsowlAC0ADMWDXww9qG2gC0ALQqAHSBS+7/CDOAU0AWgAaUQP2uftLbwNNAFoAGn07LFHEZkTfDIX5+6uiCUALQANviiK7QUSaADVAm6KIojZhjQGR6gmi3whvYk0CUFhlgLbEAFjVFEVgXQK0JSaMdU1RIu0IiaIGSBU69PSX2gaRTwD8n6JoIp8ANQAtAI0agBaARtyA6XR6z3Xdt47jfM3lct+KxeLpYDB4JK3jDGYWG6PR6GEikfiTTCZ/V6vVj7Va7UMmk/lBROz7/mNJLeshWmyxWNyu1+vvZ7PZ3fVn4/H4QTwe/5tOp38GQXB8ow24aJRKpSER8WQyuS9d24pDMAiCW0RE2Wz2u3hx9OrP5/M7sVjsX6FQOEXUh05+uVwelcvlz8aY1XA4LEXOgEaj8Y6IuNfrPUNpgE2+1Wq9IiJut9svkYsAKdpsNl8TEXued4KcvLgBq9XKuK77hoi42+0+R0+emWUbIr7vP+l0Oi9SqdSvSqXyafv7fD4/7/f7T8UEEckmwPO8EyLii4bjOF9udAJs5D/NBQU51nPjbgAAAABJRU5ErkJggg==</Image>
+        <ScaleMode>Uniform</ScaleMode>
+        <BorderWidth>0</BorderWidth>
+        <BorderColor Alpha="255" Red="0" Green="0" Blue="0" />
+        <HorizontalAlignment>Center</HorizontalAlignment>
+        <VerticalAlignment>Center</VerticalAlignment>
+        </ImageObject>
+        <Bounds X="82" Y="144" Width="1301" Height="1210" />
+        </ObjectInfo>
+        </DieCutLabel>
+        
