@@ -44,14 +44,17 @@ extern const qc12_anim_t walking, zombie;
 extern const qc12_anim_t walking_left, zombie_left;
 extern const qc12_anim_t wave_right;
 extern const qc12_anim_t flap_arms;
+extern const qc12_anim_t infant_standing, infant_moving, infant_walk, infant_walk_left, infant_play, infant_grow;
 
 extern const qc12_anim_t *demo_anims[];
 extern const uint8_t demo_anim_count;
 extern const uint8_t play_anim_count;
 
+extern const qc12_anim_t *infant_idle_anims[];
 extern const qc12_anim_t *idle_anims[];
 extern const qc12_anim_t *moody_idle_anims[];
 extern const uint8_t idle_anim_count, moody_idle_anim_count;
+extern const uint8_t infant_idle_anim_count;
 
 
 extern const qc12_anim_t *play_cause[];

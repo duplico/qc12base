@@ -25,7 +25,8 @@ legs_clip = 0
 
 is_a_number = re.compile("[0-9]+")
 
-def get_bits(paths):
+
+def get_bits(paths, part=None):
     segs = []
     for path in paths:
         img, mask = adjust_image(Image.open(path))
@@ -51,6 +52,34 @@ def get_bits(paths):
             sprite_size += 1
         out_str += "},"
         segs.append(out_str)
+    if part and part in ["head", "legs"]:
+        segs.append("{0, }, // blank!")
+    elif part and part == "body":
+        for path in sorted(glob(('infant/torso/*.png')), key=lambda a: int(is_a_number.findall(a)[0])): # kludge... TODO ?
+            img, mask = adjust_image(Image.open(path))
+            seg = Image.new('RGBA', (SPRITE_WIDTH, SPRITE_HEIGHT), (0,0,0,0))
+            seg.paste(img, (0, 0), mask)
+            
+            out_str = "{0b"
+            index = 0
+            sprite_size = 0
+            for pixel in list(seg.getdata()):
+                if 'head' in path and sprite_size/64 == head_clip:
+                    break
+                if 'legs' in path and sprite_size/64 < legs_clip:
+                    sprite_size += 1
+                    continue
+                if index == SPRITE_WIDTH:
+                    out_str += ", \n     0b"
+                    index = 0
+                if index and index % 8 == 0:
+                    out_str += ", 0b"
+                out_str += "1" if sum(pixel[:-1]) else "0" # Everything but alpha...
+                index += 1
+                sprite_size += 1
+            out_str += "},"
+            segs.append(out_str)
+    
     return segs
     
 def get_clipping_areas(dirs):
@@ -80,9 +109,9 @@ def get_clipping_areas(dirs):
 
 def make_outputs(head_paths, body_paths, legs_paths):
     parts = dict(
-        heads = get_bits(head_paths),
-        bodies = get_bits(body_paths),
-        legs = get_bits(legs_paths)
+        heads = get_bits(head_paths, "head"),
+        bodies = get_bits(body_paths, "body"),
+        legs = get_bits(legs_paths, "legs")
     )
     
     for partname, bits in parts.items():
@@ -108,6 +137,9 @@ def make_outputs(head_paths, body_paths, legs_paths):
     return parts['heads'], parts['bodies'], parts['legs']
 
 def get_tops(head_path, body_path, legs_path, heights):
+    if head_path == body_path == legs_path == None:
+        return 0,0,0
+    
     head, head_mask = adjust_image(Image.open(head_path))
     body, body_mask = adjust_image(Image.open(body_path))
     legs, legs_mask = adjust_image(Image.open(legs_path))
@@ -170,7 +202,7 @@ def main(inifile, head_dir, body_dir, legs_dir, show, thumb_id=False):
     head_files = sorted(glob(os.path.join(head_dir, 'head', '*.png')), key=lambda a: int(is_a_number.findall(a)[0]))
     body_files = sorted(glob(os.path.join(body_dir, 'torso', '*.png')), key=lambda a: int(is_a_number.findall(a)[0]))
     legs_files = sorted(glob(os.path.join(legs_dir, 'legs', '*.png')), key=lambda a: int(is_a_number.findall(a)[0]))
-    
+        
     heights = [HEAD_HEIGHT, BODY_HEIGHT, FEET_HEIGHT, FEET_HEIGHT, BODY_HEIGHT, FEET_HEIGHT]
     
     if os.path.isfile(os.path.join(body_dir, 'torso', 'height')):
@@ -203,6 +235,12 @@ def main(inifile, head_dir, body_dir, legs_dir, show, thumb_id=False):
     longest_anim_buffer = 0
     
     move = 0
+    
+    head_files.append(None)
+    body_files.append(None)
+    body_files.append(None)
+    body_files.append(None)
+    legs_files.append(None)
     
     for anim_name in parser.sections():
         # Note: The in animation must be first, followed by loop, then out.
@@ -391,7 +429,7 @@ if (__name__ == '__main__'):
             configfile.write(filestring)
         use_file = args.config + '.tmp'
     
-    uber_dirs = ["bender", "uber_astronaut", "uber_blackhat", "uber_human", "uber_minion", "uber_shark", "uber_stig"]
+    uber_dirs = ["bender", "uber_astronaut", "uber_blackhat", "uber_human", "uber_minion", "uber_shark", "uber_stig", "uber_minecraft"]
     human_dirs = ["alien", "bear", "human", "lizard", "octopus", "robot"]
     
     if 'id' in args:
