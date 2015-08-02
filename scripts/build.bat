@@ -1,1 +1,1 @@
-eclipsec -noSplash -data "..\.." -application com.ti.ccstudio.apps.projectBuild -ccs.projects qc12
+eclipsec -noSplash -data %1 -application com.ti.ccstudio.apps.projectBuild -ccs.projects qc12

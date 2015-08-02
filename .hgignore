@@ -22,3 +22,5 @@ src/grace/WDT_A_init.c
 src/grace/makefile
 scripts/tester_flash/Log/log.txt
 *.tmp
+Log/log.txt
+Release/
