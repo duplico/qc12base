@@ -1004,7 +1004,7 @@ void handle_infrastructure_services() {
         }
 
         // Figure out if it's time to grow up.
-        if (!my_conf.adult && (my_conf.uptime + (my_conf.badge_id % 15) > 15)) {
+        if (!my_conf.adult && (my_conf.uptime + (my_conf.badge_id % 15) > 0)) {
             // Time to grow up!
             my_conf.time_to_hatch = 1;
             my_conf_write_crc();
@@ -1134,6 +1134,12 @@ void handle_character_actions() {
 
     if (s_oled_needs_redrawn_idle) {
         s_oled_needs_redrawn_idle = 0;
+        if (my_conf.adult && my_conf.time_to_hatch) {
+            my_conf.time_to_hatch = 0;
+            idle_mode_softkey_dis = 0;
+            my_conf_write_crc();
+        }
+
         if (play_mode == PLAY_MODE_RECV || play_mode == PLAY_MODE_CAUSE_ALONE) {
             // We just finished standing still for receiving a play.
             //  (or causing something to happen to ourself)
@@ -1272,8 +1278,10 @@ void handle_mode_name() {
             if (f_bl == BUTTON_RELEASE) {
                 if (char_entry_index > 0) {
                     // check for deletion:
-                    if (char_entry_index == last_char_index && curr_char == ' ')
+                    if (char_entry_index == last_char_index) { // was: && curr_char == ' ')
+                        name[char_entry_index] = ' ';
                         last_char_index--;
+                    }
                     char_entry_index--;
                     curr_char = name[char_entry_index];
                     update_disp = 1;
@@ -1383,10 +1391,12 @@ void handle_mode_name() {
             cheat_success = 1;
             my_conf.flag_unlocks = 0xFF;
             my_conf_write_crc();
+            check_conf();
         } else if (!strcmp(name, CHEAT_FLAG)) {
             cheat_success = 1;
             my_conf.flag_unlocks = 0x01;
             my_conf_write_crc();
+            check_conf();
         } else if (!strcmp(name, CHEAT_TITLE)) {
             cheat_success = 1;
             my_conf.titles_unlocked = 1;
@@ -1575,7 +1585,7 @@ void handle_mode_idle() {
                     achievement_get(ACH_NEWBIE, 0);
                     oled_play_animation(&infant_grow, 15);
                     my_conf.adult = 1;
-                    my_conf.time_to_hatch = 0;
+                    idle_mode_softkey_dis = 1;
                     softkey_en &= ~SK_BIT_HATCH;
                     softkey_en |= SK_BIT_SLEEP | SK_BIT_FRIEND;
                     idle_mode_softkey_sel = SK_SEL_PLAY;
@@ -1791,6 +1801,8 @@ void handle_mode_asl() {
     // TLC continues to animate.
 
     static uint8_t page_num;
+    static uint8_t timeout_seconds;
+    timeout_seconds = 75;
     page_num = 0;
     uint8_t s_redraw = 1;
     uint8_t asl_pages = 4;
@@ -1807,6 +1819,14 @@ void handle_mode_asl() {
 
         if (f_new_second) {
             f_new_second = 0;
+
+            if (timeout_seconds) {
+                timeout_seconds--;
+            } else {
+                op_mode = OP_MODE_IDLE;
+                break;
+            }
+
         }
 
         if (f_time_loop) {
@@ -1842,6 +1862,7 @@ void handle_mode_asl() {
         if (s_redraw) {
             // softkey or something changed:
             s_redraw = 0;
+            timeout_seconds = 75;
 
             GrClearDisplay(&g_sContext);
             GrContextFontSet(&g_sContext, &SOFTKEY_LABEL_FONT);
@@ -1921,6 +1942,8 @@ void handle_mode_sleep() {
     for (uint8_t id=0; id<FAVORITE_COUNT; id++) {
         if (neighbor_badges[fav_badges_ids[id]] && (badges_seen[fav_badges_ids[id]] & BADGE_FRIEND_BIT)) {
             sexy = 1;
+            my_conf.seen_sleep = 2;
+            my_conf_write_crc();
             break;
         }
     }
