@@ -191,7 +191,7 @@ const char title_descs[NUM_ACHIEVEMENTS][36] = {
         "Make 5 friends",
         "Make 15 friends",
         "Make 50 friends",
-        "qcbadge talk: 12p Fri, qcsuite",
+        "Go: qcbadge talk: 12p Fri, qcsuite",
         "Go to QC pool party: 9p Fri Bally's",
         "Find your twin",
         "Befriend your twin",
@@ -436,8 +436,6 @@ void check_conf() {
         // Suppress any flags set from these so we don't do the animation:
         s_new_uber_seen = s_new_badge_seen = s_new_uber_friend = s_new_friend = 0;
     }
-    // TODO:
-    my_conf.uptime = 2000;
 
     if (!my_conf.adult) { // Base child softkeys:
         softkey_en = SK_BIT_ASL | SK_BIT_NAME | SK_BIT_PLAY;
@@ -1390,7 +1388,7 @@ void handle_mode_name() {
             mood_adjust_and_write_crc(-100);
         } else if (!strcmp(name, CHEAT_INFANT)) {
             cheat_success = 1;
-            my_conf.adult = 0; // TODO: test
+            my_conf.adult = 0;
             my_conf_write_crc();
             check_conf();
         } else if (!strcmp(name, CHEAT_INVERT)) {
@@ -1469,10 +1467,6 @@ void handle_mode_idle() {
     if (oled_overhead_type == OLED_OVERHEAD_OFF) {
         s_overhead_done = 1;
     }
-
-    // TODO:
-//    oled_play_animation(&standing, 0);
-//    oled_anim_next_frame();
 
     if (tlc_anim_mode == TLC_ANIM_MODE_IDLE) {
         tlc_display_ambient();
@@ -1969,7 +1963,7 @@ void handle_mode_sleep() {
         achievement_get(ACH_SLEEPY, 0);
     }
 
-    if (my_conf.sleeptime > 30) { // TODO
+    if (my_conf.sleeptime > 30) {
         // If we were asleep for more than 30 minutes,
         // check to see if any of our favorites were around us when we
         // fell asleep. If so, we "slept with them."
