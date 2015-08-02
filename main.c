@@ -208,7 +208,7 @@ const char title_descs[NUM_ACHIEVEMENTS][36] = {
         "\"Popular!\"",
         "\"Where is he?\"",
         "\"You found him!\"",
-        "\"No, you're a towel.\" Funkytown!",
+        "\"No, you're a towel.\"",
         "\"?????\"",
 };
 
@@ -1912,7 +1912,7 @@ void handle_mode_sleep() {
             GrClearDisplay(&g_sContext);
             GrStringDraw(&g_sContext, "Zzz...", zzz_index, 15, 72, 1);
 
-            if (sexy && ((minute_secs & BIT0) || my_conf.sleeptime > 30)) {
+            if (sexy && ((~zzz_index & BIT0) || my_conf.sleeptime > 30)) {
                 GrImageDraw(&g_sContext, &bed, 20, 90);
             }
 
