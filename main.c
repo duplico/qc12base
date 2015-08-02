@@ -996,7 +996,7 @@ void handle_infrastructure_services() {
         }
 
         // Figure out if it's time to grow up.
-        if (!my_conf.adult && (my_conf.uptime + (my_conf.badge_id % 15) > 0)) {
+        if (!my_conf.adult && (my_conf.uptime + (my_conf.badge_id % 15) > 75)) {
             // Time to grow up!
             my_conf.time_to_hatch = 1;
             my_conf_write_crc();
@@ -1910,7 +1910,7 @@ void handle_mode_sleep() {
 
     uint8_t sexy = 0;
     for (uint8_t id=0; id<FAVORITE_COUNT; id++) {
-        if (neighbor_badges[fav_badges_ids[id]] && (badges_seen[fav_badges_ids[id]] & BADGE_FRIEND_BIT) && !(badges_seen[fav_badges_ids[id]] & BADGE_SEX_BIT)) {
+        if (neighbor_badges[fav_badges_ids[id]] && (badges_seen[fav_badges_ids[id]] & BADGE_FRIEND_BIT)) {
             sexy = 1;
             break;
         }
@@ -1958,7 +1958,7 @@ void handle_mode_sleep() {
 
                 my_conf.sleeptime++;
 
-                if (my_conf.uptime < 8000) {
+                if (my_conf.uptime < 65534) {
                     my_conf.uptime++;
                 }
                 mood_adjust_and_write_crc(MOOD_TICK_AMOUNT_UP);
@@ -1977,7 +1977,7 @@ void handle_mode_sleep() {
         // check to see if any of our favorites were around us when we
         // fell asleep. If so, we "slept with them."
         for (uint8_t id=0; id<FAVORITE_COUNT; id++) {
-            if (neighbor_badges[fav_badges_ids[id]] && (badges_seen[fav_badges_ids[id]] & BADGE_FRIEND_BIT) && !(badges_seen[fav_badges_ids[id]] & BADGE_SEX_BIT)) {
+            if (neighbor_badges[fav_badges_ids[id]] && (badges_seen[fav_badges_ids[id]] & BADGE_FRIEND_BIT)) {
                 badges_seen[fav_badges_ids[id]] |= BADGE_SEX_BIT;
                 achievement_get(ACH_SEXY, 1);
                 mood_adjust_and_write_crc(100);
