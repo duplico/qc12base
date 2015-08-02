@@ -417,6 +417,8 @@ void check_conf() {
         // Suppress any flags set from these so we don't do the animation:
         s_new_uber_seen = s_new_badge_seen = s_new_uber_friend = s_new_friend = 0;
     }
+    // TODO:
+    my_conf.uptime = 2000;
 
     if (!my_conf.adult) { // Base child softkeys:
         softkey_en = SK_BIT_ASL | SK_BIT_NAME | SK_BIT_PLAY;
@@ -731,7 +733,7 @@ void befriend_proto_step(uint8_t from_radio, uint8_t received_flag, uint8_t from
             } else {
                 befriend_mode = 0;
                 s_befriend_success = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
-                oled_set_overhead_text(in_payload.handle, 170);
+                oled_set_overhead_text(in_payload.handle, 180);
                 set_badge_friend(befriend_candidate);
             }
         }
@@ -839,11 +841,7 @@ void handle_infrastructure_services() {
 
             // Resolve inbound or completed friendship requests:
             if (in_payload.friendship && my_conf.adult) {
-                if (befriend_mode && befriend_candidate != in_payload.from_addr) {
-                    // Check our befriend partner:
-                    set_befriend_failed();
-                    befriend_mode = 0;
-                } else if (befriend_mode) {
+                if (befriend_mode) {
                     // We're currently somewhere in the befriend process,
                     //  so the protocol function will handle managing
                     //  befriend_candidate for us.
@@ -1532,6 +1530,7 @@ void handle_mode_idle() {
                 case SK_SEL_HATCH:
                     // Grow up!
                     tlc_start_anim(&flag_ally, 2, 10, 1, 15);
+                    oled_set_overhead_off();
                     achievement_get(ACH_NEWBIE, 0);
                     oled_play_animation(&infant_grow, 15);
                     my_conf.adult = 1;
