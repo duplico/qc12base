@@ -1888,7 +1888,7 @@ void handle_mode_sleep() {
 
     uint8_t sexy = 0;
     for (uint8_t id=0; id<FAVORITE_COUNT; id++) {
-        if (neighbor_badges[fav_badges_ids[id]] && (badges_seen[fav_badges_ids[id]] & BADGE_FRIEND_BIT)) {
+        if (neighbor_badges[fav_badges_ids[id]] && (badges_seen[fav_badges_ids[id]] & BADGE_FRIEND_BIT) && !(badges_seen[fav_badges_ids[id]] & BADGE_SEX_BIT)) {
             sexy = 1;
             break;
         }
@@ -1955,7 +1955,7 @@ void handle_mode_sleep() {
         // check to see if any of our favorites were around us when we
         // fell asleep. If so, we "slept with them."
         for (uint8_t id=0; id<FAVORITE_COUNT; id++) {
-            if (neighbor_badges[fav_badges_ids[id]] && (badges_seen[fav_badges_ids[id]] & BADGE_FRIEND_BIT)) {
+            if (neighbor_badges[fav_badges_ids[id]] && (badges_seen[fav_badges_ids[id]] & BADGE_FRIEND_BIT) && !(badges_seen[fav_badges_ids[id]] & BADGE_SEX_BIT)) {
                 badges_seen[fav_badges_ids[id]] |= BADGE_SEX_BIT;
                 achievement_get(ACH_SEXY, 1);
                 mood_adjust_and_write_crc(100);
