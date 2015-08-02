@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <driverlib/MSP430FR5xx_6xx/driverlib.h>
 // Grace includes:
 #include <ti/mcu/msp430/Grace.h>
 
@@ -452,6 +453,7 @@ void check_conf() {
             softkey_en |= SK_BIT_SETFLAG | SK_BIT_FLAG;
         }
     }
+    am_puppy = 0;
 
     // Set our mood lights.
     mood_adjust_and_write_crc(0);
@@ -998,11 +1000,11 @@ void handle_infrastructure_services() {
         if (am_puppy && (my_conf.uptime % 60)) {
             // Send it a few times:
             s_send_puppy = 4;
-            puppy_target = 1 + rand() % neighbor_count
+            puppy_target = 1 + rand() % neighbor_count;
         }
 
         // Figure out if it's time to grow up.
-        if (!my_conf.adult && (my_conf.uptime + (my_conf.badge_id % 15) > 75)) {
+        if (!my_conf.adult && (my_conf.uptime + (my_conf.badge_id % 15) > 15)) {
             // Time to grow up!
             my_conf.time_to_hatch = 1;
             my_conf_write_crc();
