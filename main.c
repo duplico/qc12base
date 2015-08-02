@@ -45,6 +45,8 @@ uint8_t s_new_checkin = 0;
 uint8_t s_send_play = 0;
 uint8_t s_send_puppy = 0;
 
+uint8_t puppy_target = 0;
+
 uint8_t disable_beacon_service = 0;
 uint8_t idle_mode_softkey_sel = 0;
 uint8_t idle_mode_softkey_dis = 0;
@@ -819,21 +821,24 @@ void handle_infrastructure_services() {
             // Play schedule. We only care about this if we're in IDLE mode,
             //  and if we're not busy. (We use the enabledness of the softkey as
             //  a surrogate for that ill-defined "business").
-            if (in_payload.play_id && op_mode == OP_MODE_IDLE && !idle_mode_softkey_dis && (in_payload.play_id & 0b01111111) < play_anim_count) {
+            if (in_payload.play_id && op_mode == OP_MODE_IDLE && !idle_mode_softkey_dis && (in_payload.play_id & 0b01111111) <= play_anim_count && !play_mode) {
                 if (my_conf.mood > MOOD_THRESH_SAD) {
                     play_id = in_payload.play_id & 0b01111111;
-                    play_mode = PLAY_MODE_RECV;
                     // Just stand there for the length of time the causing badge
                     //  is doing its cause animation.
-                    if (my_conf.adult)
+                    if (my_conf.adult && play_id < play_anim_count) {
+                        play_mode = PLAY_MODE_RECV;
                         oled_play_animation(&standing, play_cause[play_id]->len);
-                    else {
+                    } else if (!my_conf.adult && play_id == play_anim_count) {
+                        play_mode = PLAY_MODE_RECV;
                         oled_play_animation(&infant_standing, infant_play.len*3);
                     }
-                    idle_mode_softkey_dis = 1;
-                    oled_draw_pane_and_flush(idle_mode_softkey_sel);
-                    if (TLC_IS_A_GO) {
-                        tlc_start_anim(&flag_pink, 0, 5*GLOBAL_TLC_SPEED_SCALE, 1, 0); // POW PINK!
+                    if (play_mode) {
+                        idle_mode_softkey_dis = 1;
+                        oled_draw_pane_and_flush(idle_mode_softkey_sel);
+                        if (TLC_IS_A_GO) {
+                            tlc_start_anim(&flag_pink, 0, 5*GLOBAL_TLC_SPEED_SCALE, 1, 0); // POW PINK!
+                        }
                     }
                 }
             }
@@ -993,6 +998,7 @@ void handle_infrastructure_services() {
         if (am_puppy && (my_conf.uptime % 60)) {
             // Send it a few times:
             s_send_puppy = 4;
+            puppy_target = 1 + rand() % neighbor_count
         }
 
         // Figure out if it's time to grow up.
@@ -1022,7 +1028,7 @@ void handle_infrastructure_services() {
 
     if (s_send_puppy && rfm_state == RFM_IDLE) {
         s_send_puppy--;
-        radio_send_puppy(1 + rand() % neighbor_count);
+        radio_send_puppy(puppy_target);
     }
 
     if (!disable_beacon_service && s_need_rf_beacon && rfm_state == RFM_IDLE) {
@@ -1534,10 +1540,11 @@ void handle_mode_idle() {
                         play_mode = PLAY_MODE_CAUSE_ALONE;
                         tlc_start_anim(&flag_yellow, 0, 5*GLOBAL_TLC_SPEED_SCALE, 1, 0); // BRRP YELLOW!
                     }
-                    play_id = rand() % play_anim_count;
                     if (my_conf.adult) {
+                        play_id = rand() % play_anim_count;
                         oled_play_animation(play_cause[play_id], 0);
                     } else {
+                        play_id = play_anim_count;
                         oled_play_animation(&infant_play, 3);
                     }
                     idle_mode_softkey_dis = 1;
