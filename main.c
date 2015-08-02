@@ -191,13 +191,13 @@ const char title_descs[NUM_ACHIEVEMENTS][36] = {
         "Make 5 friends",
         "Make 15 friends",
         "Make 50 friends",
-        "Go: qcbadge talk: 12p Fri, qcsuite",
+        "qcbadge talk: 12p Fri, qcsuite",
         "Go to QC pool party: 9p Fri Bally's",
         "Find your twin",
         "Befriend your twin",
-        "Hang around the suite",
+        "Hang around the suite a while",
         "Play a lot",
-        "Be played with lots",
+        "Be played with lot",
         "Be awake 24 hours",
         "Sleep over 8 hours",
         "Meet 10 qc ubers",
@@ -881,7 +881,7 @@ void handle_infrastructure_services() {
 
     // Poll buttons and check whether we need to resend a befriend message:
     if (f_time_loop) {
-        poll_buttons();
+//        poll_buttons();
         WDT_A_resetTimer(WDT_A_BASE); // pat pat pat
         if (my_conf.adult && befriend_mode && !befriend_mode_loops_to_tick &&
                 rfm_state == RFM_IDLE) {
@@ -1913,7 +1913,7 @@ void handle_mode_sleep() {
     while (1) {
         if (f_time_loop) {
             f_time_loop = 0;
-            poll_buttons();
+//            poll_buttons();
             WDT_A_resetTimer(WDT_A_BASE); // pat pat pat
 
             if (f_bs == BUTTON_RELEASE) {
@@ -2160,6 +2160,7 @@ void RTC_A_ISR(void) {
         f_time_loop = 1; // We know what it does! It's a TIME LOOP MACHINE.
         // ...who would build a device that loops time every 16 milliseconds?
         // WHO KNOWS. But that's what it does.
+        poll_buttons();
         tlc_timestep();
         __bic_SR_register_on_exit(SLEEP_BITS);
         break; //RT1PSIFG
