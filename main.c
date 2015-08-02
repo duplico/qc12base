@@ -275,7 +275,7 @@ void achievement_get(uint8_t achievement_id, uint8_t animate) {
 
     uint8_t frame = achievement_id / 8;
     uint8_t bit = 0x01 << (achievement_id % 8);
-    if (!(my_conf.achievements[frame] & bit)) {
+    if (!(my_conf.achievements[frame] & bit) || achievement_id == ACH_SEXY) {
         // New achievement. woot.
         my_conf.achievements[frame] |= bit;
         if (!am_puppy || achievement_id == ACH_PUPPY)
@@ -308,7 +308,7 @@ inline void set_badge_seen(uint8_t id) {
 
                 // SQUIRE: seen 10 ubers, but not uber:
                 if (my_conf.uber_seen_count >= 10 && my_conf.badge_id < UBERS_IN_SYSTEM) {
-                    achievement_get(ACH_SQUIRE, 0);
+                    achievement_get(ACH_SQUIRE, 1);
                 }
             }
         } else {
@@ -371,7 +371,7 @@ void set_badge_friend(uint8_t id) {
 
             // ELITE: seen 10 ubers:
             if (my_conf.uber_friend_count >= 10) {
-                achievement_get(ACH_ELITE, 0);
+                achievement_get(ACH_ELITE, 1);
             }
 
         } else {
@@ -1309,7 +1309,7 @@ void handle_mode_name() {
         } else if (!strcmp(name, CHEAT_PUPPY)) {
             cheat_success = 1;
             am_puppy = 1;
-            achievement_get(ACH_PUPPY, 0);
+            achievement_get(ACH_PUPPY, 1);
         } else if (!strcmp(name, CHEAT_MIRROR)) {
             cheat_success = 1;
             qc12oled_WriteCommand(0xC0);
@@ -1322,7 +1322,7 @@ void handle_mode_name() {
             cheat_success = 0;
             cheat_fail_cnt = 0;
             LED_PULSE(flag_green);
-            achievement_get(ACH_CHEATER, 0);
+            achievement_get(ACH_CHEATER, 1);
         }
         else {
             LED_PULSE(flag_red);
@@ -1338,7 +1338,7 @@ void handle_mode_name() {
         strcpy(out_payload.handle, name);
     }
 
-    achievement_get(0, 0);
+    achievement_get(0, 1);
 
     op_mode = OP_MODE_IDLE;
     suppress_softkey = 1; // And don't register the button release
@@ -1567,16 +1567,37 @@ void asl_draw_page(uint8_t page) {
     case 2:
         // Top friends
         GrContextFontSet(&g_sContext, &SYS_FONT);
-        GrStringDrawCentered(&g_sContext, "My faves:", -1, 32, 8, 0);
 
         GrStringDraw(&g_sContext, "#1", -1, 3, 20, 0);
-        GrStringDraw(&g_sContext, fav_badges_handles[0], -1, 3, 35, 0);
+        if (fav_badges_handles[0][0]) {
+            if (badges_seen[fav_badges_ids[0]] & BADGE_SEX_BIT) {
+                GrImageDraw(&g_sContext, &bed, 25, 11);
+            } else if (badges_seen[fav_badges_ids[0]] & BADGE_FRIEND_BIT) {
+                GrImageDraw(&g_sContext, &heart, 20, 15);
+            }
+        }
 
         GrStringDraw(&g_sContext, "#2", -1, 3, 51, 0);
-        GrStringDraw(&g_sContext, fav_badges_handles[1], -1, 3, 66, 0);
+        if (fav_badges_handles[1][0]) {
+            if (badges_seen[fav_badges_ids[1]] & BADGE_SEX_BIT) {
+                GrImageDraw(&g_sContext, &bed, 25, 42);
+            } else if (badges_seen[fav_badges_ids[1]] & BADGE_FRIEND_BIT) {
+                GrImageDraw(&g_sContext, &heart, 20, 46);
+            }
+        }
 
         GrStringDraw(&g_sContext, "#3", -1, 3, 82, 0);
-        GrStringDraw(&g_sContext, fav_badges_handles[2], -1, 3, 97, 0);
+        if (fav_badges_handles[2][0]) {
+            if (badges_seen[fav_badges_ids[2]] & BADGE_SEX_BIT) {
+                GrImageDraw(&g_sContext, &bed, 25, 73);
+            } else if ((badges_seen[fav_badges_ids[2]] & BADGE_FRIEND_BIT)) {
+                GrImageDraw(&g_sContext, &heart, 20, 77);
+            }
+        }
+        GrStringDrawCentered(&g_sContext, "My faves:", -1, 32, 8, 1);
+        GrStringDraw(&g_sContext, fav_badges_handles[0], -1, 3, 35, 1);
+        GrStringDraw(&g_sContext, fav_badges_handles[1], -1, 3, 66, 1);
+        GrStringDraw(&g_sContext, fav_badges_handles[2], -1, 3, 97, 1);
 
         break;
     case 3:
@@ -1748,6 +1769,13 @@ void handle_mode_sleep() {
     // Kill the LEDs.
     tlc_stop_anim(1);
 
+    uint8_t sexy = 0;
+    for (uint8_t id=0; id<FAVORITE_COUNT; id++) {
+        if (neighbor_badges[fav_badges_ids[id]] && (badges_seen[fav_badges_ids[id]] & BADGE_FRIEND_BIT)) {
+            sexy = 1;
+            break;
+        }
+    }
 
     // Set up our Zzz animation.
     static uint8_t zzz_index = 0;
@@ -1768,7 +1796,12 @@ void handle_mode_sleep() {
         if (f_new_second) {
             f_new_second = 0;
             GrClearDisplay(&g_sContext);
-            GrStringDraw(&g_sContext, "Zzz...", zzz_index, 10, 100, 1);
+            GrStringDraw(&g_sContext, "Zzz...", zzz_index, 15, 72, 1);
+
+            if (sexy && ((minute_secs & BIT0) || my_conf.sleeptime > 30)) {
+                GrImageDraw(&g_sContext, &bed, 20, 90);
+            }
+
             GrFlush(&g_sContext);
             zzz_index = (zzz_index+1) % 7;
 
@@ -1800,14 +1833,15 @@ void handle_mode_sleep() {
         achievement_get(ACH_SLEEPY, 0);
     }
 
-    if (1 || my_conf.sleeptime > 30) { // TODO
+    if (my_conf.sleeptime > 30) { // TODO
         // If we were asleep for more than 30 minutes,
         // check to see if any of our favorites were around us when we
         // fell asleep. If so, we "slept with them."
         for (uint8_t id=0; id<FAVORITE_COUNT; id++) {
             if (neighbor_badges[fav_badges_ids[id]] && (badges_seen[fav_badges_ids[id]] & BADGE_FRIEND_BIT)) {
                 badges_seen[fav_badges_ids[id]] |= BADGE_SEX_BIT;
-                achievement_get(ACH_SEXY, 0);
+                achievement_get(ACH_SEXY, 1);
+                mood_adjust_and_write_crc(100);
             }
         }
     }
