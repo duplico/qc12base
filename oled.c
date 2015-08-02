@@ -50,6 +50,9 @@ void init_oled() {
 void oled_draw_pane_and_flush(uint8_t softkey_sel) {
     static tRectangle erase_rect_top = {0, 0, 64, 2*NAME_FONT_HEIGHT+1};
     static tRectangle erase_rect_btm = {0, SPRITE_Y + 64, 64, 127};
+    static uint8_t need_light_bulb;
+    static uint8_t sk_width;
+    need_light_bulb = 0;
 
     GrContextForegroundSet(&g_sContext, ClrBlack);
     GrRectFill(&g_sContext, &erase_rect_btm);
@@ -65,21 +68,38 @@ void oled_draw_pane_and_flush(uint8_t softkey_sel) {
     GrLineDrawH(&g_sContext, 0, 64, 2*NAME_FONT_HEIGHT+1);
     GrContextFontSet(&g_sContext, &SOFTKEY_LABEL_FONT);
     if (!idle_mode_softkey_dis) {
-        GrStringDrawCentered(&g_sContext, sk_labels[softkey_sel], -1, 32,  SPRITE_Y + 64 + SOFTKEY_FONT_HEIGHT/2, 0);
         if (softkey_sel == SK_SEL_SLEEP) {
             for (uint8_t i=0; i<FAVORITE_COUNT; i++) {
                 if (neighbor_badges[fav_badges_ids[i]]) {
                     // favorite nearby.
                     if ((BADGE_FRIEND_BIT & badges_seen[fav_badges_ids[i]]) && !(BADGE_SEX_BIT & badges_seen[fav_badges_ids[i]])) {
                         // Favorite friend nearby:
-                        GrImageDraw(&g_sContext, &idea, -5, 105); // To mark a NEW IDEA!
+                        need_light_bulb = 1;
                         break;
                     } else {
                     }
                 }
             }
+        } else if (softkey_sel == SK_SEL_HATCH) {
+            need_light_bulb = 1;
+        } else if (!my_conf.seen_flags && (softkey_sel == SK_SEL_FLAG || softkey_sel == SK_SEL_SETFLAG)) {
+            need_light_bulb = 1;
+        } else if (my_conf.adult && !my_conf.seen_titles && (softkey_sel == SK_SEL_ASL)) {
+            need_light_bulb = 1;
+        } else if (!my_conf.seen_sleep && (softkey_sel == SK_SEL_SLEEP)) {
+            need_light_bulb = 1;
+        } else if (!my_conf.seen_befriend && (softkey_sel == SK_SEL_FRIEND)) {
+            need_light_bulb = 1;
         }
 
+        if (need_light_bulb) {
+            GrImageDraw(&g_sContext, &idea, -5, 105); // To mark a NEW IDEA!
+            sk_width = GrStringWidthGet(&g_sContext, sk_labels[softkey_sel], -1);
+//            GrStringDraw(&g_sContext, sk_labels[softkey_sel], -2, 64 - sk_width,  SPRITE_Y + 64, 0);
+            GrStringDrawCentered(&g_sContext, sk_labels[softkey_sel], -2, 39,  SPRITE_Y + 64 + SOFTKEY_FONT_HEIGHT/2, 0);
+        } else {
+            GrStringDrawCentered(&g_sContext, sk_labels[softkey_sel], -2, 32,  SPRITE_Y + 64 + SOFTKEY_FONT_HEIGHT/2, 0);
+        }
     }
     GrLineDrawH(&g_sContext, 0, 64, SPRITE_Y + 64);
     GrFlush(&g_sContext);
@@ -165,7 +185,8 @@ void oled_anim_disp_frame(const qc12_anim_t *animation_data, uint8_t frame_no) {
     GrImageDraw(&g_sContext, &legs[animation_data->legs_indices[frame_no]], char_pos_x, legs_clip_offset + animation_data->legs_tops[frame_no] + SPRITE_Y - char_pos_y);
     GrImageDraw(&g_sContext, &bodies[animation_data->bodies_indices[frame_no]], char_pos_x, animation_data->body_tops[frame_no] + SPRITE_Y - char_pos_y);
     GrImageDraw(&g_sContext, &heads[animation_data->heads_indices[frame_no]], char_pos_x, animation_data->head_tops[frame_no] + SPRITE_Y - char_pos_y);
-    draw_overhead();
+    if (my_conf.adult)
+        draw_overhead();
     oled_draw_pane_and_flush(idle_mode_softkey_sel); // This flushes.
 }
 
@@ -176,7 +197,13 @@ void oled_consider_walking_back() {
     }
 
     // Determine whether we need to walk back onto the screen after anim.
-    if (my_conf.mood < MOOD_THRESH_SAD) {
+    if (!my_conf.adult) {
+        if (char_pos_x < -12) {
+            oled_play_animation(&infant_walk, (uint8_t) (-char_pos_x/4) - 1);
+        } else if (char_pos_x > 12) {
+            oled_play_animation(&infant_walk_left, (uint8_t) (char_pos_x/4) - 1);
+        }
+    } else if (my_conf.mood < MOOD_THRESH_SAD) {
         // zombie walk back
         if (char_pos_x < -12) {
             oled_play_animation(&zombie, (uint8_t) (-char_pos_x/12) - 1);

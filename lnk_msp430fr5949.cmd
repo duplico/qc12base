@@ -178,7 +178,7 @@ SECTIONS
 
     .infoA     : {} > INFOA type=NOINIT              /* MSP430 INFO FRAM  Memory segments */
     .infoB     : {} > INFOB
-    .infoC     : {} > INFOC
+    .infoC     : {} > INFOC type=NOINIT
     .infoD     : {} > INFOD
 
     /* MSP430 Interrupt vectors          */

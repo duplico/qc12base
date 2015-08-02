@@ -568,6 +568,11 @@ const tImage jakethedog =
     pixel_jakethedog1BPP_UNCOMP,
 };
 
+const qc12_anim_t *infant_idle_anims[] = {
+        &infant_moving, &infant_walk, &infant_walk_left,
+};
+const uint8_t infant_idle_anim_count = 3;
+
 
 #include "generated_images.h"
 
@@ -598,5 +603,6 @@ const qc12_anim_t *play_observe[] = {
         &earthquake_creator_observer,
         &mimic_creator_observer
 };
+
 
 const uint8_t play_anim_count = 3;

@@ -121,35 +121,37 @@ uint8_t at_suite_base = 0;
 // Mood:
 uint8_t mood_tick_minutes = MOOD_TICK_MINUTES;
 
-#define ACH_NEWBIE 0
-#define ACH_NICE 1
-#define ACH_SOCIAL 2
-#define ACH_HIP 3
-#define ACH_SEXY 4
-#define ACH_FRIENDLY 5
-#define ACH_COOL 6
-#define ACH_STAR 7
-#define ACH_BADGER 8
-#define ACH_FISH 9
-#define ACH_TWIN 10
-#define ACH_TWINSY 11
-#define ACH_CHILL 12
-#define ACH_TEASE 13
-#define ACH_PUNKD 14
-#define ACH_TIRED 15
-#define ACH_SLEEPY 16
-#define ACH_SQUIRE 17
-#define ACH_ELITE 18
-#define ACH_MOODY 19
-#define ACH_MIXER 20
-#define ACH_KICKOFF 21
-#define ACH_CHIEF 22
-#define ACH_PUPPY 23
-#define ACH_HANDLER 24
-#define ACH_TOWEL 25
-#define ACH_CHEATER 26
+#define ACH_BABY    0
+#define ACH_NEWBIE  1
+#define ACH_NICE    2
+#define ACH_SOCIAL  3
+#define ACH_HIP     4
+#define ACH_SEXY    5
+#define ACH_FRIENDLY 6
+#define ACH_COOL    7
+#define ACH_STAR    8
+#define ACH_BADGER  9
+#define ACH_FISH    10
+#define ACH_TWIN    11
+#define ACH_TWINSY  12
+#define ACH_CHILL   13
+#define ACH_TEASE   14
+#define ACH_PUNKD   15
+#define ACH_TIRED   16
+#define ACH_SLEEPY  17
+#define ACH_SQUIRE  18
+#define ACH_ELITE   19
+#define ACH_MOODY   20
+#define ACH_MIXER   21
+#define ACH_KICKOFF 22
+#define ACH_CHIEF   23
+#define ACH_PUPPY   24
+#define ACH_HANDLER 25
+#define ACH_TOWEL   26
+#define ACH_CHEATER 27
 
 const char titles[NUM_ACHIEVEMENTS][10] = {
+        "baby",
         "newbie",
         "nice",
         "social",
@@ -181,6 +183,7 @@ const char titles[NUM_ACHIEVEMENTS][10] = {
 
 const char title_descs[NUM_ACHIEVEMENTS][42] = {
         "Turn it on.",
+        "You're all growed up",
         "Meet 20 qcbadges",
         "Meet 40 qcbadges",
         "Meet 60 qcbadges",
@@ -215,15 +218,15 @@ const char title_descs[NUM_ACHIEVEMENTS][42] = {
 uint8_t op_mode = OP_MODE_IDLE;
 
 uint8_t suppress_softkey = 0;
-uint16_t softkey_en = BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT6 | BIT7;
+uint16_t softkey_en = 0;
 
 const char sk_labels[SK_SEL_MAX+1][10] = {
         "Play",
         "ASL?",
         "Befriend",
-        "Wave flag",
-        "Pick flag",
-        "RPS",
+        "Use flag",
+        "Set flag",
+        "Grow!",
         "Set name",
         "Sleep"
 };
@@ -382,9 +385,7 @@ void set_badge_friend(uint8_t id) {
             }
         }
         my_conf_write_crc();
-        oled_play_animation(&flap_arms, 10);
     } else {
-        oled_play_animation(&wave_right, 10);
         mood_adjust_and_write_crc(MOOD_OLD_FRIEND);
     }
 
@@ -417,6 +418,21 @@ void check_conf() {
         my_conf_write_crc();
         // Suppress any flags set from these so we don't do the animation:
         s_new_uber_seen = s_new_badge_seen = s_new_uber_friend = s_new_friend = 0;
+    }
+
+    my_conf.adult = 0;
+    if (!my_conf.adult) { // Base child softkeys:
+        softkey_en = SK_BIT_ASL | SK_BIT_NAME | SK_BIT_PLAY;
+
+        if (my_conf.time_to_hatch) {
+            softkey_en |= SK_BIT_HATCH;
+        }
+
+    } else { // Base adult softkeys:
+        softkey_en = SK_BIT_ASL | SK_BIT_NAME | SK_BIT_PLAY | SK_BIT_SLEEP | SK_BIT_FRIEND;
+        if (my_conf.flag_unlocks) {
+            softkey_en |= SK_BIT_SETFLAG | SK_BIT_FLAG;
+        }
     }
 
     // Set our mood lights.
@@ -717,7 +733,7 @@ void befriend_proto_step(uint8_t from_radio, uint8_t received_flag, uint8_t from
                 befriend_mode_ticks--;
             } else {
                 befriend_mode = 0;
-                s_befriend_success = 1;
+                s_befriend_success = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
                 oled_set_overhead_text(in_payload.handle, 170);
                 set_badge_friend(befriend_candidate);
             }
@@ -754,15 +770,15 @@ void handle_infrastructure_services() {
         //  a valid base ID and be either a badge (from_addr < BADGES_IN_SYSTEM) or be an
         //  actual base station (from_addr == DEDICATED_BASE_ID).
         if (in_payload.base_id != NOT_A_BASE && (in_payload.from_addr < BADGES_IN_SYSTEM || in_payload.from_addr == DEDICATED_BASE_ID)) {
-            if (in_payload.base_id == 1)
+            if (my_conf.adult && in_payload.base_id == 1) // puppy
             {
                 oled_set_overhead_image(&puppy, 254);
                 achievement_get(ACH_HANDLER, 1);
             }
-            else if (in_payload.base_id == BASE_SUITE) {
+            else if (in_payload.base_id == BASE_SUITE) { // suite
                 at_base = RECEIVE_WINDOW;
                 at_suite_base = 1;
-            } else {
+            } else { // other bases
                 at_base = RECEIVE_WINDOW;
                 set_base_seen(in_payload.base_id - 2);
             }
@@ -784,7 +800,6 @@ void handle_infrastructure_services() {
                 tick_badge_seen(in_payload.from_addr, in_payload.handle);
             }
 
-
             // Play schedule. We only care about this if we're in IDLE mode,
             //  and if we're not busy. (We use the enabledness of the softkey as
             //  a surrogate for that ill-defined "business").
@@ -794,7 +809,11 @@ void handle_infrastructure_services() {
                     play_mode = PLAY_MODE_RECV;
                     // Just stand there for the length of time the causing badge
                     //  is doing its cause animation.
-                    oled_play_animation(&standing, play_cause[play_id]->len);
+                    if (my_conf.adult)
+                        oled_play_animation(&standing, play_cause[play_id]->len);
+                    else {
+                        oled_play_animation(&infant_standing, infant_play.len*3);
+                    }
                     idle_mode_softkey_dis = 1;
                     oled_draw_pane_and_flush(idle_mode_softkey_sel);
                     if (TLC_IS_A_GO) {
@@ -806,8 +825,9 @@ void handle_infrastructure_services() {
             // It's a flag schedule:
             if (in_payload.flag_id && (in_payload.flag_id & 0b01111111) < FLAG_COUNT) {
                 // Wave a flag.
-                if (!my_conf.flag_unlocks) {
+                if (my_conf.adult && !my_conf.flag_unlocks) {
                     my_conf.flag_unlocks = 1;
+                    softkey_en |= SK_BIT_FLAG | SK_BIT_SETFLAG;
                     mood_adjust_and_write_crc(MOOD_GOT_FLAG);
                 }
                 if (!flag_in_cooldown) {
@@ -821,7 +841,7 @@ void handle_infrastructure_services() {
             }
 
             // Resolve inbound or completed friendship requests:
-            if (in_payload.friendship) {
+            if (in_payload.friendship && my_conf.adult) {
                 if (befriend_mode && befriend_candidate != in_payload.from_addr) {
                     // Check our befriend partner:
                     set_befriend_failed();
@@ -848,7 +868,7 @@ void handle_infrastructure_services() {
     if (f_time_loop) {
         poll_buttons();
         WDT_A_resetTimer(WDT_A_BASE); // pat pat pat
-        if (befriend_mode && !befriend_mode_loops_to_tick &&
+        if (my_conf.adult && befriend_mode && !befriend_mode_loops_to_tick &&
                 rfm_state == RFM_IDLE) {
             befriend_proto_step(0, 0, BADGES_IN_SYSTEM);
             befriend_mode_loops_to_tick = BEFRIEND_LOOPS_TO_RESEND;
@@ -954,6 +974,18 @@ void handle_infrastructure_services() {
         if (my_conf.uptime < 8000) {
             my_conf.uptime++;
         }
+
+        // Figure out if it's time to grow up.
+        if (!my_conf.adult && (my_conf.uptime + (my_conf.badge_id % 15) > 90)) {
+            // Time to grow up!
+            my_conf.time_to_hatch = 1;
+            my_conf_write_crc();
+            softkey_en |= SK_BIT_HATCH;
+            idle_mode_softkey_sel = SK_SEL_HATCH;
+            tlc_start_anim(&flag_rainbow, 0, 50, 1, 1);
+        }
+
+
         my_conf_write_crc();
     }
 
@@ -1000,12 +1032,12 @@ void handle_led_actions() {
         LED_PULSE(flag_red);
     }
 
-    if (s_befriend_success) {
-        s_befriend_success = 0;
-        if (s_new_uber_friend || s_new_friend) {
+    if (s_befriend_success & SIGNAL_BIT_TLC) {
+        s_befriend_success &= ~SIGNAL_BIT_TLC;
+        if (s_new_uber_friend | SIGNAL_BIT_TLC ||( s_new_friend | SIGNAL_BIT_TLC)) {
             tlc_start_anim(&flag_rainbow, 0, 3, 1, 4);
-            s_new_uber_friend = 0;
-            s_new_friend = 0;
+            s_new_uber_friend &= ~SIGNAL_BIT_TLC;
+            s_new_friend &= ~SIGNAL_BIT_TLC;
         } else {
             LED_PULSE(flag_green);
         }
@@ -1025,6 +1057,8 @@ void handle_led_actions() {
             s_flag_wave = 0;
         } else if (befriend_mode) {
             START_BEFRIEND_TLC_ANIM;
+        } else if (!my_conf.adult && my_conf.time_to_hatch){
+            tlc_start_anim(&flag_rainbow, 0, 50, 1, 1);
         } else {
             tlc_display_ambient();
         }
@@ -1039,12 +1073,31 @@ void handle_character_actions() {
 
     if (f_new_second) {
         // Determine whether we should do a random action.
-        if (oled_anim_state == OLED_ANIM_DONE) {
+        if (idle_action_seconds && oled_anim_state == OLED_ANIM_DONE) {
             idle_action_seconds--;
         }
         if (!idle_action_seconds) {
             s_need_idle_action = 1;
-            idle_action_seconds = rand() % 8 + 2;
+            if (my_conf.adult) {
+                idle_action_seconds = 1 + rand() % 8;
+            }
+            else {
+                idle_action_seconds = 1 + rand() % 2;
+            }
+        } else {
+            // blink
+        }
+    }
+
+    if (s_befriend_success & SIGNAL_BIT_OLED) {
+        if (s_new_friend & SIGNAL_BIT_OLED || s_new_uber_friend & SIGNAL_BIT_OLED) {
+            s_new_friend &= ~SIGNAL_BIT_OLED;
+            s_new_uber_friend &= ~SIGNAL_BIT_OLED;
+            if (my_conf.adult)
+                oled_play_animation(&flap_arms, 10);
+        } else {
+            if (my_conf.adult)
+                oled_play_animation(&wave_right, 10);
         }
     }
 
@@ -1055,7 +1108,11 @@ void handle_character_actions() {
             //  (or causing something to happen to ourself)
             // Time to act!
             play_mode = PLAY_MODE_EFFECT;
-            oled_play_animation(play_effect[play_id], 0);
+            if (my_conf.adult) {
+                oled_play_animation(play_effect[play_id], 0);
+            } else {
+                oled_play_animation(&infant_play, 3);
+            }
             // This displeases us:
             mood_adjust_and_write_crc(MOOD_PLAY_RECV);
         } else if (play_mode == PLAY_MODE_EFFECT || play_mode == PLAY_MODE_OBSERVE) {
@@ -1069,15 +1126,20 @@ void handle_character_actions() {
             // Just finished causing a play. Time to stand back
             //  and observe.
             play_mode = PLAY_MODE_OBSERVE;
-            oled_play_animation(play_observe[play_id], 0);
+            if (my_conf.adult) {
+                oled_play_animation(play_observe[play_id], 0);
+            } else {
+                oled_play_animation(&infant_standing, infant_play.len * 3);
+            }
             oled_draw_pane_and_flush(idle_mode_softkey_sel);
         }
 
-
-        if (!play_mode && my_conf.mood < MOOD_THRESH_SAD) {
+        if (my_conf.adult && !play_mode && my_conf.mood < MOOD_THRESH_SAD) {
             oled_anim_disp_frame(&bored_standing, 0);
-        } else if (!play_mode) {
+        } else if (my_conf.adult && !play_mode) {
             oled_anim_disp_frame(&standing, 0);
+        } else if (!play_mode) { // child's play just ended (lol)
+            oled_anim_disp_frame(&infant_standing, 0);
         }
     }
 
@@ -1087,7 +1149,7 @@ void handle_character_actions() {
         return;
     }
 
-    if (s_new_uber_seen & SIGNAL_BIT_OLED || s_new_badge_seen & SIGNAL_BIT_OLED) {
+    if (my_conf.adult && (s_new_uber_seen & SIGNAL_BIT_OLED || s_new_badge_seen & SIGNAL_BIT_OLED)) {
         // Wave!
         oled_play_animation(&wave_right, 4);
         s_new_badge_seen &= ~SIGNAL_BIT_OLED;
@@ -1098,12 +1160,18 @@ void handle_character_actions() {
         s_need_idle_action = 0;
         // Pick a random idle animation to do.
         static uint8_t anim;
-        if (my_conf.mood > MOOD_THRESH_SAD) {
-            anim = rand() % idle_anim_count;
-            oled_play_animation(idle_anims[anim], rand() % 5);
+
+        if (my_conf.adult) {
+            if (my_conf.mood > MOOD_THRESH_SAD) {
+                anim = rand() % idle_anim_count;
+                oled_play_animation(idle_anims[anim], rand() % 5);
+            } else {
+                anim = rand() % moody_idle_anim_count;
+                oled_play_animation(moody_idle_anims[anim], rand() % 5);
+            }
         } else {
-            anim = rand() % moody_idle_anim_count;
-            oled_play_animation(moody_idle_anims[anim], rand() % 5);
+            anim = rand() % infant_idle_anim_count;
+            oled_play_animation(infant_idle_anims[anim], 4+rand() % 5);
         }
     }
 
@@ -1349,7 +1417,7 @@ void handle_mode_name() {
 } // handle_mode_name
 
 uint8_t softkey_enabled(uint8_t index) {
-    if ((index == SK_SEL_FLAG || index == SK_SEL_SETFLAG) && !my_conf.flag_unlocks) {
+    if ((index == SK_SEL_FLAG || index == SK_SEL_SETFLAG) && (!my_conf.flag_unlocks || !my_conf.adult)) {
         return 0;
     }
 
@@ -1367,7 +1435,6 @@ void handle_mode_idle() {
     uint8_t s_new_pane = 1;
 
     GrClearDisplay(&g_sContext);
-//    oled_draw_pane(idle_mode_softkey_sel);
     // Pick our current appearance...
     if (oled_anim_state == OLED_ANIM_DONE) {
         s_oled_needs_redrawn_idle = 1;
@@ -1376,8 +1443,9 @@ void handle_mode_idle() {
         s_overhead_done = 1;
     }
 
-    oled_play_animation(&standing, 0);
-    oled_anim_next_frame();
+    // TODO:
+//    oled_play_animation(&standing, 0);
+//    oled_anim_next_frame();
 
     if (tlc_anim_mode == TLC_ANIM_MODE_IDLE) {
         tlc_display_ambient();
@@ -1437,13 +1505,21 @@ void handle_mode_idle() {
                         tlc_start_anim(&flag_yellow, 0, 5*GLOBAL_TLC_SPEED_SCALE, 1, 0); // BRRP YELLOW!
                     }
                     play_id = rand() % play_anim_count;
-                    oled_play_animation(play_cause[play_id], 0);
+                    if (my_conf.adult) {
+                        oled_play_animation(play_cause[play_id], 0);
+                    } else {
+                        oled_play_animation(&infant_play, 3);
+                    }
                     idle_mode_softkey_dis = 1;
                     oled_draw_pane_and_flush(idle_mode_softkey_sel);
                     mood_adjust_and_write_crc(MOOD_PLAY_SEND);
                     break;
                 case SK_SEL_FLAG:
                     tlc_start_anim(flags[my_conf.flag_id], 0, 3*GLOBAL_TLC_SPEED_SCALE, 0, 5);
+                    if (!my_conf.seen_flags) {
+                        my_conf.seen_flags;
+                        my_conf_write_crc();
+                    }
                     if (my_conf.flag_unlocks != 0xFF) {
                         my_conf.flag_cooldown = FLAG_OUT_COOLDOWN_MINUTES;
                         my_conf_write_crc();
@@ -1453,7 +1529,16 @@ void handle_mode_idle() {
                     idle_mode_softkey_sel = 0;
                     s_new_pane = 1;
                     break;
-                case SK_SEL_RPS:
+                case SK_SEL_HATCH:
+                    // Grow up!
+                    tlc_start_anim(&flag_ally, 2, 10, 1, 10);
+                    oled_play_animation(&infant_grow, 15);
+                    my_conf.adult = 1;
+                    my_conf.time_to_hatch = 0;
+                    softkey_en &= ~SK_BIT_HATCH;
+                    softkey_en |= SK_BIT_SLEEP | SK_BIT_FRIEND;
+                    idle_mode_softkey_sel = SK_SEL_PLAY;
+                    my_conf_write_crc();
                     break;
                 case SK_SEL_FRIEND:
                     idle_mode_softkey_dis = 1;
@@ -1628,6 +1713,11 @@ void asl_draw_page(uint8_t page) {
         break;
     default:
         // Achievement listing.
+        if (my_conf.adult && !my_conf.seen_titles) {
+            my_conf.seen_titles = 1;
+            my_conf_write_crc();
+        }
+
         achievement_id = page-4;
         oled_print(0,0, "Title:", 1, 0);
         oled_print(0,11, titles[achievement_id], 1, 1);
@@ -1654,7 +1744,10 @@ void handle_mode_asl() {
     static uint8_t page_num;
     page_num = 0;
     uint8_t s_redraw = 1;
-    uint8_t asl_pages = 4 + NUM_ACHIEVEMENTS;
+    uint8_t asl_pages = 4;
+    if (my_conf.adult) {
+        asl_pages += NUM_ACHIEVEMENTS;
+    }
 
     GrClearDisplay(&g_sContext);
     GrFlush(&g_sContext);
@@ -1710,10 +1803,16 @@ void handle_mode_asl() {
             } else {
                 GrStringDrawCentered(&g_sContext, "Close", -1, 32, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
             }
-            GrLineDraw(&g_sContext, 10, 118, 0, 123);
-            GrLineDraw(&g_sContext, 10, 127, 0, 123);
-            GrLineDraw(&g_sContext, 53, 118, 63, 123);
-            GrLineDraw(&g_sContext, 53, 127, 63, 123);
+
+            if (my_conf.adult && !my_conf.seen_titles) {
+                GrImageDraw(&g_sContext, &idea, 50, 105); // To mark a NEW IDEA!
+            }
+
+            // Arrows:
+            GrLineDraw(&g_sContext, 4, 112, 0, 116);
+            GrLineDraw(&g_sContext, 4, 120, 0, 116);
+            GrLineDraw(&g_sContext, 59, 112, 63, 116);
+            GrLineDraw(&g_sContext, 59, 120, 63, 116);
             GrLineDrawH(&g_sContext, 0, 64, 116);
 
             asl_draw_page(page_num);
@@ -1920,13 +2019,6 @@ void handle_mode_setflag() {
 
     // Cleanup:
     // (clear all the character stuff)
-}
-
-void handle_mode_rps() {
-    while (1) {
-        handle_infrastructure_services();
-        try_to_sleep();
-    }
 }
 
 int main(void)

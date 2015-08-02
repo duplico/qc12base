@@ -23,7 +23,7 @@
 #define BASES_IN_SYSTEM 5
 #define UBERS_IN_SYSTEM 12
 #define SLEEP_BITS LPM1_bits // because we need SMCLK for the TLC.
-#define NUM_ACHIEVEMENTS 27
+#define NUM_ACHIEVEMENTS 28
 #define FAVORITE_COUNT 3
 #define RADIO_TX_POWER_DB 4 // [-18 .. 13]
 #define FLAG_OUT_COOLDOWN_MINUTES 10
@@ -140,10 +140,19 @@
 #define SK_SEL_FRIEND 2
 #define SK_SEL_FLAG 3
 #define SK_SEL_SETFLAG 4
-#define SK_SEL_RPS 5
+#define SK_SEL_HATCH 5
 #define SK_SEL_NAME 6
 #define SK_SEL_SLEEP 7
 #define SK_SEL_MAX 7
+
+#define SK_BIT_PLAY     BIT0
+#define SK_BIT_ASL      BIT1
+#define SK_BIT_FRIEND   BIT2
+#define SK_BIT_FLAG     BIT3
+#define SK_BIT_SETFLAG  BIT4
+#define SK_BIT_HATCH    BIT5
+#define SK_BIT_NAME     BIT6
+#define SK_BIT_SLEEP    BIT7
 
 extern const char sk_labels[][10];
 extern uint16_t softkey_en;
@@ -206,7 +215,8 @@ typedef struct {
     uint8_t title_index;
     uint8_t flag_id;
     uint8_t flag_cooldown;
-    uint16_t exp;
+    uint8_t adult;
+    uint8_t time_to_hatch;
     uint8_t seen_count;
     uint8_t uber_seen_count;
     uint8_t friend_count;
@@ -218,6 +228,10 @@ typedef struct {
     uint16_t waketime;
     uint16_t sleeptime;
     uint8_t suite_minutes;
+    uint8_t seen_flags;
+    uint8_t seen_titles;
+    uint8_t seen_sleep;
+    uint8_t seen_befriend;
     uint8_t achievements[CEILING_DIV(NUM_ACHIEVEMENTS, 8)];
     uint8_t top_seen[FAVORITE_COUNT];
     char top_seen_handles[FAVORITE_COUNT][NAME_MAX_LEN+1];
