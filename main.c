@@ -925,6 +925,12 @@ void handle_infrastructure_services() {
             window_position = (window_position + 1) % RECEIVE_WINDOW;
             if (!window_position) {
                 skip_window = rand() % RECEIVE_WINDOW;
+                // If there's no one around, reset the radio just in case.
+                if (!neighbor_count && rfm_state == RFM_IDLE) {
+                    mode_sync(RFM_MODE_SL); // Going to sleep... mode...
+                    write_single_register(0x3b, RFM_AUTOMODE_OFF);
+                    init_radio();
+                }
             }
         }
     }
