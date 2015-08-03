@@ -269,6 +269,11 @@ void mood_adjust_and_write_crc(int8_t change) {
             my_conf.mood += change;
         }
     }
+
+    if (mood >= MOOD_THRESH_SAD) {
+        my_conf.sadtime = 0;
+    }
+
     my_conf_write_crc();
 
     tlc_set_ambient(my_conf.mood);
@@ -984,6 +989,14 @@ void handle_infrastructure_services() {
         if (my_conf.flag_cooldown) {
             my_conf.flag_cooldown--;
             my_conf_write_crc();
+        }
+
+        if (my_conf.mood <= MOOD_THRESH_SAD) {
+            my_conf.sadtime++;
+            my_conf_write_crc();
+            if (my_conf.sadtime == 480) {
+                achievement_get(ACH_MOODY, 1);
+            }
         }
 
         mood_tick_minutes--;

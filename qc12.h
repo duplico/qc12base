@@ -232,6 +232,7 @@ typedef struct {
     uint_fast32_t uptime;
     uint16_t waketime;
     uint16_t sleeptime;
+    uint16_t sadtime;
     uint8_t suite_minutes;
     uint8_t seen_flags;
     uint8_t seen_titles;
