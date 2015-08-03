@@ -455,6 +455,7 @@ void check_conf() {
     }
 
     am_puppy = 0;
+    my_conf.adult = 1; // TODO!!!!!
 
     // Set our mood lights.
     mood_adjust_and_write_crc(0);
@@ -578,7 +579,7 @@ void post() {
 
 // Play a cute animation when we first turn the badge on.
 void intro() {
-    GrImageDraw(&g_sContext, &fingerprint_1BPP_UNCOMP, 0, 0);
+//    GrImageDraw(&g_sContext, &fingerprint_1BPP_UNCOMP, 0, 0); // TODO
     GrStringDrawCentered(&g_sContext, "Queercon", -1, 31, 94 + SYS_FONT_HEIGHT/3, 0);
     GrStringDrawCentered(&g_sContext, "twelve", -1, 31, 94 + SYS_FONT_HEIGHT/3 + SYS_FONT_HEIGHT, 0);
     GrStringDrawCentered(&g_sContext, "- 2015 -", -1, 31, 94 + SYS_FONT_HEIGHT/3 + SYS_FONT_HEIGHT*2, 0);
@@ -663,15 +664,20 @@ void befriend_proto_step(uint8_t from_radio, uint8_t received_flag, uint8_t from
         return;
     }
 
-    // Flag 5 is the highest that ever gets sent. If we see
-    //  something higher, someone's ruined something.
-    //  Therefore we fail.
-    if (received_flag > 5 || (from_radio && !received_flag)) {
-        set_befriend_failed();
-        return;
-    }
+    char buf[32] = "";
 
     if (from_radio) {
+        sprintf(buf, "r. m:%d i:%d", befriend_mode, received_flag);
+        oled_set_overhead_text(buf, 100);
+
+        // Flag 5 is the highest that ever gets sent. If we see
+        //  something higher, someone's ruined something.
+        //  Therefore we fail.
+//        if (received_flag > 5 || received_flag == 0) {
+//            set_befriend_failed();
+//            return;
+//        }
+
         // Here, we've received a radio message.
         // We expect it to be either:
         //  befriend_mode+1 (time to move to next state)
@@ -683,10 +689,12 @@ void befriend_proto_step(uint8_t from_radio, uint8_t received_flag, uint8_t from
             // If we are a beaconing server, we use the incoming
             //  sender to set our befriend_candidate.
             befriend_candidate = from_id;
+            if (received_flag == 1 && from_id > my_conf.badge_id) {
+                befriend_mode = 2;
+            }
         } else if (from_id != befriend_candidate) {
-            // Otherwise, we need to reject anything that's not
+            // Otherwise, we need to ignore anything that's not
             //  from our befriend_candidate.
-            set_befriend_failed();
             return;
         }
 
@@ -711,17 +719,17 @@ void befriend_proto_step(uint8_t from_radio, uint8_t received_flag, uint8_t from
 
             // So if we're in one of those states, don't send anything.
             if (befriend_mode != BF_S_WAIT && befriend_mode != BF_C_WAIT) {
-                oled_set_overhead_text("Hello!", 50);
+//                oled_set_overhead_text("Hello!", 75);
                 radio_send_befriend(befriend_mode);
             }
         } else {
-            // Malformed response.
-            set_befriend_failed();
             return;
         }
         // End of radio handling section
 
     } else {
+        sprintf(buf, "t. m:%d", befriend_mode);
+        oled_set_overhead_text(buf, 100);
 
         // (we've already ruled out 0)
         if (befriend_mode < 5) { // the "normal" modes:
@@ -742,7 +750,8 @@ void befriend_proto_step(uint8_t from_radio, uint8_t received_flag, uint8_t from
                 // still some retries left.
                 befriend_mode_ticks--;
                 // Do re-send our message.
-                oled_set_overhead_text("Hello?", 50);
+//                oled_set_overhead_text("Hello?", 75);
+                sprintf(buf, "s:m:%d", befriend_mode);
                 radio_send_befriend(befriend_mode);
             } else {
                 set_befriend_failed();
@@ -895,7 +904,7 @@ void handle_infrastructure_services() {
                 rfm_state == RFM_IDLE) {
             befriend_proto_step(0, 0, BADGES_IN_SYSTEM);
             befriend_mode_loops_to_tick = BEFRIEND_LOOPS_TO_RESEND;
-        } else if (befriend_mode && befriend_mode_loops_to_tick) {
+        } else if (my_conf.adult && befriend_mode && befriend_mode_loops_to_tick) {
             befriend_mode_loops_to_tick--;
         }
 
@@ -1919,7 +1928,7 @@ void handle_mode_sleep() {
                 radio_send_beacon(fav_badges_ids[i], 10);
                 while (rfm_state != RFM_IDLE);
                 WDT_A_resetTimer(WDT_A_BASE);
-                delay(100);
+                delay(50);
             }
         }
     }
