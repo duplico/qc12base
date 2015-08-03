@@ -51,6 +51,7 @@
 								<option id="com.ti.ccstudio.buildDefinitions.MSP430_4.4.compilerID.OPT_FOR_SPEED.628708845" name="Speed vs. size trade-offs (--opt_for_speed, -mf)" superClass="com.ti.ccstudio.buildDefinitions.MSP430_4.4.compilerID.OPT_FOR_SPEED" value="com.ti.ccstudio.buildDefinitions.MSP430_4.4.compilerID.OPT_FOR_SPEED._none" valueType="enumerated"/>
 								<option id="com.ti.ccstudio.buildDefinitions.MSP430_4.4.compilerID.INCLUDE_PATH.1431170145" name="Add dir to #include search path (--include_path, -I)" superClass="com.ti.ccstudio.buildDefinitions.MSP430_4.4.compilerID.INCLUDE_PATH" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${CCS_BASE_ROOT}/msp430/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MSP430_DRIVERLIB_ROOT}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${PROJECT_LOC}/grlib&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${PROJECT_LOC}/LCD_Driver&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${PROJECT_LOC}&quot;"/>
