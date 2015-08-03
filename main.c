@@ -579,7 +579,7 @@ void post() {
 
 // Play a cute animation when we first turn the badge on.
 void intro() {
-//    GrImageDraw(&g_sContext, &fingerprint_1BPP_UNCOMP, 0, 0); // TODO
+    GrImageDraw(&g_sContext, &fingerprint_1BPP_UNCOMP, 0, 0);
     GrStringDrawCentered(&g_sContext, "Queercon", -1, 31, 94 + SYS_FONT_HEIGHT/3, 0);
     GrStringDrawCentered(&g_sContext, "twelve", -1, 31, 94 + SYS_FONT_HEIGHT/3 + SYS_FONT_HEIGHT, 0);
     GrStringDrawCentered(&g_sContext, "- 2015 -", -1, 31, 94 + SYS_FONT_HEIGHT/3 + SYS_FONT_HEIGHT*2, 0);
@@ -663,19 +663,14 @@ void befriend_proto_step(uint8_t from_radio, uint8_t received_flag, uint8_t from
         return;
     }
 
-    char buf[32] = "";
-
     if (from_radio) {
-        sprintf(buf, "r. m:%d i:%d", befriend_mode, received_flag);
-        oled_set_overhead_text(buf, 100);
-
         // Flag 5 is the highest that ever gets sent. If we see
         //  something higher, someone's ruined something.
         //  Therefore we fail.
-//        if (received_flag > 5 || received_flag == 0) {
-//            set_befriend_failed();
-//            return;
-//        }
+        if (received_flag > 5 || received_flag == 0) {
+            set_befriend_failed();
+            return;
+        }
 
         // Here, we've received a radio message.
         // We expect it to be either:
@@ -718,7 +713,7 @@ void befriend_proto_step(uint8_t from_radio, uint8_t received_flag, uint8_t from
 
             // So if we're in one of those states, don't send anything.
             if (befriend_mode != BF_S_WAIT && befriend_mode != BF_C_WAIT) {
-//                oled_set_overhead_text("Hello!", 75);
+                oled_set_overhead_text("Hello!", 75);
                 radio_send_befriend(befriend_mode);
             }
         } else {
@@ -727,8 +722,6 @@ void befriend_proto_step(uint8_t from_radio, uint8_t received_flag, uint8_t from
         // End of radio handling section
 
     } else {
-        sprintf(buf, "t. m:%d", befriend_mode);
-        oled_set_overhead_text(buf, 100);
 
         // (we've already ruled out 0)
         if (befriend_mode < 5) { // the "normal" modes:
@@ -749,8 +742,7 @@ void befriend_proto_step(uint8_t from_radio, uint8_t received_flag, uint8_t from
                 // still some retries left.
                 befriend_mode_ticks--;
                 // Do re-send our message.
-//                oled_set_overhead_text("Hello?", 75);
-                sprintf(buf, "s:m:%d", befriend_mode);
+                oled_set_overhead_text("Hello?", 75);
                 radio_send_befriend(befriend_mode);
             } else {
                 set_befriend_failed();
@@ -2118,6 +2110,7 @@ int main(void)
         s_default_conf_loaded = 0;
     }
 
+    WDT_A_initWatchdogTimer(WDT_A_BASE, WDT_A_CLOCKSOURCE_ACLK, WDT_A_CLOCKDIVIDER_32K);
     WDT_A_start(WDT_A_BASE);
 
     while (1) {

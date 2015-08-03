@@ -64,7 +64,4 @@ void Grace_init(void)
 
     /* initialize Config for the MSP430 RTC_B */
     RTC_B_graceInit();
-
-    /* initialize Config for the MSP430 WDT_A */
-    WDT_A_graceInit();
 }
