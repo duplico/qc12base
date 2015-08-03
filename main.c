@@ -234,6 +234,20 @@ const char sk_labels[SK_SEL_MAX+1][10] = {
 };
 
 void my_conf_write_crc() {
+    if (!my_conf.adult) { // Base child softkeys:
+        softkey_en = SK_BIT_ASL | SK_BIT_NAME | SK_BIT_PLAY;
+
+        if (my_conf.time_to_hatch) {
+            softkey_en |= SK_BIT_HATCH;
+        }
+
+    } else { // Base adult softkeys:
+        softkey_en = SK_BIT_ASL | SK_BIT_NAME | SK_BIT_PLAY | SK_BIT_SLEEP | SK_BIT_FRIEND;
+        if (my_conf.flag_unlocks) {
+            softkey_en |= SK_BIT_SETFLAG | SK_BIT_FLAG;
+        }
+    }
+
     CRC_setSeed(CRC_BASE, 0x0C12);
     for (uint8_t i = 0; i < sizeof(qc12conf) - 2; i++) {
         CRC_set8BitData(CRC_BASE, ((uint8_t *) &default_conf)[i]);
@@ -440,19 +454,6 @@ void check_conf() {
         s_new_uber_seen = s_new_badge_seen = s_new_uber_friend = s_new_friend = 0;
     }
 
-    if (!my_conf.adult) { // Base child softkeys:
-        softkey_en = SK_BIT_ASL | SK_BIT_NAME | SK_BIT_PLAY;
-
-        if (my_conf.time_to_hatch) {
-            softkey_en |= SK_BIT_HATCH;
-        }
-
-    } else { // Base adult softkeys:
-        softkey_en = SK_BIT_ASL | SK_BIT_NAME | SK_BIT_PLAY | SK_BIT_SLEEP | SK_BIT_FRIEND;
-        if (my_conf.flag_unlocks) {
-            softkey_en |= SK_BIT_SETFLAG | SK_BIT_FLAG;
-        }
-    }
     am_puppy = 0;
 
     // Set our mood lights.
@@ -615,6 +616,7 @@ void radio_send_flag(uint8_t flag) {
     out_payload.from_addr = my_conf.badge_id;
     out_payload.to_addr = RFM_BROADCAST;
     out_payload.play_id = 0;
+    radio_send_sync();
     radio_send_sync();
 }
 
@@ -856,10 +858,9 @@ void handle_infrastructure_services() {
                 if (!flag_in_cooldown) {
                     mood_adjust_and_write_crc(MOOD_FLAG);
                     flag_id = in_payload.flag_id & 0b01111111;
-                    radio_send_flag(flag_id | BIT7);
                     tlc_start_anim(flags[in_payload.flag_id & 0b01111111], 0, 3*GLOBAL_TLC_SPEED_SCALE, 0, 0);
                     s_flag_wave = 1;
-                    s_flag_send = 1;
+                    s_flag_send = 2;
                 } // Otherwise, ignore it.
             }
 

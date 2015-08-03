@@ -497,7 +497,7 @@ if (__name__ == '__main__'):
             configfile.write(filestring)
         use_file = args.config + '.tmp'
     
-    uber_dirs = ["uber_astronaut", "uber_bender", "uber_blackhat", "uber_demon", "uber_human", "uber_minecraft", "uber_minion", "uber_shark", "uber_stig"]
+    uber_dirs = ["uber_astronaut", "uber_bender", "uber_black_mage", "uber_blackhat", "uber_demon", "uber_human", "uber_minecraft", "uber_minion", "uber_shark", "uber_stig"]
     human_dirs = ["alien", "bear", "human", "lizard", "octopus", "robot"]
     
     if 'id' in args:
