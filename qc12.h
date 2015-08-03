@@ -42,6 +42,7 @@
 #define CHEAT_FLAG "FFS"
 #define CHEAT_FLAG_NC "BANNER"
 #define CHEAT_PUPPY "WOOF"
+#define CHEAT_PUPPYOFF "MEOW"
 #define CHEAT_INVERT "BANDW"
 #define CHEAT_UNINVERT "WANDB"
 #define CHEAT_INFANT "BABY"
@@ -227,7 +228,7 @@ typedef struct {
     uint16_t bases_seen;
     uint8_t flag_unlocks;
     uint8_t titles_unlocked;
-    uint16_t uptime;
+    uint_fast32_t uptime;
     uint16_t waketime;
     uint16_t sleeptime;
     uint8_t suite_minutes;
