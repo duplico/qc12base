@@ -238,6 +238,7 @@ typedef struct {
     uint8_t seen_titles;
     uint8_t seen_sleep;
     uint8_t seen_befriend;
+    int8_t play_margin;
     uint8_t achievements[CEILING_DIV(NUM_ACHIEVEMENTS, 8)];
     uint8_t top_seen[FAVORITE_COUNT];
     char top_seen_handles[FAVORITE_COUNT][NAME_MAX_LEN+1];
