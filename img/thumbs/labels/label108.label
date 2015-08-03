@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+        <DieCutLabel Version="8.0" Units="twips">
+        <PaperOrientation>Portrait</PaperOrientation>
+        <Id>Small30332</Id>
+        <PaperName>30332 1 in x 1 in</PaperName>
+        <DrawCommands>
+        <RoundRectangle X="0" Y="0" Width="1440" Height="1440" Rx="180" Ry="180" />
+        </DrawCommands>
+        <ObjectInfo>
+        <ImageObject>
+        <Name>GRAPHIC</Name>
+        <ForeColor Alpha="255" Red="0" Green="0" Blue="0" />
+        <BackColor Alpha="0" Red="255" Green="255" Blue="255" />
+        <LinkedObjectName></LinkedObjectName>
+        <Rotation>Rotation0</Rotation>
+        <IsMirrored>False</IsMirrored>
+        <IsVariable>False</IsVariable>
+        <Image>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</Image>
+        <ScaleMode>Uniform</ScaleMode>
+        <BorderWidth>0</BorderWidth>
+        <BorderColor Alpha="255" Red="0" Green="0" Blue="0" />
+        <HorizontalAlignment>Center</HorizontalAlignment>
+        <VerticalAlignment>Center</VerticalAlignment>
+        </ImageObject>
+        <Bounds X="82" Y="144" Width="1301" Height="1210" />
+        </ObjectInfo>
+        </DieCutLabel>
+        

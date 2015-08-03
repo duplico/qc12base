@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+        <DieCutLabel Version="8.0" Units="twips">
+        <PaperOrientation>Portrait</PaperOrientation>
+        <Id>Small30332</Id>
+        <PaperName>30332 1 in x 1 in</PaperName>
+        <DrawCommands>
+        <RoundRectangle X="0" Y="0" Width="1440" Height="1440" Rx="180" Ry="180" />
+        </DrawCommands>
+        <ObjectInfo>
+        <ImageObject>
+        <Name>GRAPHIC</Name>
+        <ForeColor Alpha="255" Red="0" Green="0" Blue="0" />
+        <BackColor Alpha="0" Red="255" Green="255" Blue="255" />
+        <LinkedObjectName></LinkedObjectName>
+        <Rotation>Rotation0</Rotation>
+        <IsMirrored>False</IsMirrored>
+        <IsVariable>False</IsVariable>
+        <Image>iVBORw0KGgoAAAANSUhEUgAAAEAAAABUCAYAAAAyLjFTAAAEPklEQVR4nO1aP0gbURj/nkQblyYg0ZJrpHQxxYLQwVI6OKi0gxEn6dLiUASpQ+jg2OqYQeJQO9ShiIudFBsQqUsHBTsIxUJcBJvmwIsFo0NDSMnrUI9er++Sd/fevXdp7gePhOS77/3e733f+3sIYwzNjBbZBGTDF0A2AdnwBZBNQDZ8AWQTkA1fANkEZMMXQDYB2fAFkE1ANnwBZBOQjaYXICC6QoRQzRMYjDESxQUAAIk4EarXaCuIEMP1FHDaeNZnqetwMwKMDTD2plXDrGzcjISmHwSFCkAT0iLC/q/6RKUACxo2BXgQd3smEJoCNI35L9cBAH/SoV4Dae14wXMrQdEQlgJ2elRkGvjrAJGVeXEQbPoIcGUWcLrllbFV5h4Bbo7ybvjmKgAtQZIdy7Ms4CaAXWJGe5ZnWSF8IWSEFxZFXCJARkN41dn00yC3FCBNUQghjDFGLIeiug+Sbyc+zeAmQKNNfzq4pIDeQxhjRPrO6tvKP6tvAEFjgBOyovYETT8I+gLIJiAbvgCyCciGL4CISpwsZETtL4TsBkWf89mBsO2w3R5tqIVQvca5kQKe2wyZe4wHwVovUnj6PMCN8HUrJbieCeq9Yr7gZNkM6Z9G3zxnCK73ArTESCFsJ6x5RgPXFCD1uPm3WuRr2fI+B9Dhyr0A6Y7fTtiS3hAz++YFrmMAqcd4vCdo9iv8XoCUr6T/3Hy7Q2+4nSij4UEVAaQ53kiG1PNWJGlBiiCrCCPNDLR12poFzGTqRYbZhiZ8rZ6p19NO3yy1PQ06XZ3VEszulFjrf7vRJuwtMa/CPxCRTUA2fAFkE5ANXwBejqrVasvKysrj/v7+T0NDQ9skm3K5fGVycvJNX1/f50gkcqooijo8PPxhdXX1EYstEzDGzGVtbW2st7f3CwBgAMCKouRJdmdnZ+FoNKqOj4+/SyaT6YmJibcdHR3fAQDPz88/d2rLUpgdzM3NvQAA3N3d/XV5eflJLQFIJZfLxYLBYCkWi+V42goT4ODg4HYqlZoplUrBy0WVLQEwxtDT03MYCoWKvG2FCPCPQ5sCqKoabWtrKycSiQ2etrSF+1IYIYQVRVHz+fx1K5udnZ375+fnoePj4xsLCwvJQCDwc2tr60EsFvvGYusIMiLAOGAihKpTU1OvNU3rZLVtmBRQVTV6dHR0c3d3997s7OzL9vb2H4qi5AuFQoTFtmEEMJelpaWnAIBTqdQMT1ua4omVYDwePwQA0DSti6ctDTwhwPr6+hgAwMDAwEeetjRgvhvMZrO3FhcXnxl/KxaL4enp6VcAv3tM/76/v39nb2/vbiQSOW1tba2cnJxcy2QyI5lMZmR0dHQjkUi8133YsWUCaw5tbm4+hMtRmlQGBwe3zflrLPF4PJtOp5OVSiVAynUaW5Yi9EisWq22aJrWdXFxcRUhhDs7OwvhcLjIasuCX2jtjkIMEsEGAAAAAElFTkSuQmCC</Image>
+        <ScaleMode>Uniform</ScaleMode>
+        <BorderWidth>0</BorderWidth>
+        <BorderColor Alpha="255" Red="0" Green="0" Blue="0" />
+        <HorizontalAlignment>Center</HorizontalAlignment>
+        <VerticalAlignment>Center</VerticalAlignment>
+        </ImageObject>
+        <Bounds X="82" Y="144" Width="1301" Height="1210" />
+        </ObjectInfo>
+        </DieCutLabel>
+        
