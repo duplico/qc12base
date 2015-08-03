@@ -223,6 +223,14 @@ void radio_send_sync() {
     // Wait for, e.g., completion of receiving something.
     if (radio_barrier_with_timeout()) return;
     mode_sync(RFM_MODE_SB);
+
+    // Compute our CRC.
+    CRC_setSeed(CRC_BASE, 0x0C12);
+    for (uint8_t i = 0; i < sizeof(qc12payload) - 2; i++) {
+        CRC_set8BitData(CRC_BASE, ((uint8_t *) &out_payload)[i]);
+    }
+    out_payload.crc = CRC_getResult(CRC_BASE);
+
     // Intermediate mode is TX
     // Enter condition is FIFO level
     // Exit condition is PacketSent.
@@ -258,8 +266,19 @@ void radio_recv() {
 
     // Ideally FifoNotEmpty would be asserted here... TODO.
     memcpy(&in_payload, in_bytes, sizeof(qc12payload));
-
     rfm_state = RFM_IDLE;
+
+    // Compute our CRC.
+    CRC_setSeed(CRC_BASE, 0x0C12);
+    for (uint8_t i = 0; i < sizeof(qc12payload) - 2; i++) {
+        CRC_set8BitData(CRC_BASE, ((uint8_t *) &in_payload)[i]);
+    }
+    if (in_payload.crc != CRC_getResult(CRC_BASE)) {
+        // CRC fail.
+        in_payload.from_addr = BADGES_IN_SYSTEM;
+        in_payload.base_id = NOT_A_BASE;
+        f_rfm_rx_done = 0;
+    }
 }
 
 /*
