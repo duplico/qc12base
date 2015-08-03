@@ -1,7 +1,8 @@
 Param(
   [string]$id,
   [string]$workspace,
-  [switch]$f
+  [switch]$f,
+  [switch]$nf
 )
 
 if (-not $f) {
@@ -23,4 +24,6 @@ if (-not $f) {
 
 }
 
-Invoke-Expression "msp430flasher.exe -n msp430fr5949 -m SBW2 -w images\${id}.txt -v"
+if (-not $nf) {
+    Invoke-Expression "msp430flasher.exe -n msp430fr5949 -m SBW2 -w images\${id}.txt -v"
+}
