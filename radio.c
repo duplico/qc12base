@@ -264,7 +264,8 @@ void radio_recv() {
     }
     RFM_NSS_PORT_OUT |= RFM_NSS_PIN;
 
-    // Ideally FifoNotEmpty would be asserted here... TODO.
+    // Ideally FifoNotEmpty would be asserted here...
+    // Ain't nobody got time for that.
     memcpy(&in_payload, in_bytes, sizeof(qc12payload));
     rfm_state = RFM_IDLE;
 
