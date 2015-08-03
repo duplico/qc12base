@@ -468,7 +468,7 @@ void check_conf() {
         memset(fav_badges_handles, 0, sizeof(char) * FAVORITE_COUNT * (NAME_MAX_LEN+1));
         s_default_conf_loaded = 1;
         out_payload.handle[0] = 0;
-        set_badge_seen(my_conf.badge_id); // TODO: consider changing these two.
+        set_badge_seen(my_conf.badge_id);
         set_badge_friend(my_conf.badge_id);
         my_conf_write_crc();
         // Suppress any flags set from these so we don't do the animation:
@@ -476,7 +476,6 @@ void check_conf() {
     }
 
     am_puppy = 0;
-    my_conf.adult = 1; // TODO!!!!!
 
     // Set our mood lights.
     mood_adjust_and_write_crc(0);
@@ -1040,7 +1039,7 @@ void handle_infrastructure_services() {
         }
 
         // Figure out if it's time to grow up.
-        if (!my_conf.adult && (my_conf.uptime + (my_conf.badge_id % 15) > 0)) {
+        if (!my_conf.adult && (my_conf.uptime + (my_conf.badge_id % 15) > 80)) {
             // Time to grow up!
             my_conf.time_to_hatch = 1;
             my_conf_write_crc();

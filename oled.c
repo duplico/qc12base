@@ -280,7 +280,7 @@ void oled_print(uint8_t x, uint8_t y, const char str[], uint8_t opaque, uint8_t 
             str_end = str_end_candidate;
             str_end_candidate++; // Skip the space.
         } else {
-            // If it doesn't fit, we use str_end. If str_end == str_start, then I don't know??? TODO.
+            // If it doesn't fit, we halt and catch fire. Make sure it fits.
             if (centered) {
                 GrStringDrawCentered(&g_sContext, &str[str_start], str_end - str_start, (64+x)/2, curr_y+SYS_FONT_HEIGHT/2, opaque);
             } else {

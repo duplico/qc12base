@@ -19,7 +19,7 @@
 #include "badgeconf.h"
 
 // System configuration
-#define BADGES_IN_SYSTEM 175
+#define BADGES_IN_SYSTEM 174
 #define BASES_IN_SYSTEM 5
 #define UBERS_IN_SYSTEM 12
 #define SLEEP_BITS LPM1_bits // because we need SMCLK for the TLC.
