@@ -995,10 +995,10 @@ void handle_infrastructure_services() {
         if (my_conf.waketime > 1440) { // 24 hours
             achievement_get(ACH_TIRED, 1);
         }
-        if (my_conf.uptime < 65534) { // TODO: Might be OK to let this roll over.
+        if (my_conf.uptime) { // Might be OK to let this roll over, but we won't.
             my_conf.uptime++;
         }
-        if (am_puppy && (my_conf.uptime % 60)) {
+        if (am_puppy && !(my_conf.uptime % 60)) {
             // Send it a few times:
             s_send_puppy = 4;
             puppy_target = 1 + rand() % neighbor_count;
@@ -1424,7 +1424,9 @@ void handle_mode_name() {
         } else if (!strcmp(name, CHEAT_PUPPY)) {
             cheat_success = 1;
             need_puppy = 1;
-            achievement_get(ACH_PUPPY, 1);
+        } else if (!strcmp(name, CHEAT_PUPPYOFF)) {
+            cheat_success = 1;
+            am_puppy = 0;
         } else if (!strcmp(name, CHEAT_MIRROR)) {
             cheat_success = 1;
             qc12oled_WriteCommand(0xC0);
@@ -1991,7 +1993,7 @@ void handle_mode_sleep() {
 
                 my_conf.sleeptime++;
 
-                if (my_conf.uptime < 65534) {
+                if (my_conf.uptime) {
                     my_conf.uptime++;
                 }
                 mood_adjust_and_write_crc(MOOD_TICK_AMOUNT_UP);
