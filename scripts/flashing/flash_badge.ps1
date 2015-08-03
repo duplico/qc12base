@@ -1,21 +1,26 @@
 Param(
   [string]$id,
-  [string]$workspace
+  [string]$workspace,
+  [switch]$f
 )
 
-echo "// Generated file." | Out-File -FilePath "badgeconf.h" -Encoding utf8
-echo "#define BADGE_ID ${id}" | Out-File -FilePath "badgeconf.h" -Encoding utf8 -Append
+if (-not $f) {
 
-cd img
+    echo "// Generated file." | Out-File -FilePath "badgeconf.h" -Encoding utf8
+    echo "#define BADGE_ID ${id}" | Out-File -FilePath "badgeconf.h" -Encoding utf8 -Append
 
-Invoke-Expression "python ..\scripts\image_composition\compose.py frames.ini play.ini -f -i ${id}" | Out-File -FilePath ..\generated_images.h -Encoding utf8
+    cd img
 
-cd ..
+    Invoke-Expression "python ..\scripts\image_composition\compose.py frames.ini play.ini -f -i ${id}" | Out-File -FilePath ..\generated_images.h -Encoding utf8
 
-Invoke-Expression ".\scripts\build.bat ${workspace}"
+    cd ..
 
-cmd /C eclipsec -noSplash -data "${workspace}" -application com.ti.ccstudio.apps.projectBuild -ccs.projects qc12
+    Invoke-Expression ".\scripts\build.bat ${workspace}"
 
-Copy-Item Debug\qc12.txt "images\${id}.txt"
+    cmd /C eclipsec -noSplash -data "${workspace}" -application com.ti.ccstudio.apps.projectBuild -ccs.projects qc12
+
+    Copy-Item Debug\qc12.txt "images\${id}.txt"
+
+}
 
 Invoke-Expression "msp430flasher.exe -n msp430fr5949 -m SBW2 -w images\${id}.txt -v"
