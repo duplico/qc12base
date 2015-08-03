@@ -499,11 +499,12 @@ if (__name__ == '__main__'):
     
     uber_dirs = ["uber_astronaut", "uber_bender", "uber_black_mage", "uber_blackhat", "uber_demon", "uber_human", "uber_minecraft", "uber_minion", "uber_shark", "uber_stig"]
     human_dirs = ["alien", "bear", "human", "lizard", "octopus", "robot"]
+    human_computed_ids = [19,27,28,30,31,32,33,52,53,54,56,60,61,62,72,75,76,77,78,80,81,82,85,86,87,90,92,99,103,104,106,111,112,114,116,117,120,122,124,127,130,133,136,137,138,141,143,145,146,149,150,151,152,154,157,158,163,164,169,180,185,187,188,194,195,196,197,198,199,200,205,208,209,211,217,220,228,229,230,231]
     
     if 'id' in args:
         if (args.id >= 15):
             l = list(itertools.product(human_dirs, repeat=3))
-            head, body, legs = l[(args.id-15) % len(l)]
+            head, body, legs = l[(human_computed_ids[(args.id-15) % len(human_computed_ids)]-15) % len(l)]
         else:
             head = body = legs = uber_dirs[args.id]
        
