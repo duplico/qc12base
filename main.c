@@ -297,7 +297,11 @@ void achievement_get(uint8_t achievement_id, uint8_t animate) {
     if (!(my_conf.achievements[frame] & bit) || achievement_id == ACH_SEXY) {
         // New achievement. woot.
         my_conf.achievements[frame] |= bit;
-        my_conf.title_index = achievement_id;
+        if (achievement_id == ACH_FISH || achievement_id == ACH_KICKOFF || achievement_id == ACH_MIXER) {
+
+        } else {
+            my_conf.title_index = achievement_id;
+        }
         if (animate && TLC_IS_A_GO) { // If we've nothing better to do with the lights,
             tlc_start_anim(&flag_rainbow, 0, 2*GLOBAL_TLC_SPEED_SCALE, 0, 1);
         }
@@ -345,6 +349,12 @@ inline void set_badge_seen(uint8_t id) {
             if (id != my_conf.badge_id) {
                 s_new_badge_seen = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
                 mood_adjust_and_write_crc(MOOD_NEW_SEEN);
+
+                if (id >= 15 && my_conf.badge_id >= 15) {
+                    if ((id-15)%80 == (my_conf.badge_id-15)%80) {
+                        achievement_get(ACH_TWIN, 1);
+                    }
+                }
             }
         }
         my_conf_write_crc();
@@ -416,6 +426,12 @@ void set_badge_friend(uint8_t id) {
             if (id != my_conf.badge_id) {
                 s_new_friend = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
                 mood_adjust_and_write_crc(MOOD_NEW_FRIEND);
+
+                if (id >= 15 && my_conf.badge_id >= 15) {
+                    if ((id-15)%80 == (my_conf.badge_id-15)%80) {
+                        achievement_get(ACH_TWINSY, 1);
+                    }
+                }
             }
         }
         my_conf_write_crc();
@@ -800,7 +816,7 @@ void handle_infrastructure_services() {
             else if (in_payload.base_id == BASE_SUITE) { // suite
                 at_base = RECEIVE_WINDOW;
                 at_suite_base = 1;
-            } else { // other bases
+            } else if (in_payload.base_id < BASES_IN_SYSTEM) { // other bases
                 at_base = RECEIVE_WINDOW;
                 set_base_seen(in_payload.base_id - 2);
             }
@@ -1461,7 +1477,7 @@ void handle_mode_name() {
         strcpy(out_payload.handle, name);
     }
 
-    achievement_get(0, 1);
+    achievement_get(ACH_BABY, 1);
 
     op_mode = OP_MODE_IDLE;
     suppress_softkey = 1; // And don't register the button release
@@ -2111,6 +2127,7 @@ int main(void)
     }
 
     WDT_A_initWatchdogTimer(WDT_A_BASE, WDT_A_CLOCKSOURCE_ACLK, WDT_A_CLOCKDIVIDER_32K);
+//    WDTCTL = WDTPW + WDTCNTCL + WDTHOLD + WDT_A_CLOCKSOURCE_ACLK, WDT_A_CLOCKDIVIDER_32K;
     WDT_A_start(WDT_A_BASE);
 
     while (1) {
