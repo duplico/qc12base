@@ -618,7 +618,6 @@ void radio_send_flag(uint8_t flag) {
     out_payload.to_addr = RFM_BROADCAST;
     out_payload.play_id = 0;
     radio_send_sync();
-    radio_send_sync();
 }
 
 void radio_send_play(uint8_t index) {
@@ -787,7 +786,7 @@ void handle_infrastructure_services() {
     // Radio RX tasks:
 
     if (f_rfm_rx_done) {
-        radio_recv();
+        radio_recv(); // If the CRC is bad, this will unset the flag.
     }
 
     // Got a probably valid message:

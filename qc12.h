@@ -34,8 +34,8 @@
 #define MOOD_TICK_AMOUNT_UP 10
 #define BEFRIEND_TIMEOUT_SECONDS 3
 #define BEFRIEND_BCN_AGE_LOOPS 30
-#define BEFRIEND_RESEND_TRIES 5
-#define BEFRIEND_LOOPS_TO_RESEND 15
+#define BEFRIEND_RESEND_TRIES 4
+#define BEFRIEND_LOOPS_TO_RESEND 16
 #define GLOBAL_TLC_SPEED_SCALE 2
 
 #define CHEAT_TITLE "TITULAR"
@@ -207,6 +207,7 @@ typedef struct {
     uint8_t flag_id;
     uint8_t play_id;
     char handle[NAME_MAX_LEN+1];
+    uint16_t crc;
 } qc12payload;
 
 extern qc12payload in_payload, out_payload;
