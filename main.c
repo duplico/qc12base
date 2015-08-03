@@ -304,7 +304,7 @@ void achievement_get(uint8_t achievement_id, uint8_t animate) {
     if (!(my_conf.achievements[frame] & bit) || achievement_id == ACH_SEXY) {
         // New achievement. woot.
         my_conf.achievements[frame] |= bit;
-        if (achievement_id == ACH_FISH || achievement_id == ACH_KICKOFF || achievement_id == ACH_MIXER) {
+        if (achievement_id == ACH_FISH || achievement_id == ACH_KICKOFF || achievement_id == ACH_MIXER || (achievement_id == ACH_NEWBIE && my_conf.title_index != ACH_BABY)) {
 
         } else {
             my_conf.title_index = achievement_id;
@@ -327,7 +327,8 @@ inline void set_badge_seen(uint8_t id) {
 
     if (!(BADGE_SEEN_BIT & badges_seen[id])) {
         badges_seen[id] |= BADGE_SEEN_BIT;
-        my_conf.seen_count++;
+        if (my_conf.seen_count < BADGES_IN_SYSTEM)
+            my_conf.seen_count++;
 
         if (my_conf.seen_count >= 120) {
             achievement_get(ACH_CHIEF, 1);
@@ -340,7 +341,8 @@ inline void set_badge_seen(uint8_t id) {
         }
 
         if (id < UBERS_IN_SYSTEM) {
-            my_conf.uber_seen_count++;
+            if (my_conf.seen_count < UBERS_IN_SYSTEM)
+                my_conf.uber_seen_count++;
             // flag an animation
             if (id != my_conf.badge_id) {
                 s_new_uber_seen = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
@@ -405,7 +407,8 @@ void set_badge_friend(uint8_t id) {
 
     if (!(BADGE_FRIEND_BIT & badges_seen[id])) {
         badges_seen[id] |= BADGE_FRIEND_BIT;
-        my_conf.friend_count++;
+        if (my_conf.friend_count < BADGES_IN_SYSTEM)
+            my_conf.friend_count++;
 
         if (my_conf.friend_count >= 50) {
             achievement_get(ACH_STAR, 1);
@@ -416,7 +419,8 @@ void set_badge_friend(uint8_t id) {
         }
 
         if (id < UBERS_IN_SYSTEM) {
-            my_conf.uber_friend_count++;
+            if (my_conf.uber_friend_count < UBERS_IN_SYSTEM)
+                my_conf.uber_friend_count++;
             // flag an animation
             if (id != my_conf.badge_id) {
                 s_new_uber_friend = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
