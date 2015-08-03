@@ -270,7 +270,7 @@ void mood_adjust_and_write_crc(int8_t change) {
         }
     }
 
-    if (mood >= MOOD_THRESH_SAD) {
+    if (my_conf.mood >= MOOD_THRESH_SAD) {
         my_conf.sadtime = 0;
     }
 
@@ -861,6 +861,12 @@ void handle_infrastructure_services() {
                     if (play_mode) {
                         idle_mode_softkey_dis = 1;
                         oled_draw_pane_and_flush(idle_mode_softkey_sel);
+                        my_conf.play_margin--;
+                        my_conf_write_crc();
+                        if (my_conf.play_margin < -20) {
+                            achievement_get(ACH_PUNKD, 1);
+                            my_conf.play_margin = 0;
+                        }
                         if (TLC_IS_A_GO) {
                             tlc_start_anim(&flag_pink, 0, 5*GLOBAL_TLC_SPEED_SCALE, 1, 0); // POW PINK!
                         }
@@ -1576,10 +1582,16 @@ void handle_mode_idle() {
                     break;
                 case SK_SEL_PLAY:
                     if (neighbor_count && rand() % 3) {
-                        // If I see other people, 50/50 chance of group play.
+                        // If I see other people, 2-in-3 chance of group play.
                         s_send_play = 1;
                         play_mode = PLAY_MODE_CAUSE;
                         tlc_start_anim(&flag_pink, 0, 5*GLOBAL_TLC_SPEED_SCALE, 1, 0); // POW PINK!
+                        my_conf.play_margin++;
+                        my_conf_write_crc();
+                        if (my_conf.play_margin > 20) {
+                            achievement_get(ACH_TEASE, 1);
+                            my_conf.play_margin = 0;
+                        }
                     } else {
                         play_mode = PLAY_MODE_CAUSE_ALONE;
                         tlc_start_anim(&flag_yellow, 0, 5*GLOBAL_TLC_SPEED_SCALE, 1, 0); // BRRP YELLOW!
