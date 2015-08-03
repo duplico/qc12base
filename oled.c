@@ -190,7 +190,7 @@ void oled_anim_disp_frame(const qc12_anim_t *animation_data, uint8_t frame_no) {
     GrImageDraw(&g_sContext, &legs[animation_data->legs_indices[frame_no]], char_pos_x, legs_clip_offset + animation_data->legs_tops[frame_no] + SPRITE_Y - char_pos_y);
     GrImageDraw(&g_sContext, &bodies[animation_data->bodies_indices[frame_no]], char_pos_x, animation_data->body_tops[frame_no] + SPRITE_Y - char_pos_y);
     GrImageDraw(&g_sContext, &heads[animation_data->heads_indices[frame_no]], char_pos_x, animation_data->head_tops[frame_no] + SPRITE_Y - char_pos_y);
-    if (my_conf.adult || my_conf.time_to_hatch)
+    if (my_conf.adult && !my_conf.time_to_hatch)
         draw_overhead();
     oled_draw_pane_and_flush(idle_mode_softkey_sel); // This flushes.
 }
