@@ -2140,7 +2140,7 @@ int main(void)
 {
     init();
     intro();
-    delay(1000);
+    delay(8500);
     post();
 
     GrClearDisplay(&g_sContext);
