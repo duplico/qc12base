@@ -1,3 +1,5 @@
+#include <driverlib/MSP430FR5xx_6xx/wdt_a.h>
+
 // System includes:
 #include <stdint.h>
 #include <grlib.h>
@@ -1029,9 +1031,10 @@ void handle_infrastructure_services() {
         if (my_conf.waketime > 1440) { // 24 hours
             achievement_get(ACH_TIRED, 1);
         }
-        if (my_conf.uptime) { // Might be OK to let this roll over, but we won't.
-            my_conf.uptime++;
-        }
+
+        // NB: overflows every 8166.13 years:
+        my_conf.uptime++;
+
         if (am_puppy && !(my_conf.uptime % 60)) {
             // Send it a few times:
             s_send_puppy = 4;
