@@ -1447,6 +1447,12 @@ void handle_mode_name() {
             my_conf.adult = 0;
             my_conf_write_crc();
             check_conf();
+        } else if (!strcmp(name, CHEAT_ADULT)) {
+            // Time to grow up!
+            my_conf.time_to_hatch = 1;
+            my_conf_write_crc();
+            softkey_en |= SK_BIT_HATCH;
+            idle_mode_softkey_sel = SK_SEL_HATCH;
         } else if (!strcmp(name, CHEAT_INVERT)) {
             cheat_success = 1;
             qc12_oledInit(1);
