@@ -1087,54 +1087,6 @@ void handle_infrastructure_services() {
     }
 }
 
-void handle_led_actions() {
-    if (f_time_loop) {
-
-    }
-
-    if (s_new_checkin && TLC_IS_A_GO) {
-        s_new_checkin = 0;
-        tlc_start_anim(&flag_rainbow, 0, 5*GLOBAL_TLC_SPEED_SCALE, 1, 4);
-    }
-
-    if (s_befriend_failed) {
-        s_befriend_failed = 0;
-        LED_PULSE(flag_red);
-    }
-
-    if (s_befriend_success & SIGNAL_BIT_TLC) {
-        s_befriend_success &= ~SIGNAL_BIT_TLC;
-        if (s_new_uber_friend | SIGNAL_BIT_TLC ||( s_new_friend | SIGNAL_BIT_TLC)) {
-            tlc_start_anim(&flag_rainbow, 0, 3, 1, 4);
-            s_new_uber_friend &= ~SIGNAL_BIT_TLC;
-            s_new_friend &= ~SIGNAL_BIT_TLC;
-        } else {
-            LED_PULSE(flag_green);
-        }
-    }
-
-    if ((s_new_uber_seen & SIGNAL_BIT_TLC || s_new_badge_seen & SIGNAL_BIT_TLC) && TLC_IS_A_GO) {
-        // Big rainbow animation.
-        tlc_start_anim(&flag_rainbow, 0, 4*GLOBAL_TLC_SPEED_SCALE, 1, 4);
-        s_new_badge_seen &= ~SIGNAL_BIT_TLC;
-        s_new_uber_seen &= ~SIGNAL_BIT_TLC;
-    }
-
-    if (f_tlc_anim_done) {
-        f_tlc_anim_done = 0;
-        if (s_flag_wave) {
-            tlc_start_anim(flags[my_conf.flag_id], 0, 3*GLOBAL_TLC_SPEED_SCALE, 0, 3);
-            s_flag_wave = 0;
-        } else if (befriend_mode) {
-            START_BEFRIEND_TLC_ANIM;
-        } else if (!my_conf.adult && my_conf.time_to_hatch){
-            tlc_start_anim(&flag_rainbow, 0, 50, 1, 1);
-        } else {
-            tlc_display_ambient();
-        }
-    }
-}
-
 void handle_character_actions() {
     if (f_time_loop) {
         oled_timestep();
