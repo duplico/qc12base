@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <grlib.h>
 #include <stdio.h>
+#include <leds.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -16,7 +17,6 @@
 #include <img.h>
 #include <qc12.h>
 #include <radio.h>
-#include <leds.h>
 #include <oled.h>
 
 // Interrupt flags:
@@ -76,15 +76,14 @@ uint8_t befriend_candidate_age = 0;
 uint8_t play_mode = 0;
 uint8_t play_id = 0;
 
-#define START_BEFRIEND_TLC_ANIM tlc_start_anim(&flag_blue, 0, 30*GLOBAL_TLC_SPEED_SCALE, 1, 0)
-#define LED_PULSE(colorflag) tlc_start_anim(&colorflag, 0, 3*GLOBAL_TLC_SPEED_SCALE, 1, 2);
-
 #define BF_S_BEACON 1
 #define BF_S_OPEN   3
 #define BF_S_WAIT   5
 #define BF_C_OPENING 2
 #define BF_C_CLOSING 4
 #define BF_C_WAIT   6
+
+#define FLAG_COUNT 14
 
 uint8_t flag_id = 0;
 
@@ -310,7 +309,6 @@ void achievement_get(uint8_t achievement_id, uint8_t animate) {
             my_conf.title_index = achievement_id;
         }
         if (animate && TLC_IS_A_GO) { // If we've nothing better to do with the lights,
-            tlc_start_anim(&flag_rainbow, 0, 2*GLOBAL_TLC_SPEED_SCALE, 0, 1);
         }
         s_oled_needs_redrawn_idle = 1;
         mood_adjust_and_write_crc(MOOD_NEW_TITLE);
@@ -873,7 +871,6 @@ void handle_infrastructure_services() {
                             my_conf.play_margin = 0;
                         }
                         if (TLC_IS_A_GO) {
-                            tlc_start_anim(&flag_pink, 0, 5*GLOBAL_TLC_SPEED_SCALE, 1, 0); // POW PINK!
                         }
                     }
                 }
@@ -890,7 +887,6 @@ void handle_infrastructure_services() {
                 if (!flag_in_cooldown) {
                     mood_adjust_and_write_crc(MOOD_FLAG);
                     flag_id = in_payload.flag_id & 0b01111111;
-                    tlc_start_anim(flags[in_payload.flag_id & 0b01111111], 0, 3*GLOBAL_TLC_SPEED_SCALE, 0, 0);
                     s_flag_wave = 1;
                     s_flag_send = 2;
                 } // Otherwise, ignore it.
@@ -939,7 +935,6 @@ void handle_infrastructure_services() {
     if (f_new_second) {
         if (f_radio_fault) {
             f_radio_fault = 0;
-            LED_PULSE(flag_red);
             init_radio();
         }
 
@@ -1052,7 +1047,6 @@ void handle_infrastructure_services() {
             my_conf_write_crc();
             softkey_en |= SK_BIT_HATCH;
             idle_mode_softkey_sel = SK_SEL_HATCH;
-            tlc_start_anim(&flag_rainbow, 0, 50, 1, 1);
         }
 
 
@@ -1090,7 +1084,6 @@ void handle_infrastructure_services() {
 void handle_character_actions() {
     if (f_time_loop) {
         oled_timestep();
-
     }
 
     if (f_new_second) {
@@ -1260,7 +1253,6 @@ void handle_mode_name() {
 
     while (1) {
         handle_infrastructure_services();
-        handle_led_actions();
 
         if (f_new_second) {
             f_new_second = 0;
@@ -1341,7 +1333,6 @@ void handle_mode_name() {
                 bl_down_loops++;
             } else if (my_conf.handle[0] && !cheat_mode && bl_down_loops) {
                 bl_down_loops = 0;
-                tlc_start_anim(&flag_ally, 2, 2*GLOBAL_TLC_SPEED_SCALE, 1, 4);
                 GrClearDisplay(&g_sContext);
                 GrContextFontSet(&g_sContext, &SYS_FONT);
                 oled_print(0, 5, "Enter a cheat code, you wascally wabbit.", 1, 0);
@@ -1437,7 +1428,6 @@ void handle_mode_name() {
         if (cheat_success) {
             cheat_success = 0;
             cheat_fail_cnt = 0;
-            LED_PULSE(flag_green);
             achievement_get(ACH_CHEATER, 1);
             if (need_puppy) {
                 am_puppy = 1;
@@ -1446,7 +1436,6 @@ void handle_mode_name() {
             }
         }
         else {
-            LED_PULSE(flag_red);
             cheat_fail_cnt++;
             if (cheat_fail_cnt == 5) {
                 achievement_get(ACH_TOWEL, 1);
@@ -1503,7 +1492,6 @@ void handle_mode_idle() {
 
     while (1) {
         handle_infrastructure_services();
-        handle_led_actions();
         handle_character_actions();
 
         if (f_new_second) {
@@ -1535,92 +1523,11 @@ void handle_mode_idle() {
             if (f_bs == BUTTON_RELEASE) {
                 // Select button
                 switch (idle_mode_softkey_sel) {
-                case SK_SEL_ASL:
-                    op_mode = OP_MODE_ASL;
-                    break;
                 case SK_SEL_SETFLAG:
                     op_mode = OP_MODE_SETFLAG;
                     break;
                 case SK_SEL_NAME:
                     op_mode = OP_MODE_NAME;
-                    break;
-                case SK_SEL_PLAY:
-                    if (neighbor_count && rand() % 3) {
-                        // If I see other people, 2-in-3 chance of group play.
-                        s_send_play = 1;
-                        play_mode = PLAY_MODE_CAUSE;
-                        tlc_start_anim(&flag_pink, 0, 5*GLOBAL_TLC_SPEED_SCALE, 1, 0); // POW PINK!
-                        my_conf.play_margin++;
-                        my_conf_write_crc();
-                        if (my_conf.play_margin > 20) {
-                            achievement_get(ACH_TEASE, 1);
-                            my_conf.play_margin = 0;
-                        }
-                    } else {
-                        play_mode = PLAY_MODE_CAUSE_ALONE;
-                        tlc_start_anim(&flag_yellow, 0, 5*GLOBAL_TLC_SPEED_SCALE, 1, 0); // BRRP YELLOW!
-                    }
-                    if (my_conf.adult) {
-                        play_id = rand() % play_anim_count;
-                        oled_play_animation(play_cause[play_id], 0);
-                    } else {
-                        play_id = play_anim_count;
-                        oled_play_animation(&infant_play, 3);
-                    }
-                    idle_mode_softkey_dis = 1;
-                    oled_draw_pane_and_flush(idle_mode_softkey_sel);
-                    mood_adjust_and_write_crc(MOOD_PLAY_SEND);
-                    break;
-                case SK_SEL_FLAG:
-                    if (!my_conf.seen_flags) {
-                        my_conf.seen_flags = 1;
-                        my_conf_write_crc();
-                    }
-                    tlc_start_anim(flags[my_conf.flag_id], 0, 3*GLOBAL_TLC_SPEED_SCALE, 0, 5);
-                    if (my_conf.flag_unlocks != 0xFF) {
-                        my_conf.flag_cooldown = FLAG_OUT_COOLDOWN_MINUTES;
-                        my_conf_write_crc();
-                    }
-                    flag_id = my_conf.flag_id;
-                    s_flag_send = FLAG_SEND_TRIES;
-                    idle_mode_softkey_sel = 0;
-                    s_new_pane = 1;
-                    break;
-                case SK_SEL_HATCH:
-                    // Grow up!
-                    tlc_start_anim(&flag_ally, 2, 10, 1, 15);
-                    oled_set_overhead_off();
-                    achievement_get(ACH_NEWBIE, 0);
-                    oled_play_animation(&infant_grow, 15);
-                    my_conf.adult = 1;
-                    idle_mode_softkey_dis = 1;
-                    softkey_en &= ~SK_BIT_HATCH;
-                    softkey_en |= SK_BIT_SLEEP | SK_BIT_FRIEND;
-                    idle_mode_softkey_sel = SK_SEL_PLAY;
-                    my_conf_write_crc();
-                    break;
-                case SK_SEL_FRIEND:
-                    if (!my_conf.seen_befriend) {
-                        my_conf.seen_befriend = 1;
-                        my_conf_write_crc();
-                    }
-                    idle_mode_softkey_dis = 1;
-                    oled_draw_pane_and_flush(idle_mode_softkey_sel);
-                    befriend_mode_loops_to_tick = BEFRIEND_LOOPS_TO_RESEND;
-                    befriend_mode_secs = BEFRIEND_TIMEOUT_SECONDS;
-                    befriend_mode_ticks = BEFRIEND_RESEND_TRIES;
-
-                    START_BEFRIEND_TLC_ANIM;
-
-                    if (befriend_candidate_age) { // We have a valid candidate:
-                        // This will be from a beacon, so we'll be the client:
-                        befriend_mode = 2;
-                        befriend_proto_step(0, 0, BADGES_IN_SYSTEM);
-                    } else { // We haven't seen any beacons,
-                        // so we'll be the server.
-                        befriend_mode = 1;
-                        befriend_proto_step(0, 0, BADGES_IN_SYSTEM);
-                    }
                     break;
                 case SK_SEL_SLEEP:
                     if (!my_conf.seen_sleep) {
@@ -1652,260 +1559,6 @@ void handle_mode_idle() {
 
     // Cleanup:
     f_bs = 0;
-}
-
-void asl_draw_page(uint8_t page) {
-    static uint8_t achievement_id;
-    char buf[16] = "";
-    tRectangle friends_rect = {5, 50, 59, 60};
-    tRectangle uber_rect = {5, 93, 59, 103};
-    switch (page) {
-    case 0:
-        GrContextFontSet(&g_sContext, &SYS_FONT);
-        GrStringDrawCentered(&g_sContext, "I've seen:", -1, 32, 8, 0);
-
-        GrStringDraw(&g_sContext, "overall", -1, 10, 23, 0);
-
-        // Badges seen:
-        sprintf(buf, "%d / %d", my_conf.seen_count, BADGES_IN_SYSTEM);
-        GrRectDraw(&g_sContext, &friends_rect);
-        GrStringDraw(&g_sContext, buf, -1, 10, 35, 0);
-        friends_rect.sXMax = 5 + 54 * my_conf.seen_count / BADGES_IN_SYSTEM;
-
-        // Ubers seen:
-        GrStringDraw(&g_sContext, "uber", -1, 10, 65, 0);
-        sprintf(buf, "%d / %d", my_conf.uber_seen_count, UBERS_IN_SYSTEM);
-        GrRectDraw(&g_sContext, &uber_rect);
-        GrStringDraw(&g_sContext, buf, -1, 10, 77, 0);
-        uber_rect.sXMax = 5 + 54 * my_conf.uber_seen_count / UBERS_IN_SYSTEM;
-
-        // Fill both meters:
-        friends_rect.sYMax--;
-        uber_rect.sYMax--;
-        GrRectFill(&g_sContext, &uber_rect);
-        GrRectFill(&g_sContext, &friends_rect);
-        uber_rect.sYMax++;
-        friends_rect.sYMax++;
-
-        break;
-    case 1:
-        GrContextFontSet(&g_sContext, &SYS_FONT);
-        GrStringDrawCentered(&g_sContext, "Friends:", -1, 32, 8, 0);
-
-        GrStringDraw(&g_sContext, "overall", -1, 10, 23, 0);
-
-        // Badges friended:
-        sprintf(buf, "%d / %d", my_conf.friend_count, BADGES_IN_SYSTEM);
-        GrRectDraw(&g_sContext, &friends_rect);
-        GrStringDraw(&g_sContext, buf, -1, 10, 35, 0);
-        friends_rect.sXMax = 5 + 54 * my_conf.friend_count / BADGES_IN_SYSTEM;
-
-
-        // Ubers seen:
-        GrStringDraw(&g_sContext, "uber", -1, 10, 65, 0);
-        sprintf(buf, "%d / %d", my_conf.uber_friend_count, UBERS_IN_SYSTEM);
-        GrRectDraw(&g_sContext, &uber_rect);
-        GrStringDraw(&g_sContext, buf, -1, 10, 77, 0);
-        uber_rect.sXMax = 5 + 54 * my_conf.uber_friend_count / UBERS_IN_SYSTEM;
-
-        // Fill both meters:
-        friends_rect.sYMax--;
-        uber_rect.sYMax--;
-        GrRectFill(&g_sContext, &uber_rect);
-        GrRectFill(&g_sContext, &friends_rect);
-        friends_rect.sYMax++;
-        uber_rect.sYMax++;
-        break;
-    case 2:
-        // Top friends
-        GrContextFontSet(&g_sContext, &SYS_FONT);
-
-        GrStringDraw(&g_sContext, "#1", -1, 3, 20, 0);
-        if (fav_badges_handles[0][0]) {
-            if (badges_seen[fav_badges_ids[0]] & BADGE_SEX_BIT) {
-                GrImageDraw(&g_sContext, &bed, 25, 11);
-            } else if (badges_seen[fav_badges_ids[0]] & BADGE_FRIEND_BIT) {
-                GrImageDraw(&g_sContext, &heart, 20, 15);
-            }
-        }
-
-        GrStringDraw(&g_sContext, "#2", -1, 3, 51, 0);
-        if (fav_badges_handles[1][0]) {
-            if (badges_seen[fav_badges_ids[1]] & BADGE_SEX_BIT) {
-                GrImageDraw(&g_sContext, &bed, 25, 42);
-            } else if (badges_seen[fav_badges_ids[1]] & BADGE_FRIEND_BIT) {
-                GrImageDraw(&g_sContext, &heart, 20, 46);
-            }
-        }
-
-        GrStringDraw(&g_sContext, "#3", -1, 3, 82, 0);
-        if (fav_badges_handles[2][0]) {
-            if (badges_seen[fav_badges_ids[2]] & BADGE_SEX_BIT) {
-                GrImageDraw(&g_sContext, &bed, 25, 73);
-            } else if ((badges_seen[fav_badges_ids[2]] & BADGE_FRIEND_BIT)) {
-                GrImageDraw(&g_sContext, &heart, 20, 77);
-            }
-        }
-        GrStringDrawCentered(&g_sContext, "My faves:", -1, 32, 8, 1);
-        GrStringDraw(&g_sContext, fav_badges_handles[0], -1, 3, 35, 1);
-        GrStringDraw(&g_sContext, fav_badges_handles[1], -1, 3, 66, 1);
-        GrStringDraw(&g_sContext, fav_badges_handles[2], -1, 3, 97, 1);
-
-        break;
-    case 3:
-        // I see
-        GrStringDrawCentered(&g_sContext, "I can see", -1, 32, 8, 0);
-
-        // Badges visible:
-        sprintf(buf, "%d", neighbor_count);
-        GrStringDrawCentered(&g_sContext, buf, -1, 32, 20, 0);
-        GrStringDrawCentered(&g_sContext, "qcbadges", neighbor_count == 1 ? 7 : 8, 32, 32, 0);
-
-        // Mood:
-        GrStringDrawCentered(&g_sContext, "My mood:", -1, 32, 68, 0);
-        if (my_conf.mood > MOOD_THRESH_HAPPY) {
-            GrStringDrawCentered(&g_sContext, "Happy!", -1, 32, 83, 0);
-        } else if (my_conf.mood < MOOD_THRESH_SAD) {
-            GrStringDrawCentered(&g_sContext, "Sad!", -1, 32, 83, 0);
-        } else {
-            GrStringDrawCentered(&g_sContext, "OK.", -1, 32, 83, 0);
-        }
-        GrRectDraw(&g_sContext, &uber_rect);
-        uber_rect.sXMax = 5 + 54 * my_conf.mood / 100;
-
-        // Fill both meters:
-        uber_rect.sYMax--;
-        GrRectFill(&g_sContext, &uber_rect);
-        uber_rect.sYMax++;
-        break;
-    default:
-        // Achievement listing.
-        if (my_conf.adult && !my_conf.seen_titles) {
-            my_conf.seen_titles = 1;
-            my_conf_write_crc();
-        }
-
-        achievement_id = page-4;
-        oled_print(0,0, "Title:", 1, 0);
-        oled_print(0,11, titles[achievement_id], 1, 1);
-        GrLineDrawH(&g_sContext, 5, 58, 24);
-        if (achievement_have(achievement_id)) {
-            oled_print(0,25, "Unlocked!", 0, 1);
-            GrImageDraw(&g_sContext, &check, 16, 40);
-        } else {
-            oled_print(0,25, "LOCKED", 0, 1);
-            GrImageDraw(&g_sContext, &nocheck, 16, 40);
-        }
-        oled_print(0,62, title_descs[page-4], 0, 1);
-
-        break;
-
-    }
-
-}
-
-void handle_mode_asl() {
-    // Radio does background stuff but character actions ignored.
-    // TLC continues to animate.
-
-    static uint8_t page_num;
-    static uint8_t timeout_seconds;
-    timeout_seconds = 75;
-    page_num = 0;
-    uint8_t s_redraw = 1;
-    uint8_t asl_pages = 4;
-    if (my_conf.adult) {
-        asl_pages += NUM_ACHIEVEMENTS;
-    }
-
-    GrClearDisplay(&g_sContext);
-    GrFlush(&g_sContext);
-
-    while (1) {
-        handle_infrastructure_services();
-        handle_led_actions();
-
-        if (f_new_second) {
-            f_new_second = 0;
-
-            if (timeout_seconds) {
-                timeout_seconds--;
-            } else {
-                op_mode = OP_MODE_IDLE;
-                break;
-            }
-
-        }
-
-        if (f_time_loop) {
-            f_time_loop = 0;
-            if (f_br == BUTTON_PRESS) {
-                page_num = (page_num+1) % (asl_pages);
-                s_redraw = 1;
-            }
-            f_br = 0;
-
-            if (f_bl == BUTTON_PRESS) {
-                page_num = (page_num+(asl_pages-1)) % (asl_pages);
-                s_redraw = 1;
-            }
-            f_bl = 0;
-
-            if (f_bs == BUTTON_RELEASE) {
-                f_bs = 0;
-
-                if (my_conf.titles_unlocked && page_num >= 4 && achievement_have(page_num-4)) {
-                    // This is your new title.
-                    my_conf.title_index = page_num-4;
-                    my_conf_write_crc();
-                }
-
-                // Select button
-                op_mode = OP_MODE_IDLE;
-                break;
-            }
-            f_bs = 0;
-        }
-
-        if (s_redraw) {
-            // softkey or something changed:
-            s_redraw = 0;
-            timeout_seconds = 75;
-
-            GrClearDisplay(&g_sContext);
-            GrContextFontSet(&g_sContext, &SOFTKEY_LABEL_FONT);
-
-            if (my_conf.titles_unlocked && page_num >= 4 && achievement_have(page_num-4)) {
-                // This is your new title.
-                GrStringDrawCentered(&g_sContext, "Pick", -1, 32, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
-            } else {
-                GrStringDrawCentered(&g_sContext, "Close", -1, 32, 127 - SOFTKEY_FONT_HEIGHT/2, 1);
-            }
-
-            if (my_conf.adult && !my_conf.seen_titles) {
-                GrImageDraw(&g_sContext, &idea, 45, 109); // To mark a NEW IDEA!
-            }
-
-            // Arrows:
-            GrLineDraw(&g_sContext, 4, 112, 0, 116);
-            GrLineDraw(&g_sContext, 4, 120, 0, 116);
-            GrLineDraw(&g_sContext, 59, 112, 63, 116);
-            GrLineDraw(&g_sContext, 59, 120, 63, 116);
-            GrLineDrawH(&g_sContext, 0, 64, 116);
-
-            asl_draw_page(page_num);
-
-            GrFlush(&g_sContext);
-        }
-
-        try_to_sleep();
-
-    }
-    f_bs = 0;
-
-    // Cleanup:
-    // (clear all the character stuff)
-
 }
 
 void handle_mode_sleep() {
@@ -2043,8 +1696,6 @@ void handle_mode_setflag() {
 
     while (1) {
         handle_infrastructure_services();
-        handle_led_actions();
-
 
         if (f_new_second) {
             f_new_second = 0;
@@ -2070,7 +1721,25 @@ void handle_mode_setflag() {
                 my_conf.flag_id = softkey_sel;
                 my_conf_write_crc();
                 op_mode = OP_MODE_IDLE;
-                tlc_start_anim(flags[softkey_sel], 0, 1*GLOBAL_TLC_SPEED_SCALE, 0, 0);
+                /*
+                 *
+                    if (!my_conf.seen_flags) {
+                        my_conf.seen_flags = 1;
+                        my_conf_write_crc();
+                    }
+                    if (my_conf.flag_unlocks != 0xFF) {
+                        my_conf.flag_cooldown = FLAG_OUT_COOLDOWN_MINUTES;
+                        my_conf_write_crc();
+                    }
+                    flag_id = my_conf.flag_id;
+                    s_flag_send = FLAG_SEND_TRIES;
+                    idle_mode_softkey_sel = 0;
+                    s_new_pane = 1;
+                    break;
+                 */
+
+
+
                 break;
             }
             f_bs = 0;
@@ -2116,7 +1785,6 @@ int main(void)
     }
 
     WDT_A_initWatchdogTimer(WDT_A_BASE, WDT_A_CLOCKSOURCE_ACLK, WDT_A_CLOCKDIVIDER_32K);
-//    WDTCTL = WDTPW + WDTCNTCL + WDTHOLD + WDT_A_CLOCKSOURCE_ACLK, WDT_A_CLOCKDIVIDER_32K;
     WDT_A_start(WDT_A_BASE);
 
     while (1) {
@@ -2126,9 +1794,6 @@ int main(void)
             break;
         case OP_MODE_NAME:
             handle_mode_name(); // Learn the badge's name (if we don't have it already)
-            break;
-        case OP_MODE_ASL:
-            handle_mode_asl();
             break;
         case OP_MODE_SETFLAG:
             handle_mode_setflag();
