@@ -15,9 +15,6 @@
 
 // CONFIGURATION SETTINGS ///////////////////////////////////////////
 
-// From our hacked-together build script:
-#include "badgeconf.h"
-
 // System configuration
 #define BADGES_IN_SYSTEM 174
 #define BASES_IN_SYSTEM 5
@@ -37,20 +34,7 @@
 #define BEFRIEND_RESEND_TRIES 6
 #define BEFRIEND_LOOPS_TO_RESEND 18
 #define GLOBAL_TLC_SPEED_SCALE 2
-
-#define CHEAT_TITLE "TITULAR"
-#define CHEAT_FLAG "FFS"
-#define CHEAT_FLAG_NC "BANNER"
-#define CHEAT_PUPPY "WOOF"
-#define CHEAT_PUPPYOFF "MEOW"
-#define CHEAT_INVERT "BANDW"
-#define CHEAT_UNINVERT "WANDB"
-#define CHEAT_INFANT "BABY"
-#define CHEAT_ADULT "MOMMA"
-#define CHEAT_HAPPY "SMILE"
-#define CHEAT_SAD "FROWN"
-#define CHEAT_MIRROR "R2L"
-#define CHEAT_UNMIRROR "L2R"
+#define START_WITH_FLAGS 0
 
 #define RECEIVE_WINDOW 6
 #define RECEIVE_WINDOW_LENGTH_SECONDS 10
@@ -137,26 +121,31 @@
 #define OP_MODE_MAX OP_MODE_SETFLAG
 
 // Softkey options:
-#define SK_SEL_PLAY 0
-#define SK_SEL_ASL 1
-#define SK_SEL_FRIEND 2
-#define SK_SEL_FLAG 3
-#define SK_SEL_SETFLAG 4
-#define SK_SEL_HATCH 5
-#define SK_SEL_NAME 6
-#define SK_SEL_SLEEP 7
-#define SK_SEL_MAX 7
+#define SK_SEL_UNLOCK 0
+#define SK_SEL_LOCK 1
+#define SK_SEL_BOFF 2
+#define SK_SEL_BSUITE 3
+#define SK_SEL_BPOOL 4
+#define SK_SEL_BKICKOFF 5
+#define SK_SEL_BMIXER 6
+#define SK_SEL_BTALK 7
+#define SK_SEL_FLAG 8
+#define SK_SEL_SETFLAG 9
+#define SK_SEL_MAX 10
 
-#define SK_BIT_PLAY     BIT0
-#define SK_BIT_ASL      BIT1
-#define SK_BIT_FRIEND   BIT2
-#define SK_BIT_FLAG     BIT3
-#define SK_BIT_SETFLAG  BIT4
-#define SK_BIT_HATCH    BIT5
-#define SK_BIT_NAME     BIT6
-#define SK_BIT_SLEEP    BIT7
+#define SK_BIT_UNLOCK BIT0
+#define SK_BIT_LOCK BIT1
+#define SK_BIT_BOFF BIT2
+#define SK_BIT_BSUITE BIT3
+#define SK_BIT_BPOOL BIT4
+#define SK_BIT_BKICKOFF BIT5
+#define SK_BIT_BMIXER BIT6
+#define SK_BIT_BTALK BIT7
+#define SK_BIT_FLAG BIT8
+#define SK_BIT_SETFLAG BIT9
+#define SK_BIT_MAX BITA
 
-extern const char sk_labels[][10];
+extern const char sk_labels[][12];
 extern uint16_t softkey_en;
 
 // Badge count tracking:
@@ -214,36 +203,16 @@ typedef struct {
 extern qc12payload in_payload, out_payload;
 
 extern const char titles[][8];
+extern const char base_labels[][12];
+
 
 typedef struct {
     uint8_t badge_id;
-    uint8_t mood;
-    uint8_t title_index;
     uint8_t flag_id;
-    uint8_t flag_cooldown;
-    uint8_t adult;
-    uint8_t time_to_hatch;
-    uint8_t seen_count;
-    uint8_t uber_seen_count;
-    uint8_t friend_count;
-    uint8_t uber_friend_count;
-    uint16_t bases_seen;
-    uint8_t flag_unlocks;
-    uint8_t titles_unlocked;
     uint_fast32_t uptime;
-    uint16_t waketime;
-    uint16_t sleeptime;
-    uint16_t sadtime;
-    uint8_t suite_minutes;
-    uint8_t seen_flags;
-    uint8_t seen_titles;
-    uint8_t seen_sleep;
-    uint8_t seen_befriend;
-    int8_t play_margin;
-    uint8_t achievements[CEILING_DIV(NUM_ACHIEVEMENTS, 8)];
-    uint8_t top_seen[FAVORITE_COUNT];
-    char top_seen_handles[FAVORITE_COUNT][NAME_MAX_LEN+1];
-    char handle[NAME_MAX_LEN+1];
+    uint8_t flag_unlocks;
+    uint8_t locked;
+    uint8_t base_id;
     uint16_t crc16;
 } qc12conf;
 

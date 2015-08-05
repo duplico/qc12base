@@ -50,8 +50,6 @@ void init_oled() {
 void oled_draw_pane_and_flush(uint8_t softkey_sel) {
     static tRectangle erase_rect_top = {0, 0, 64, 2*NAME_FONT_HEIGHT+1};
     static tRectangle erase_rect_btm = {0, SPRITE_Y + 64, 64, 127};
-    static uint8_t need_light_bulb;
-    need_light_bulb = 0;
 
     GrContextForegroundSet(&g_sContext, ClrBlack);
     GrRectFill(&g_sContext, &erase_rect_btm);
@@ -59,53 +57,14 @@ void oled_draw_pane_and_flush(uint8_t softkey_sel) {
     GrContextForegroundSet(&g_sContext, ClrWhite);
 
     GrContextFontSet(&g_sContext, &NAME_FONT);
-    GrStringDraw(&g_sContext, my_conf.handle, -1, 0, 0, 0);
-    uint8_t title_width = GrStringWidthGet(&g_sContext, titles[my_conf.title_index], -1);
-    uint8_t the_width = GrStringWidthGet(&g_sContext, "the", -1);
-    GrStringDraw(&g_sContext, "the", -1, 65 - title_width - the_width - 3, NAME_FONT_HEIGHT, 0);
-    GrStringDraw(&g_sContext, titles[my_conf.title_index], -1, 65 - title_width, NAME_FONT_HEIGHT, 0);
-    GrLineDrawH(&g_sContext, 0, 64, 2*NAME_FONT_HEIGHT+1);
-    GrContextFontSet(&g_sContext, &SOFTKEY_LABEL_FONT);
-    if (!idle_mode_softkey_dis) {
-        if (softkey_sel == SK_SEL_SLEEP) {
-            if (!my_conf.seen_sleep && (softkey_sel == SK_SEL_SLEEP)) {
-                need_light_bulb = 1;
-            } else if (my_conf.seen_sleep == 1) { // 1: seen sleep but not "sleep".
-                for (uint8_t i=0; i<FAVORITE_COUNT; i++) {
-                    if (neighbor_badges[fav_badges_ids[i]]) {
-                        // favorite nearby.
-                        if ((BADGE_FRIEND_BIT & badges_seen[fav_badges_ids[i]]) && !(BADGE_SEX_BIT & badges_seen[fav_badges_ids[i]])) {
-                            // Favorite friend nearby:
-                            need_light_bulb = 1;
-                            break;
-                        }
-                    }
-                }
-            }
-        } else if (softkey_sel == SK_SEL_HATCH) {
-            need_light_bulb = 1;
-        } else if (!my_conf.seen_flags && (softkey_sel == SK_SEL_FLAG || softkey_sel == SK_SEL_SETFLAG)) {
-            need_light_bulb = 1;
-        } else if (my_conf.adult && !my_conf.seen_titles && (softkey_sel == SK_SEL_ASL)) {
-            need_light_bulb = 1;
-        } else if (!my_conf.seen_befriend && (softkey_sel == SK_SEL_FRIEND)) {
-            need_light_bulb = 1;
-        }
-
-        if (need_light_bulb) {
-            GrImageDraw(&g_sContext, &idea, -5, 105); // To mark a NEW IDEA!
-//            GrStringDraw(&g_sContext, sk_labels[softkey_sel], -2, 64 - sk_width,  SPRITE_Y + 64, 0);
-            GrStringDrawCentered(&g_sContext, sk_labels[softkey_sel], -2, 39,  SPRITE_Y + 64 + SOFTKEY_FONT_HEIGHT/2, 0);
-        } else {
-            GrStringDrawCentered(&g_sContext, sk_labels[softkey_sel], -2, 32,  SPRITE_Y + 64 + SOFTKEY_FONT_HEIGHT/2, 0);
-        }
-    } else if (befriend_mode){
-        GrStringDrawCentered(&g_sContext, "LOOKING", -2, 32,  SPRITE_Y + 64 + SOFTKEY_FONT_HEIGHT/2, 0);
-    } else if (play_mode) {
-        GrStringDrawCentered(&g_sContext, "PLAYING!", -2, 32,  SPRITE_Y + 64 + SOFTKEY_FONT_HEIGHT/2, 0);
-    } else if (my_conf.time_to_hatch) {
-        GrStringDrawCentered(&g_sContext, "GROWING!", -2, 32,  SPRITE_Y + 64 + SOFTKEY_FONT_HEIGHT/2, 0);
+    GrStringDrawCentered(&g_sContext, "qc12base", -1, 32, 6, 0);
+    if (my_conf.base_id != NOT_A_BASE) {
+        GrStringDrawCentered(&g_sContext, base_labels[my_conf.base_id-1], -1, 32, 16, 0);
     }
+    GrImageDraw(&g_sContext, &fingerprint_1BPP_UNCOMP, 0, 21);
+
+    GrContextFontSet(&g_sContext, &SOFTKEY_LABEL_FONT);
+    GrStringDrawCentered(&g_sContext, sk_labels[softkey_sel], -2, 32,  SPRITE_Y + 64 + SOFTKEY_FONT_HEIGHT/2, 0);
     GrLineDrawH(&g_sContext, 0, 64, SPRITE_Y + 64);
     GrFlush(&g_sContext);
 }
@@ -190,39 +149,7 @@ void oled_anim_disp_frame(const qc12_anim_t *animation_data, uint8_t frame_no) {
     GrImageDraw(&g_sContext, &legs[animation_data->legs_indices[frame_no]], char_pos_x, legs_clip_offset + animation_data->legs_tops[frame_no] + SPRITE_Y - char_pos_y);
     GrImageDraw(&g_sContext, &bodies[animation_data->bodies_indices[frame_no]], char_pos_x, animation_data->body_tops[frame_no] + SPRITE_Y - char_pos_y);
     GrImageDraw(&g_sContext, &heads[animation_data->heads_indices[frame_no]], char_pos_x, animation_data->head_tops[frame_no] + SPRITE_Y - char_pos_y);
-    if (my_conf.adult && !my_conf.time_to_hatch)
-        draw_overhead();
     oled_draw_pane_and_flush(idle_mode_softkey_sel); // This flushes.
-}
-
-void oled_consider_walking_back() {
-    if (char_pos_y != 0) {
-        char_pos_x = 64;
-        char_pos_y = 0;
-    }
-
-    // Determine whether we need to walk back onto the screen after anim.
-    if (!my_conf.adult) {
-        if (char_pos_x < -12) {
-            oled_play_animation(&infant_walk, (uint8_t) (-char_pos_x/4) - 1);
-        } else if (char_pos_x > 12) {
-            oled_play_animation(&infant_walk_left, (uint8_t) (char_pos_x/4) - 1);
-        }
-    } else if (my_conf.mood < MOOD_THRESH_SAD) {
-        // zombie walk back
-        if (char_pos_x < -12) {
-            oled_play_animation(&zombie, (uint8_t) (-char_pos_x/12) - 1);
-        } else if (char_pos_x > 12) {
-            oled_play_animation(&zombie_left, (uint8_t) (char_pos_x/12) - 1);
-        }
-    } else {
-        // happy walk back
-        if (char_pos_x < -16) {
-            oled_play_animation(&walking, (uint8_t) (-char_pos_x/16) - 1);
-        } else if (char_pos_x > 16) {
-            oled_play_animation(&walking_left, (uint8_t) (char_pos_x/16) - 1);
-        }
-    }
 }
 
 void oled_anim_next_frame() {
@@ -248,7 +175,6 @@ void oled_anim_next_frame() {
     if (anim_index == anim_data->len) {
         s_oled_needs_redrawn_idle = 1;
         oled_anim_state = OLED_ANIM_DONE;
-        oled_consider_walking_back();
     }
 }
 
@@ -303,46 +229,6 @@ void oled_print(uint8_t x, uint8_t y, const char str[], uint8_t opaque, uint8_t 
 }
 
 void oled_timestep() {
-    if (oled_overhead_loops && oled_overhead_type != OLED_OVERHEAD_OFF) {
-        if (oled_overhead_loops != 0xFF) {
-            oled_overhead_loops--;
-        }
-        if (!oled_overhead_loops) {
-            oled_overhead_type = OLED_OVERHEAD_OFF;
-            s_overhead_done = 1;
-            if (!oled_anim_state) {
-                s_oled_needs_redrawn_idle = 1;
-            }
-        }
-    }
-
-    if (s_overhead_done) {
-        s_overhead_done = 0;
-        if (my_conf.mood < MOOD_THRESH_SAD) { // We don't really do anything if we're moody.
-            if (rand() % 2) {
-                oled_set_overhead_image(&lightning, 10);
-            } else {
-                oled_set_overhead_image(&cloud, 100);
-            }
-        } else if (am_puppy) {
-            oled_set_overhead_image(&puppy, 100);
-        } else {
-            for (uint8_t i=0; i<FAVORITE_COUNT; i++) {
-                if (neighbor_badges[fav_badges_ids[i]]) {
-                    // favorite nearby.
-                    if ((BADGE_FRIEND_BIT & badges_seen[fav_badges_ids[i]])) {
-                        // Favorite friend nearby:
-                        oled_set_overhead_image(&heart, 100);
-                        break;
-                    } else {
-                        // Favorite non-friend nearby:
-                        oled_set_overhead_image(&empty_heart, 100);
-                    }
-                }
-            }
-        }
-    }
-
 
     if (oled_anim_state) {
         if (anim_frame_skip) {

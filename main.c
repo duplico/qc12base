@@ -100,8 +100,8 @@ void poll_buttons();
 qc12conf my_conf = {0};
 
 const qc12conf default_conf = {
-    BADGE_ID,  // id
-    50,  // mood
+    DEDICATED_BASE_ID,  // id
+    0,  // mood
 };
 
 #pragma PERSISTENT(badge_seen_ticks)
@@ -122,131 +122,38 @@ uint8_t neighbor_badges[BADGES_IN_SYSTEM] = {0};
 uint8_t at_base = 0;
 uint8_t at_suite_base = 0;
 
-// Mood:
-uint8_t mood_tick_minutes = MOOD_TICK_MINUTES;
-
-#define ACH_BABY    0
-#define ACH_NEWBIE  1
-#define ACH_NICE    2
-#define ACH_SOCIAL  3
-#define ACH_HIP     4
-#define ACH_SEXY    5
-#define ACH_FRIENDLY 6
-#define ACH_COOL    7
-#define ACH_STAR    8
-#define ACH_BADGER  9
-#define ACH_FISH    10
-#define ACH_TWIN    11
-#define ACH_TWINSY  12
-#define ACH_CHILL   13
-#define ACH_TEASE   14
-#define ACH_PUNKD   15
-#define ACH_TIRED   16
-#define ACH_SLEEPY  17
-#define ACH_SQUIRE  18
-#define ACH_ELITE   19
-#define ACH_MOODY   20
-#define ACH_MIXER   21
-#define ACH_KICKOFF 22
-#define ACH_CHIEF   23
-#define ACH_PUPPY   24
-#define ACH_HANDLER 25
-#define ACH_TOWEL   26
-#define ACH_CHEATER 27
-
-const char titles[NUM_ACHIEVEMENTS][8] = {
-        "baby",
-        "newbie",
-        "nice",
-        "social",
-        "hip",
-        "sexy",
-        "friend",
-        "cool",
-        "star",
-        "badger",
-        "fish",
-        "twin",
-        "twinsy!",
-        "chill",
-        "tease",
-        "punk'd",
-        "tired",
-        "sleepy",
-        "squire",
-        "elite",
-        "moody",
-        "queer",
-        "early",
-        "Chief",
-        "Puppy",
-        "Handler",
-        "Towel",
-        "Cheat",
-};
-
-const char title_descs[NUM_ACHIEVEMENTS][36] = {
-        "Turn it on.",
-        "You're all growed up",
-        "Meet 20 qcbadges",
-        "Meet 40 qcbadges",
-        "Meet 60 qcbadges",
-        "Sleep with your fave",
-        "Make 5 friends",
-        "Make 15 friends",
-        "Make 50 friends",
-        "qcbadge talk: 12p Fri, qcsuite",
-        "Go to QC pool party: 9p Fri Bally's",
-        "Find your twin",
-        "Befriend your twin",
-        "Hang around the suite a while",
-        "Play a lot",
-        "Be played with lot",
-        "Be awake 24 hours",
-        "Sleep over 8 hours",
-        "Meet 10 qc ubers",
-        "Befriend 10 qc ubers",
-        "Be sad for 8 hours",
-        "Go to a QC mixer: 4p daily, qcsuite",
-        "Attend QC12 Thurs kickoff",
-        "\"Popular!\"",
-        "\"Where is he?\"",
-        "\"You found him!\"",
-        "\"No, you're a towel.\"",
-        "\"?????\"",
-};
-
-
 // In the "modal" sense:
 uint8_t op_mode = OP_MODE_IDLE;
 
 uint8_t suppress_softkey = 0;
 uint16_t softkey_en = 0;
 
-const char sk_labels[SK_SEL_MAX+1][10] = {
-        "Play",
-        "ASL?",
-        "Befriend",
-        "Use flag",
+const char sk_labels[SK_SEL_MAX+1][12] = {
+        "Unlock",
+        "Lock",
+        "B: Off",
+        "B: Suite", // base ID 1, so we send sk_label index - 2
+        "B: Pool",
+        "B: Kickoff",
+        "B: Mixer",
+        "B: Talk",
+        "Flag",
         "Set flag",
-        "Grow up!",
-        "Set name",
-        "Sleep"
+};
+
+const char base_labels[][12] = { // so we send label index + 1
+        "qcsuite",
+        "pool",
+        "kickoff",
+        "mixer",
+        "badgetalk"
 };
 
 void my_conf_write_crc() {
-    if (!my_conf.adult) { // Base child softkeys:
-        softkey_en = SK_BIT_ASL | SK_BIT_NAME | SK_BIT_PLAY;
-
-        if (my_conf.time_to_hatch) {
-            softkey_en |= SK_BIT_HATCH;
-        }
-
-    } else { // Base adult softkeys:
-        softkey_en = SK_BIT_ASL | SK_BIT_NAME | SK_BIT_PLAY | SK_BIT_SLEEP | SK_BIT_FRIEND;
-        if (my_conf.flag_unlocks) {
-            softkey_en |= SK_BIT_SETFLAG | SK_BIT_FLAG;
-        }
+    if (my_conf.locked) {
+        softkey_en = BIT0;
+    } else {
+        softkey_en = 0x3FE;
     }
 
     CRC_setSeed(CRC_BASE, 0x0C12);
@@ -254,208 +161,6 @@ void my_conf_write_crc() {
         CRC_set8BitData(CRC_BASE, ((uint8_t *) &default_conf)[i]);
     }
     my_conf.crc16 = CRC_getResult(CRC_BASE);
-}
-
-void mood_adjust_and_write_crc(int8_t change) {
-    if (change < 0) {
-        if (my_conf.mood < (-change)) {
-            my_conf.mood = 0;
-        } else {
-            my_conf.mood += change;
-        }
-    } else if (change > 0) {
-        if (my_conf.mood > (100 - change)) {
-            my_conf.mood = 100;
-        } else {
-            my_conf.mood += change;
-        }
-    }
-
-    if (my_conf.mood >= MOOD_THRESH_SAD) {
-        my_conf.sadtime = 0;
-    }
-
-    my_conf_write_crc();
-
-    tlc_set_ambient(my_conf.mood);
-}
-
-uint8_t achievement_have(uint8_t achievement_id) {
-    if (achievement_id >= NUM_ACHIEVEMENTS) {
-        return 0;
-    }
-    uint8_t frame = achievement_id / 8;
-    uint8_t bit = 0x01 << (achievement_id % 8);
-    if (my_conf.achievements[frame] & bit) {
-        return 1;
-    } else {
-        return 0;
-    }
-}
-
-void achievement_get(uint8_t achievement_id, uint8_t animate) {
-    if (achievement_id >= NUM_ACHIEVEMENTS) {
-        return;
-    }
-
-    uint8_t frame = achievement_id / 8;
-    uint8_t bit = 0x01 << (achievement_id % 8);
-    if (!(my_conf.achievements[frame] & bit) || achievement_id == ACH_SEXY) {
-        // New achievement. woot.
-        my_conf.achievements[frame] |= bit;
-        if (achievement_id == ACH_FISH || achievement_id == ACH_KICKOFF || achievement_id == ACH_MIXER || (achievement_id == ACH_NEWBIE && my_conf.title_index != ACH_BABY)) {
-
-        } else {
-            my_conf.title_index = achievement_id;
-        }
-        if (animate && TLC_IS_A_GO) { // If we've nothing better to do with the lights,
-        }
-        s_oled_needs_redrawn_idle = 1;
-        mood_adjust_and_write_crc(MOOD_NEW_TITLE);
-    } else {
-        // Already got it. Boring.
-    }
-}
-
-inline void set_badge_seen(uint8_t id) {
-    if (id >= BADGES_IN_SYSTEM) {
-        __no_operation();
-        return;
-    }
-
-    if (!(BADGE_SEEN_BIT & badges_seen[id])) {
-        badges_seen[id] |= BADGE_SEEN_BIT;
-        if (my_conf.seen_count < BADGES_IN_SYSTEM)
-            my_conf.seen_count++;
-
-        if (my_conf.seen_count >= 120) {
-            achievement_get(ACH_CHIEF, 1);
-        } else if (my_conf.seen_count >= 60) {
-            achievement_get(ACH_HIP, 1);
-        } else if (my_conf.seen_count >= 40) {
-            achievement_get(ACH_SOCIAL, 1);
-        } else if (my_conf.seen_count >=20) {
-           achievement_get(ACH_NICE, 1);
-        }
-
-        if (id < UBERS_IN_SYSTEM) {
-            if (my_conf.seen_count < UBERS_IN_SYSTEM)
-                my_conf.uber_seen_count++;
-            // flag an animation
-            if (id != my_conf.badge_id) {
-                s_new_uber_seen = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
-                mood_adjust_and_write_crc(MOOD_NEW_UBER_SEEN);
-
-                // SQUIRE: seen 10 ubers, but not uber:
-                if (my_conf.uber_seen_count >= 10 && my_conf.badge_id < UBERS_IN_SYSTEM) {
-                    achievement_get(ACH_SQUIRE, 1);
-                }
-            }
-        } else {
-            // flag a lamer animation
-            if (id != my_conf.badge_id) {
-                s_new_badge_seen = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
-                mood_adjust_and_write_crc(MOOD_NEW_SEEN);
-
-                if (id >= 15 && my_conf.badge_id >= 15) {
-                    if ((id-15)%80 == (my_conf.badge_id-15)%80) {
-                        achievement_get(ACH_TWIN, 1);
-                    }
-                }
-            }
-        }
-        my_conf_write_crc();
-        // No need to write a CRC here because adjust_mood takes care of that for us.
-    }
-
-    if (oled_overhead_type == OLED_OVERHEAD_OFF) {
-        s_overhead_done = 1;
-    }
-}
-
-void set_base_seen(uint8_t base) {
-    if (base >= BASES_IN_SYSTEM) {
-        return;
-    }
-
-    uint16_t base_mask = BIT0 << base;
-
-    if (!(base_mask & my_conf.bases_seen)) {
-        s_new_checkin = 1;
-
-        if (base == BASE_KICKOFF) {
-            achievement_get(ACH_KICKOFF, 1);
-        } else if (base == BASE_POOL) {
-            achievement_get(ACH_FISH, 1);
-        } else if (base == BASE_TALK) {
-            achievement_get(ACH_BADGER, 1);
-        } else if (base == BASE_MIXER) {
-            achievement_get(ACH_MIXER, 1);
-        }
-
-        my_conf.bases_seen |= base_mask;
-        mood_adjust_and_write_crc(MOOD_EVENT_ARRIVE);
-    }
-}
-
-void set_badge_friend(uint8_t id) {
-    if (!(id < BADGES_IN_SYSTEM)) {
-        return;
-    }
-
-    if (!(BADGE_FRIEND_BIT & badges_seen[id])) {
-        badges_seen[id] |= BADGE_FRIEND_BIT;
-        if (my_conf.friend_count < BADGES_IN_SYSTEM)
-            my_conf.friend_count++;
-
-        if (my_conf.friend_count >= 50) {
-            achievement_get(ACH_STAR, 1);
-        } else if (my_conf.friend_count >= 15) {
-            achievement_get(ACH_COOL, 1);
-        } else if (my_conf.friend_count >=5) {
-           achievement_get(ACH_FRIENDLY, 1);
-        }
-
-        if (id < UBERS_IN_SYSTEM) {
-            if (my_conf.uber_friend_count < UBERS_IN_SYSTEM)
-                my_conf.uber_friend_count++;
-            // flag an animation
-            if (id != my_conf.badge_id) {
-                s_new_uber_friend = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
-                mood_adjust_and_write_crc(MOOD_NEW_UBER_FRIEND);
-            }
-
-            // ELITE: seen 10 ubers:
-            if (my_conf.uber_friend_count >= 10) {
-                achievement_get(ACH_ELITE, 1);
-            }
-
-        } else {
-            // flag a lamer animation
-            if (id != my_conf.badge_id) {
-                s_new_friend = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
-                mood_adjust_and_write_crc(MOOD_NEW_FRIEND);
-
-                if (id >= 15 && my_conf.badge_id >= 15) {
-                    if ((id-15)%80 == (my_conf.badge_id-15)%80) {
-                        achievement_get(ACH_TWINSY, 1);
-                    }
-                }
-            }
-        }
-        my_conf_write_crc();
-    } else {
-        mood_adjust_and_write_crc(MOOD_OLD_FRIEND);
-    }
-
-    if (oled_overhead_type == OLED_OVERHEAD_OFF) {
-        s_overhead_done = 1;
-    }
-
-    if (id != my_conf.badge_id) {
-        idle_mode_softkey_dis = 0;
-        oled_draw_pane_and_flush(idle_mode_softkey_sel);
-    }
 }
 
 void check_conf() {
@@ -472,64 +177,15 @@ void check_conf() {
         memset(fav_badges_handles, 0, sizeof(char) * FAVORITE_COUNT * (NAME_MAX_LEN+1));
         s_default_conf_loaded = 1;
         out_payload.handle[0] = 0;
-        set_badge_seen(my_conf.badge_id);
-        set_badge_friend(my_conf.badge_id);
+        my_conf.locked = 1;
+        my_conf.base_id = NOT_A_BASE;
+        my_conf.flag_unlocks = START_WITH_FLAGS? 0xFF: 0;
         my_conf_write_crc();
         // Suppress any flags set from these so we don't do the animation:
         s_new_uber_seen = s_new_badge_seen = s_new_uber_friend = s_new_friend = 0;
     }
 
     am_puppy = 0;
-
-    // Set our mood lights.
-    mood_adjust_and_write_crc(0);
-}
-
-void tick_badge_seen(uint8_t id, char* handle) {
-    if (!(id < BADGES_IN_SYSTEM)) {
-        return;
-    }
-    if (badge_seen_ticks[id] < UINT16_MAX) {
-        badge_seen_ticks[id]++;
-        // do top badges:
-        for (uint8_t top_index=0; top_index<FAVORITE_COUNT; top_index++) {
-            if (fav_badges_ids[top_index] == id) {
-                // If we run into the ID we're currently handling before
-                // we run into one that needs to be demoted in its favor,
-                // then its rank is OK (because we start at index 0, which
-                // is the #1 spot). Let's go ahead and make sure we've still
-                // got the most up-to-date handle for them though.
-                strcpy(fav_badges_handles[top_index], handle); // handle has already been sanitized.
-
-                break;
-            }
-            if (fav_badges_ids[top_index] == 0xff || (badge_seen_ticks[id] > badge_seen_ticks[fav_badges_ids[top_index]])) {
-                // This is where it goes, and all the rest need to be demoted.
-
-                // So we can start at the lowest ranked favorite, which is fav_badges_ids[FAVORITE_COUNT-1]
-                //  and clobber it with its superior until one IS CLOBBERED BY top_index.
-                //  Then we replace top_id's original spot with id.
-
-                for (uint8_t index_to_clobber = FAVORITE_COUNT-1; index_to_clobber>top_index; index_to_clobber--) {
-                    // index_to_clobber starts at the max value for fav_badges_ids
-                    // and goes through top_index+1. (index_to_clobber will never be 0).
-                    if (fav_badges_ids[index_to_clobber-1] == id) {
-                        // If we would be clobbering something by DEMOTING the old, stale entry for the
-                        // badge we're logging into this list now, just skip it.
-                    } else {
-                        fav_badges_ids[index_to_clobber] = fav_badges_ids[index_to_clobber-1];
-                        strcpy(fav_badges_handles[index_to_clobber], fav_badges_handles[index_to_clobber-1]);
-                    }
-                }
-
-                // now clobber top_index with out new one.
-                fav_badges_ids[top_index] = id;
-                strcpy(fav_badges_handles[top_index], handle); // handle has already been sanitized.
-
-                break; // We only care about the highest ranking that we qualify for.
-            }
-        }
-    }
 }
 
 void init_rtc() {
@@ -546,13 +202,16 @@ void init_payload() {
     out_payload.friendship = 0;
     out_payload.from_addr = my_conf.badge_id;
     out_payload.to_addr = RFM_BROADCAST;
-    strcpy(out_payload.handle, my_conf.handle);
+    memset(out_payload.handle, 0, NAME_MAX_LEN+1);
 }
 
 void init() {
     Grace_init(); // Activate Grace-generated configuration
 
     check_conf();
+
+    my_conf.locked = 1;
+    my_conf_write_crc();
 
     init_payload();
     init_tlc();
@@ -572,10 +231,8 @@ void post() {
     uint8_t led_error = tlc_test_loopback(0b10101010);
     led_error = led_error || tlc_test_loopback(0b01010101);
 
-    tlc_set_fun();
-
     // If we detected no errors, we're done here.
-    if (!(led_error || crystal_error))
+    if (!crystal_error)
         return;
 
     // Otherwise, show those errors and then delay for a bit so we can
@@ -591,11 +248,6 @@ void post() {
         print_loc += 12;
     }
 
-    if (led_error) {
-        GrStringDraw(&g_sContext, "Err: LED!", -1, 0, print_loc, 0);
-        print_loc += 12;
-    }
-
     GrFlush(&g_sContext);
 
     delay(5000);
@@ -603,10 +255,9 @@ void post() {
 
 // Play a cute animation when we first turn the badge on.
 void intro() {
-    GrImageDraw(&g_sContext, &fingerprint_1BPP_UNCOMP, 0, 0);
-    GrStringDrawCentered(&g_sContext, "Queercon", -1, 31, 94 + SYS_FONT_HEIGHT/3, 0);
-    GrStringDrawCentered(&g_sContext, "twelve", -1, 31, 94 + SYS_FONT_HEIGHT/3 + SYS_FONT_HEIGHT, 0);
-    GrStringDrawCentered(&g_sContext, "- 2015 -", -1, 31, 94 + SYS_FONT_HEIGHT/3 + SYS_FONT_HEIGHT*2, 0);
+    GrStringDrawCentered(&g_sContext, "qc12base", -1, 31, 10, 0);
+    GrImageDraw(&g_sContext, &fingerprint_1BPP_UNCOMP, 0, 18);
+    GrStringDrawCentered(&g_sContext, "- 2015 -", -1, 31, 125 - SYS_FONT_HEIGHT/2, 0);
     GrFlush(&g_sContext);
 }
 
@@ -617,20 +268,7 @@ void radio_send_beacon(uint8_t address, uint8_t beacons) {
     out_payload.from_addr = my_conf.badge_id;
     out_payload.to_addr = address;
     out_payload.play_id = 0;
-    radio_send_sync();
-}
-
-void radio_send_befriend(uint8_t mode) {
-    out_payload.beacon = 0;
-    out_payload.flag_id = 0;
-    out_payload.friendship = mode;
-    out_payload.from_addr = my_conf.badge_id;
-    out_payload.play_id = 0;
-    if (befriend_mode > 1) {
-        out_payload.to_addr = befriend_candidate;
-    } else {
-        out_payload.to_addr = RFM_BROADCAST;
-    }
+    out_payload.base_id = my_conf.base_id;
     radio_send_sync();
 }
 
@@ -641,150 +279,8 @@ void radio_send_flag(uint8_t flag) {
     out_payload.from_addr = my_conf.badge_id;
     out_payload.to_addr = RFM_BROADCAST;
     out_payload.play_id = 0;
-    radio_send_sync();
-}
-
-void radio_send_play(uint8_t index) {
-    out_payload.beacon = 0;
-    out_payload.flag_id = 0;
-    out_payload.friendship = 0;
-    out_payload.play_id = BIT7 | index;
-    out_payload.from_addr = my_conf.badge_id;
-    out_payload.to_addr = RFM_BROADCAST;
-    radio_send_sync();
-}
-
-void radio_send_puppy(uint8_t neighbor_index) {
-    static uint8_t neighbor_addr;
-    for (neighbor_addr=0; neighbor_index && (neighbor_addr<BADGES_IN_SYSTEM); neighbor_addr++) {
-        if (neighbor_badges[neighbor_addr])
-            neighbor_index--;
-    }
-    neighbor_addr--;
-
-    out_payload.beacon = 0;
-    out_payload.flag_id = 0;
-    out_payload.friendship = 0;
-    out_payload.base_id = 1; // puppy base.
-    out_payload.play_id = 0;
-    out_payload.from_addr = my_conf.badge_id;
-    out_payload.to_addr = neighbor_addr;
-    radio_send_sync();
     out_payload.base_id = NOT_A_BASE;
-}
-
-void set_befriend_failed() {
-    oled_set_overhead_text("Okbai :(", 20);
-    s_befriend_failed = 1;
-    befriend_mode = 0;
-    idle_mode_softkey_dis = 0;
-    oled_draw_pane_and_flush(idle_mode_softkey_sel);
-}
-
-// Received_flag is ignored if from_radio is 0.
-void befriend_proto_step(uint8_t from_radio, uint8_t received_flag, uint8_t from_id) {
-    if (!befriend_mode || rfm_state != RFM_IDLE) {
-        return;
-    }
-
-    if (from_radio) {
-        // Flag 5 is the highest that ever gets sent. If we see
-        //  something higher, someone's ruined something.
-        //  Therefore we fail.
-        if (received_flag > 5 || received_flag == 0) {
-            set_befriend_failed();
-            return;
-        }
-
-        // Here, we've received a radio message.
-        // We expect it to be either:
-        //  befriend_mode+1 (time to move to next state)
-        //      or
-        //  befriend_mode-1 (need to re-send this state)
-
-        // First we'll want to validate the sender's ID.
-        if (befriend_mode == 1) {
-            // If we are a beaconing server, we use the incoming
-            //  sender to set our befriend_candidate.
-            befriend_candidate = from_id;
-            if (received_flag == 1 && from_id > my_conf.badge_id) {
-                befriend_mode = 2;
-            }
-        } else if (from_id != befriend_candidate) {
-            // Otherwise, we need to ignore anything that's not
-            //  from our befriend_candidate.
-            return;
-        }
-
-        // Now let's handle the protocol machine:
-        if (received_flag == befriend_mode-1) {
-            // Older message received: we need to re-transmit our current mode.
-            radio_send_befriend(befriend_mode);
-        } else if (received_flag == befriend_mode+1) {
-            // Next message received: we're ready to move along in the protocol.
-            befriend_mode_ticks = BEFRIEND_RESEND_TRIES;
-            befriend_mode += 2;
-
-            // Two valid protocol states are TIME ONLY:
-            //  BF_S_WAIT (where we think we've transmitted the last packet
-            //              in the conversation but want to make sure that
-            //              the client has received it)
-            //      and
-            // BF_C_WAIT (where we've transmitted the client's last packet in
-            //              the conversation, received the server's last
-            //              packet, and we're waiting a bit in order to try
-            //              to synchronize our next actions with the server.)
-
-            // So if we're in one of those states, don't send anything.
-            if (befriend_mode != BF_S_WAIT && befriend_mode != BF_C_WAIT) {
-                oled_set_overhead_text("Hello!", 75);
-                radio_send_befriend(befriend_mode);
-            }
-        } else {
-            return;
-        }
-        // End of radio handling section
-
-    } else {
-
-        // (we've already ruled out 0)
-        if (befriend_mode < 5) { // the "normal" modes:
-            // BEACON, OPEN
-            // OPENING, and CLOSING.
-
-            // In these we retransmit if we have ticks left,
-            //  otherwise we time out.
-
-            if (befriend_mode == BF_S_BEACON || befriend_mode == BF_C_OPENING) {
-                // Modes 1 and 2's timeout is controlled outside of this
-                //  function, so make sure it never times out here.
-                //  This is kind of a kludge.
-                befriend_mode_ticks = BEFRIEND_RESEND_TRIES;
-            }
-
-            if (befriend_mode_ticks) {
-                // still some retries left.
-                befriend_mode_ticks--;
-                // Do re-send our message.
-                oled_set_overhead_text("Hello?", 75);
-                radio_send_befriend(befriend_mode);
-            } else {
-                set_befriend_failed();
-            }
-        } else {
-            // CLOSE_WAIT and JUST_WAIT. (The waiting modes)
-            // Here we just tick down and call things a success if we reach
-            //  zero.
-            if (befriend_mode_ticks) {
-                befriend_mode_ticks--;
-            } else {
-                befriend_mode = 0;
-                s_befriend_success = SIGNAL_BIT_OLED | SIGNAL_BIT_TLC;
-                oled_set_overhead_text(befriend_candidate_handle, 180);
-                set_badge_friend(befriend_candidate);
-            }
-        }
-    } // end of time-step handling section.
+    radio_send_sync();
 }
 
 void handle_infrastructure_services() {
@@ -810,106 +306,6 @@ void handle_infrastructure_services() {
         f_rfm_rx_done = 0;
         in_payload.handle[NAME_MAX_LEN] = 0; // Make sure it's definitely null-terminated.
 
-        // BASE SERVICES:
-        // Base services are a sort of overlay - The incoming payload is going to tell us
-        //  either that it's NOT A BASE (in which case we skip), OR it's going to give us
-        //  a valid base ID and be either a badge (from_addr < BADGES_IN_SYSTEM) or be an
-        //  actual base station (from_addr == DEDICATED_BASE_ID).
-        if (in_payload.base_id != NOT_A_BASE && (in_payload.from_addr < BADGES_IN_SYSTEM || in_payload.from_addr == DEDICATED_BASE_ID)) {
-            if (my_conf.adult && in_payload.base_id == 1) // puppy
-            {
-                oled_set_overhead_image(&puppy, 254);
-                achievement_get(ACH_HANDLER, 1);
-            }
-            else if (in_payload.base_id == BASE_SUITE) { // suite
-                at_base = RECEIVE_WINDOW;
-                at_suite_base = 1;
-            } else if (in_payload.base_id < BASES_IN_SYSTEM) { // other bases
-                at_base = RECEIVE_WINDOW;
-                set_base_seen(in_payload.base_id - 2);
-            }
-        }
-
-        // BEACON SERVICES:
-        // "Beacon services" refers to BADGE TO BADGE COMMUNICATION.
-        if (!disable_beacon_service && in_payload.from_addr < BADGES_IN_SYSTEM) {
-
-            // It's a standard beacon:
-            // Increment the badge count if needed:
-            if (in_payload.beacon) {
-                // It's a beacon (one per cycle).
-                // Update the TTL of the neighbor_badges record for the
-                //  source badge.
-                neighbor_badges[in_payload.from_addr] = RECEIVE_WINDOW * in_payload.beacon;
-                // Mark it seen:
-                set_badge_seen(in_payload.from_addr);
-                tick_badge_seen(in_payload.from_addr, in_payload.handle);
-            }
-
-            // Play schedule. We only care about this if we're in IDLE mode,
-            //  and if we're not busy. (We use the enabledness of the softkey as
-            //  a surrogate for that ill-defined "business").
-            if (in_payload.play_id && op_mode == OP_MODE_IDLE && !idle_mode_softkey_dis && (in_payload.play_id & 0b01111111) <= play_anim_count && !play_mode) {
-                if (my_conf.mood > MOOD_THRESH_SAD) {
-                    play_id = in_payload.play_id & 0b01111111;
-                    // Just stand there for the length of time the causing badge
-                    //  is doing its cause animation.
-                    if (my_conf.adult && play_id < play_anim_count) {
-                        play_mode = PLAY_MODE_RECV;
-                        oled_play_animation(&standing, play_cause[play_id]->len);
-                    } else if (!my_conf.adult && play_id == play_anim_count) {
-                        play_mode = PLAY_MODE_RECV;
-                        oled_play_animation(&infant_standing, infant_play.len*3);
-                    }
-                    if (play_mode) {
-                        idle_mode_softkey_dis = 1;
-                        oled_draw_pane_and_flush(idle_mode_softkey_sel);
-                        my_conf.play_margin--;
-                        my_conf_write_crc();
-                        if (my_conf.play_margin < -20) {
-                            achievement_get(ACH_PUNKD, 1);
-                            my_conf.play_margin = 0;
-                        }
-                        if (TLC_IS_A_GO) {
-                        }
-                    }
-                }
-            }
-
-            // It's a flag schedule:
-            if (in_payload.flag_id && (in_payload.flag_id & 0b01111111) < FLAG_COUNT) {
-                // Wave a flag.
-                if (my_conf.adult && !my_conf.flag_unlocks) {
-                    my_conf.flag_unlocks = 1;
-                    softkey_en |= SK_BIT_FLAG | SK_BIT_SETFLAG;
-                    mood_adjust_and_write_crc(MOOD_GOT_FLAG);
-                }
-                if (!flag_in_cooldown) {
-                    mood_adjust_and_write_crc(MOOD_FLAG);
-                    flag_id = in_payload.flag_id & 0b01111111;
-                    s_flag_wave = 1;
-                    s_flag_send = 2;
-                } // Otherwise, ignore it.
-            }
-
-            // Resolve inbound or completed friendship requests:
-            if (in_payload.friendship && my_conf.adult) {
-                if (befriend_mode) {
-                    // We're currently somewhere in the befriend process,
-                    //  so the protocol function will handle managing
-                    //  befriend_candidate for us.
-                    if (in_payload.from_addr == befriend_candidate) {
-                        strcpy(befriend_candidate_handle, in_payload.handle);
-                    }
-                    befriend_proto_step(1, in_payload.friendship, in_payload.from_addr);
-                } else if (in_payload.friendship == BF_S_BEACON) {
-                    // Only track beacons in this way.
-                    befriend_candidate = in_payload.from_addr;
-                    befriend_candidate_age = BEFRIEND_BCN_AGE_LOOPS;
-                }
-            }
-        }
-
     } else if (f_rfm_rx_done) {
         // Ignore messages from our own ID, because what even is that anyway?
         f_rfm_rx_done = 0;
@@ -917,33 +313,13 @@ void handle_infrastructure_services() {
 
     // Poll buttons and check whether we need to resend a befriend message:
     if (f_time_loop) {
-//        poll_buttons();
         WDT_A_resetTimer(WDT_A_BASE); // pat pat pat
-        if (my_conf.adult && befriend_mode && !befriend_mode_loops_to_tick &&
-                rfm_state == RFM_IDLE) {
-            befriend_proto_step(0, 0, BADGES_IN_SYSTEM);
-            befriend_mode_loops_to_tick = BEFRIEND_LOOPS_TO_RESEND;
-        } else if (my_conf.adult && befriend_mode && befriend_mode_loops_to_tick) {
-            befriend_mode_loops_to_tick--;
-        }
-
-        if (befriend_candidate_age) {
-            befriend_candidate_age--;
-        }
     }
 
     if (f_new_second) {
         if (f_radio_fault) {
             f_radio_fault = 0;
             init_radio();
-        }
-
-        if (befriend_mode == 1 || befriend_mode == 2) {
-            if (befriend_mode_secs) {
-                befriend_mode_secs--;
-            } else {
-                set_befriend_failed();
-            }
         }
 
         if (flag_in_cooldown) {
@@ -959,12 +335,6 @@ void handle_infrastructure_services() {
         window_seconds--;
         if (!window_seconds) {
             window_seconds = RECEIVE_WINDOW_LENGTH_SECONDS;
-            if (at_base) {
-                at_base--;
-                if (!at_base) {
-                    at_suite_base = 0;
-                }
-            }
             if (skip_window != window_position) {
                 s_need_rf_beacon = 1;
             }
@@ -992,44 +362,6 @@ void handle_infrastructure_services() {
 
     if (s_new_minute) {
         s_new_minute = 0;
-        if (my_conf.flag_cooldown) {
-            my_conf.flag_cooldown--;
-            my_conf_write_crc();
-        }
-
-        if (my_conf.mood <= MOOD_THRESH_SAD) {
-            my_conf.sadtime++;
-            my_conf_write_crc();
-            if (my_conf.sadtime == 480) {
-                achievement_get(ACH_MOODY, 1);
-            }
-        }
-
-        mood_tick_minutes--;
-        if (!mood_tick_minutes) {
-            if (neighbor_count >= 5 || at_base) {
-                // Happy time.
-                mood_adjust_and_write_crc(MOOD_TICK_AMOUNT_UP);
-            } else {
-                // Boring time.
-                mood_adjust_and_write_crc(MOOD_TICK_AMOUNT);
-            }
-            mood_tick_minutes = MOOD_TICK_MINUTES;
-
-        }
-
-        if (at_base && at_suite_base && my_conf.suite_minutes < 200) {
-            my_conf.suite_minutes++;
-        }
-        if (my_conf.suite_minutes >= 200) {
-            achievement_get(ACH_CHILL, 1);
-        }
-
-        // General timing stuff:
-        my_conf.waketime++;
-        if (my_conf.waketime > 1440) { // 24 hours
-            achievement_get(ACH_TIRED, 1);
-        }
 
         // NB: overflows every 8166.13 years:
         my_conf.uptime++;
@@ -1040,16 +372,6 @@ void handle_infrastructure_services() {
             puppy_target = 1 + rand() % neighbor_count;
         }
 
-        // Figure out if it's time to grow up.
-        if (!my_conf.adult && (my_conf.uptime + (my_conf.badge_id % 15) > 80)) {
-            // Time to grow up!
-            my_conf.time_to_hatch = 1;
-            my_conf_write_crc();
-            softkey_en |= SK_BIT_HATCH;
-            idle_mode_softkey_sel = SK_SEL_HATCH;
-        }
-
-
         my_conf_write_crc();
     }
 
@@ -1057,16 +379,6 @@ void handle_infrastructure_services() {
         s_flag_send--;
         flag_in_cooldown = FLAG_IN_COOLDOWN_SECONDS;
         radio_send_flag(flag_id | BIT7);
-    }
-
-    if (s_send_play && rfm_state == RFM_IDLE) {
-        s_send_play--;
-        radio_send_play(play_id);
-    }
-
-    if (s_send_puppy && rfm_state == RFM_IDLE) {
-        s_send_puppy--;
-        radio_send_puppy(puppy_target);
     }
 
     if (!disable_beacon_service && s_need_rf_beacon && rfm_state == RFM_IDLE) {
@@ -1081,122 +393,12 @@ void handle_infrastructure_services() {
     }
 }
 
-void handle_character_actions() {
+void handle_oled_actions() {
     if (f_time_loop) {
         oled_timestep();
     }
 
     if (f_new_second) {
-        // Determine whether we should do a random action.
-        if (idle_action_seconds && oled_anim_state == OLED_ANIM_DONE) {
-            if (my_conf.adult && my_conf.mood > MOOD_THRESH_SAD && (idle_action_seconds & BIT0)) {
-                oled_play_animation(&standing, (idle_action_seconds & BIT1) >> 1);
-            }
-            idle_action_seconds--;
-        }
-        if (!idle_action_seconds) {
-            s_need_idle_action = 1;
-            if (my_conf.adult) {
-                idle_action_seconds = 2 + rand() % 7;
-            }
-            else {
-                idle_action_seconds = 1 + rand() % 3;
-            }
-        } else {
-        }
-    }
-
-    if (s_befriend_success & SIGNAL_BIT_OLED) {
-        s_befriend_success &= ~SIGNAL_BIT_OLED;
-        if (s_new_friend & SIGNAL_BIT_OLED || s_new_uber_friend & SIGNAL_BIT_OLED) {
-            s_new_friend &= ~SIGNAL_BIT_OLED;
-            s_new_uber_friend &= ~SIGNAL_BIT_OLED;
-            if (my_conf.adult)
-                oled_play_animation(&flap_arms, 10);
-        } else {
-            if (my_conf.adult)
-                oled_play_animation(&wave_right, 10);
-        }
-    }
-
-    if (s_oled_needs_redrawn_idle) {
-        s_oled_needs_redrawn_idle = 0;
-        if (my_conf.adult && my_conf.time_to_hatch) {
-            my_conf.time_to_hatch = 0;
-            idle_mode_softkey_dis = 0;
-            my_conf_write_crc();
-        }
-
-        if (play_mode == PLAY_MODE_RECV || play_mode == PLAY_MODE_CAUSE_ALONE) {
-            // We just finished standing still for receiving a play.
-            //  (or causing something to happen to ourself)
-            // Time to act!
-            play_mode = PLAY_MODE_EFFECT;
-            if (my_conf.adult) {
-                oled_play_animation(play_effect[play_id], 0);
-            } else {
-                oled_play_animation(&infant_play, 3);
-            }
-            // This displeases us:
-            mood_adjust_and_write_crc(MOOD_PLAY_RECV);
-        } else if (play_mode == PLAY_MODE_EFFECT || play_mode == PLAY_MODE_OBSERVE) {
-            // We just finished receiving a play.
-            //  (or watching one)
-            // Time to go back to normal.
-            play_mode = 0;
-            idle_mode_softkey_dis = 0;
-            oled_draw_pane_and_flush(idle_mode_softkey_sel);
-        } else if (play_mode == PLAY_MODE_CAUSE) {
-            // Just finished causing a play. Time to stand back
-            //  and observe.
-            play_mode = PLAY_MODE_OBSERVE;
-            if (my_conf.adult) {
-                oled_play_animation(play_observe[play_id], 0);
-            } else {
-                oled_play_animation(&infant_standing, infant_play.len * 3);
-            }
-            oled_draw_pane_and_flush(idle_mode_softkey_sel);
-        }
-
-        if (my_conf.adult && !play_mode && my_conf.mood < MOOD_THRESH_SAD) {
-            oled_anim_disp_frame(&bored_standing, 0);
-        } else if (my_conf.adult && !play_mode) {
-            oled_anim_disp_frame(&standing, 0);
-        } else if (!play_mode) { // child's play just ended (lol)
-            oled_anim_disp_frame(&infant_standing, 0);
-        }
-    }
-
-    // Bail if we're not going to be able to start an animation, because that's
-    // all that the rest of this function does.
-    if (oled_anim_state != OLED_ANIM_DONE) {
-        return;
-    }
-
-    if (my_conf.adult && (s_new_uber_seen & SIGNAL_BIT_OLED || s_new_badge_seen & SIGNAL_BIT_OLED)) {
-        // Wave!
-        oled_play_animation(&wave_right, 4);
-        s_new_badge_seen &= ~SIGNAL_BIT_OLED;
-        s_new_uber_seen &= ~SIGNAL_BIT_OLED;
-    }
-
-    if (s_need_idle_action) {
-        s_need_idle_action = 0;
-        // Pick a random idle animation to do.
-        static uint8_t anim;
-
-        if (my_conf.adult) {
-            if (my_conf.mood > MOOD_THRESH_SAD) {
-                anim = rand() % idle_anim_count;
-                oled_play_animation(idle_anims[anim], rand() % 5);
-            } else {
-                anim = rand() % moody_idle_anim_count;
-                oled_play_animation(moody_idle_anims[anim], rand() % 5);
-            }
-        } else {
-            anim = rand() % infant_idle_anim_count;
-            oled_play_animation(infant_idle_anims[anim], 4+rand() % 5);
-        }
     }
 
 }
@@ -1209,20 +411,15 @@ void try_to_sleep() {
 }
 
 // Read the badgeholder's name if appropriate:
-void handle_mode_name() {
+uint8_t unlock() {
     // Clear the screen and display the instructions.
     static tRectangle name_erase_rect = {0, NAME_Y_OFFSET, 63, NAME_Y_OFFSET + NAME_FONT_HEIGHT + SYS_FONT_HEIGHT};
-    disable_beacon_service = 1;
     static uint8_t update_disp;
     update_disp = 1;
-    static uint8_t cheat_success;
-    static uint8_t cheat_fail_cnt=0;
 
-    cheat_success = 0;
     GrClearDisplay(&g_sContext);
     GrContextFontSet(&g_sContext, &SYS_FONT);
-    oled_print(0, 5, "Enter a name.", 1, 0);
-    oled_print(0, 3+SYS_FONT_HEIGHT*3, "Hold middle button to finish.", 1, 0);
+    oled_print(0, 5, "Password please.", 1, 0);
     GrFlush(&g_sContext);
 
     // Switch to the NAME font so it's the expected width.
@@ -1246,9 +443,6 @@ void handle_mode_name() {
 
     // For determining whether name entry is complete:
     uint8_t bs_down_loops = 0;
-    // For cheat mode:
-    uint8_t bl_down_loops = 0;
-    uint8_t cheat_mode = 0;
     text_width = GrStringWidthGet(&g_sContext, name, last_char_index+1);
 
     while (1) {
@@ -1273,7 +467,6 @@ void handle_mode_name() {
                     update_disp = 1;
                     text_width = GrStringWidthGet(&g_sContext, name, last_char_index+1);
                 }
-                bl_down_loops = 0;
                 f_bl = 0;
             }
             if (f_br == BUTTON_RELEASE) {
@@ -1314,9 +507,6 @@ void handle_mode_name() {
                 // counting the number of time loops for which it is depressed.
                 bs_down_loops = 1;
                 f_bs = 0;
-            } else if (f_bl == BUTTON_PRESS) {
-                f_bl = 0;
-                bl_down_loops = 1;
             }
 
             // If we're counting the number of loops for which the softkey is
@@ -1326,19 +516,6 @@ void handle_mode_name() {
                 bs_down_loops++;
             } else if (bs_down_loops) {
                 break;
-            }
-
-            // Check to see if we're ready to enter CHEAT MODE.
-            if (bl_down_loops && bl_down_loops < NAME_COMMIT_LOOPS) {
-                bl_down_loops++;
-            } else if (my_conf.handle[0] && !cheat_mode && bl_down_loops) {
-                bl_down_loops = 0;
-                GrClearDisplay(&g_sContext);
-                GrContextFontSet(&g_sContext, &SYS_FONT);
-                oled_print(0, 5, "Enter a cheat code, you wascally wabbit.", 1, 0);
-                GrFlush(&g_sContext);
-                cheat_mode = 1;
-                update_disp = 1;
             }
 
             if (update_disp) {
@@ -1368,104 +545,24 @@ void handle_mode_name() {
         name_len++;
     name[name_len] = 0; // null terminate.
 
-    static uint8_t need_puppy;
-    need_puppy = 0;
-
-    if (cheat_mode) {
-        if (!strcmp(name, CHEAT_FLAG_NC)) {
-            cheat_success = 1;
-            my_conf.flag_unlocks = 0xFF;
-            my_conf_write_crc();
-            check_conf();
-        } else if (!strcmp(name, CHEAT_FLAG)) {
-            cheat_success = 1;
-            my_conf.flag_unlocks = 0x01;
-            my_conf_write_crc();
-            check_conf();
-        } else if (!strcmp(name, CHEAT_TITLE)) {
-            cheat_success = 1;
-            my_conf.titles_unlocked = 1;
-            my_conf_write_crc();
-        } else if (!strcmp(name, CHEAT_HAPPY)) {
-            cheat_success = 1;
-            mood_adjust_and_write_crc(100);
-        } else if (!strcmp(name, CHEAT_SAD)) {
-            cheat_success = 1;
-            mood_adjust_and_write_crc(-100);
-        } else if (!strcmp(name, CHEAT_INFANT)) {
-            cheat_success = 1;
-            my_conf.adult = 0;
-            my_conf_write_crc();
-            check_conf();
-        } else if (!strcmp(name, CHEAT_ADULT)) {
-            // Time to grow up!
-            my_conf.time_to_hatch = 1;
-            my_conf_write_crc();
-            softkey_en |= SK_BIT_HATCH;
-            idle_mode_softkey_sel = SK_SEL_HATCH;
-        } else if (!strcmp(name, CHEAT_INVERT)) {
-            cheat_success = 1;
-            qc12_oledInit(1);
-            tlc_stop_anim(0);
-        } else if (!strcmp(name, CHEAT_UNINVERT)) {
-            cheat_success = 1;
-            qc12_oledInit(0);
-            tlc_stop_anim(0);
-        } else if (!strcmp(name, CHEAT_PUPPY)) {
-            cheat_success = 1;
-            need_puppy = 1;
-        } else if (!strcmp(name, CHEAT_PUPPYOFF)) {
-            cheat_success = 1;
-            am_puppy = 0;
-        } else if (!strcmp(name, CHEAT_MIRROR)) {
-            cheat_success = 1;
-            qc12oled_WriteCommand(0xC0);
-        } else if (!strcmp(name, CHEAT_UNMIRROR)) {
-            cheat_success = 1;
-            qc12oled_WriteCommand(0xC8);
-        }
-
-        if (cheat_success) {
-            cheat_success = 0;
-            cheat_fail_cnt = 0;
-            achievement_get(ACH_CHEATER, 1);
-            if (need_puppy) {
-                am_puppy = 1;
-                need_puppy = 0;
-                achievement_get(ACH_PUPPY, 1);
-            }
-        }
-        else {
-            cheat_fail_cnt++;
-            if (cheat_fail_cnt == 5) {
-                achievement_get(ACH_TOWEL, 1);
-            }
-        }
-
-
-    } else {
-        strcpy(my_conf.handle, name);
-        my_conf_write_crc();
-        strcpy(out_payload.handle, name);
-    }
-
-    achievement_get(ACH_BABY, 1);
-
-    op_mode = OP_MODE_IDLE;
-    suppress_softkey = 1; // And don't register the button release
-
     GrClearDisplay(&g_sContext);
     GrFlush(&g_sContext);
-    disable_beacon_service = 0;
+
+    suppress_softkey = 1;
+
+    if (strcmp(name, "OKHOMO")) {
+        // fail
+        return 0;
+    } else {
+        my_conf.locked = 0;
+        my_conf_write_crc();
+        return 1;
+    }
 } // handle_mode_name
 
 uint8_t softkey_enabled(uint8_t index) {
-    if ((index == SK_SEL_FLAG || index == SK_SEL_SETFLAG) && (!my_conf.flag_unlocks || !my_conf.adult)) {
+    if ((index == SK_SEL_FLAG || index == SK_SEL_SETFLAG) && my_conf.flag_unlocks) {
         return 0;
-    }
-
-    if (index == SK_SEL_FLAG) {
-        return !my_conf.flag_cooldown;
     }
     return ((1<<index) & softkey_en)? 1 : 0;
 }
@@ -1492,7 +589,7 @@ void handle_mode_idle() {
 
     while (1) {
         handle_infrastructure_services();
-        handle_character_actions();
+        handle_oled_actions();
 
         if (f_new_second) {
             f_new_second = 0;
@@ -1521,26 +618,38 @@ void handle_mode_idle() {
             f_bl = 0;
 
             if (f_bs == BUTTON_RELEASE) {
+                f_bs = 0;
                 // Select button
                 switch (idle_mode_softkey_sel) {
+                case SK_SEL_UNLOCK:
+                    unlock();
+                    s_new_pane = 1;
+                    break;
+                case SK_SEL_LOCK:
+                    my_conf.locked = 1;
+                    my_conf_write_crc();
+                    idle_mode_softkey_sel = SK_SEL_UNLOCK;
+                    s_new_pane = 1;
+                    break;
                 case SK_SEL_SETFLAG:
                     op_mode = OP_MODE_SETFLAG;
                     break;
-                case SK_SEL_NAME:
-                    op_mode = OP_MODE_NAME;
+                case SK_SEL_FLAG:
                     break;
-                case SK_SEL_SLEEP:
-                    if (!my_conf.seen_sleep) {
-                        my_conf.seen_sleep = 1;
-                        my_conf_write_crc();
-                    }
-                    op_mode = OP_MODE_SLEEP;
+                case SK_SEL_BOFF:
+                    my_conf.base_id = NOT_A_BASE;
+                    my_conf_write_crc();
+                    s_new_pane = 1;
                     break;
                 default:
-                    __never_executed();
+                    if (idle_mode_softkey_sel > SK_SEL_MAX) {
+                        break;
+                    }
+                    my_conf.base_id = idle_mode_softkey_sel - 2;
+                    my_conf_write_crc();
+                    op_mode = OP_MODE_IDLE;
                 }
             }
-            f_bs = 0;
         }
 
         if (s_new_pane) {
@@ -1559,130 +668,6 @@ void handle_mode_idle() {
 
     // Cleanup:
     f_bs = 0;
-}
-
-void handle_mode_sleep() {
-    // Clear the screen.
-    GrClearDisplay(&g_sContext);
-    GrFlush(&g_sContext);
-
-    // Let our faves know we're going to sleep (so they remember us).
-    // A beacon normally has a staying power of about 60*10 seconds (1min)
-    // Let's give nearby badges a 10-minute grace period to sleep with us
-    // as well. Sex can be one-way in this system, which is, in a somewhat
-    // poetic sense, quite realistic.
-    for (uint8_t t=4; t; t--) { // Do this a few times to try to get through.
-        for (uint8_t i=0; i<FAVORITE_COUNT; i++) {
-            if (badge_seen_ticks[fav_badges_ids[i]]) {
-                radio_send_beacon(fav_badges_ids[i], 10);
-                while (rfm_state != RFM_IDLE);
-                WDT_A_resetTimer(WDT_A_BASE);
-                delay(50);
-            }
-        }
-    }
-
-    // Wait for the radio to quiesce.
-    while (rfm_state != RFM_IDLE)
-        __no_operation();
-
-    // Sleep the radio.
-    mode_sync(RFM_MODE_SL); // Going to sleep... mode...
-    write_single_register(0x3b, RFM_AUTOMODE_OFF);
-    f_rfm_rx_done = f_rfm_tx_done = 0;
-
-    my_conf.waketime = 0;
-    my_conf.sleeptime = 0;
-    my_conf_write_crc();
-
-
-    // Kill the LEDs.
-    tlc_stop_anim(1);
-
-    uint8_t sexy = 0;
-    for (uint8_t id=0; id<FAVORITE_COUNT; id++) {
-        if (neighbor_badges[fav_badges_ids[id]] && (badges_seen[fav_badges_ids[id]] & BADGE_FRIEND_BIT)) {
-            sexy = 1;
-            my_conf.seen_sleep = 2;
-            my_conf_write_crc();
-            break;
-        }
-    }
-
-    // Set up our Zzz animation.
-    static uint8_t zzz_index = 0;
-
-    while (1) {
-        if (f_time_loop) {
-            f_time_loop = 0;
-//            poll_buttons();
-            WDT_A_resetTimer(WDT_A_BASE); // pat pat pat
-
-            if (f_bs == BUTTON_RELEASE) {
-                f_bs = 0;
-                break;
-            }
-            f_bs = f_br = f_bl = 0;
-
-        }
-        if (f_new_second) {
-            f_new_second = 0;
-            GrClearDisplay(&g_sContext);
-            GrStringDraw(&g_sContext, "Zzz...", zzz_index, 15, 72, 1);
-
-            if (sexy && ((~zzz_index & BIT0) || my_conf.sleeptime > 30)) {
-                GrImageDraw(&g_sContext, &bed, 20, 90);
-            }
-
-            GrFlush(&g_sContext);
-            zzz_index = (zzz_index+1) % 7;
-
-            minute_secs--;
-            if (!minute_secs) {
-                minute_secs = 60;
-                s_new_minute = 1;
-            }
-
-            if (s_new_minute) {
-                s_new_minute = 0;
-                if (my_conf.flag_cooldown) {
-                    my_conf.flag_cooldown--;
-                }
-
-                my_conf.sleeptime++;
-
-                if (my_conf.uptime) {
-                    my_conf.uptime++;
-                }
-                mood_adjust_and_write_crc(MOOD_TICK_AMOUNT_UP);
-            }
-        }
-
-        try_to_sleep(); // This one needs to be different...
-    }
-
-    if (my_conf.sleeptime > 480) {
-        achievement_get(ACH_SLEEPY, 0);
-    }
-
-    if (my_conf.sleeptime > 30) {
-        // If we were asleep for more than 30 minutes,
-        // check to see if any of our favorites were around us when we
-        // fell asleep. If so, we "slept with them."
-        for (uint8_t id=0; id<FAVORITE_COUNT; id++) {
-            if (neighbor_badges[fav_badges_ids[id]] && (badges_seen[fav_badges_ids[id]] & BADGE_FRIEND_BIT)) {
-                badges_seen[fav_badges_ids[id]] |= BADGE_SEX_BIT;
-                achievement_get(ACH_SEXY, 1);
-                mood_adjust_and_write_crc(100);
-            }
-        }
-    }
-
-    my_conf.sleeptime = 0;
-    mood_adjust_and_write_crc(10);
-
-    init_radio();
-    op_mode = OP_MODE_IDLE;
 }
 
 void handle_mode_setflag() {
@@ -1779,11 +764,6 @@ int main(void)
 
     GrClearDisplay(&g_sContext);
 
-    if (!my_conf.handle[0] || s_default_conf_loaded) { // Name is not set:
-        op_mode = OP_MODE_NAME;
-        s_default_conf_loaded = 0;
-    }
-
     WDT_A_initWatchdogTimer(WDT_A_BASE, WDT_A_CLOCKSOURCE_ACLK, WDT_A_CLOCKDIVIDER_32K);
     WDT_A_start(WDT_A_BASE);
 
@@ -1793,13 +773,11 @@ int main(void)
             handle_mode_idle();
             break;
         case OP_MODE_NAME:
-            handle_mode_name(); // Learn the badge's name (if we don't have it already)
             break;
         case OP_MODE_SETFLAG:
             handle_mode_setflag();
             break;
         case OP_MODE_SLEEP:
-            handle_mode_sleep();
             break;
         }
 
