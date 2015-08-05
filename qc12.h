@@ -129,9 +129,8 @@
 #define SK_SEL_BKICKOFF 5
 #define SK_SEL_BMIXER 6
 #define SK_SEL_BTALK 7
-#define SK_SEL_FLAG 8
-#define SK_SEL_SETFLAG 9
-#define SK_SEL_MAX 10
+#define SK_SEL_SETFLAG 8
+#define SK_SEL_MAX 8
 
 #define SK_BIT_UNLOCK BIT0
 #define SK_BIT_LOCK BIT1

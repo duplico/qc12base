@@ -276,11 +276,12 @@ void radio_send_flag(uint8_t flag) {
     out_payload.beacon = 0;
     out_payload.flag_id = flag;
     out_payload.friendship = 0;
-    out_payload.from_addr = my_conf.badge_id;
+    out_payload.from_addr = 0;
     out_payload.to_addr = RFM_BROADCAST;
     out_payload.play_id = 0;
     out_payload.base_id = NOT_A_BASE;
     radio_send_sync();
+    out_payload.from_addr = my_conf.badge_id;
 }
 
 void handle_infrastructure_services() {
@@ -550,18 +551,30 @@ uint8_t unlock() {
 
     suppress_softkey = 1;
 
-    if (strcmp(name, "OKHOMO")) {
-        // fail
-        return 0;
-    } else {
+    if (!strcmp(name, "OKHOMOr")) {
+        // unlock with rainbows
+        my_conf.locked = 0;
+        my_conf.flag_unlocks = 0xFF;
+        my_conf_write_crc();
+        return 1;
+    } else if (!strcmp(name, "OKHOMOn")) {
+        // unlock
+        my_conf.locked = 0;
+        my_conf.flag_unlocks = 0;
+        my_conf_write_crc();
+        return 1;
+    } else if (!strcmp(name, "OKHOMO")) {
+        // unlock
         my_conf.locked = 0;
         my_conf_write_crc();
         return 1;
+    } else {
+        return 0; // fail
     }
 } // handle_mode_name
 
 uint8_t softkey_enabled(uint8_t index) {
-    if ((index == SK_SEL_FLAG || index == SK_SEL_SETFLAG) && my_conf.flag_unlocks) {
+    if (index == SK_SEL_SETFLAG && !my_conf.flag_unlocks) {
         return 0;
     }
     return ((1<<index) & softkey_en)? 1 : 0;
@@ -624,6 +637,8 @@ void handle_mode_idle() {
                 case SK_SEL_UNLOCK:
                     unlock();
                     s_new_pane = 1;
+                    idle_mode_softkey_sel = SK_SEL_LOCK;
+                    oled_draw_pane_and_flush(idle_mode_softkey_sel);
                     break;
                 case SK_SEL_LOCK:
                     my_conf.locked = 1;
@@ -634,18 +649,21 @@ void handle_mode_idle() {
                 case SK_SEL_SETFLAG:
                     op_mode = OP_MODE_SETFLAG;
                     break;
-                case SK_SEL_FLAG:
-                    break;
                 case SK_SEL_BOFF:
                     my_conf.base_id = NOT_A_BASE;
                     my_conf_write_crc();
                     s_new_pane = 1;
+                    oled_draw_pane_and_flush(idle_mode_softkey_sel);
                     break;
                 default:
                     if (idle_mode_softkey_sel > SK_SEL_MAX) {
                         break;
                     }
-                    my_conf.base_id = idle_mode_softkey_sel - 2;
+                    // I need to SEND:  3 for pool
+                    //                  4 for kickoff
+                    //                  5 for mixer
+                    //                  6 for talk
+                    my_conf.base_id = idle_mode_softkey_sel - 1;
                     my_conf_write_crc();
                     op_mode = OP_MODE_IDLE;
                 }
@@ -705,26 +723,9 @@ void handle_mode_setflag() {
                 // Select button
                 my_conf.flag_id = softkey_sel;
                 my_conf_write_crc();
+                flag_id = my_conf.flag_id;
+                s_flag_send = FLAG_SEND_TRIES;
                 op_mode = OP_MODE_IDLE;
-                /*
-                 *
-                    if (!my_conf.seen_flags) {
-                        my_conf.seen_flags = 1;
-                        my_conf_write_crc();
-                    }
-                    if (my_conf.flag_unlocks != 0xFF) {
-                        my_conf.flag_cooldown = FLAG_OUT_COOLDOWN_MINUTES;
-                        my_conf_write_crc();
-                    }
-                    flag_id = my_conf.flag_id;
-                    s_flag_send = FLAG_SEND_TRIES;
-                    idle_mode_softkey_sel = 0;
-                    s_new_pane = 1;
-                    break;
-                 */
-
-
-
                 break;
             }
             f_bs = 0;
@@ -759,7 +760,7 @@ int main(void)
 {
     init();
     intro();
-    delay(8500);
+    delay(3500);
     post();
 
     GrClearDisplay(&g_sContext);
